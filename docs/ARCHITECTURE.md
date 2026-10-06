@@ -42,28 +42,36 @@ flowchart TB
 ├─ tsconfig.base.json        # strict, ESM, NodeNext / Bundler según workspace
 ├─ eslint.config.js          # flat config + typescript-eslint
 ├─ .prettierrc
-├─ .env.example
+├─ .nvmrc
 ├─ apps/
 │  ├─ api/
+│  │  ├─ .env.example
 │  │  ├─ src/
-│  │  │  ├─ server.ts                 # bootstrap: env, conexión DB, recuperación de jobs, listen
+│  │  │  ├─ server.ts                 # bootstrap: env, conexión DB (con reintentos), listen, apagado limpio
 │  │  │  ├─ app.ts                    # createApp(): Express sin efectos (usable en tests)
 │  │  │  ├─ config/env.ts             # variables de entorno validadas con Zod
+│  │  │  ├─ lib/
+│  │  │  │  ├─ logger.ts              # logger mínimo: pretty en dev, JSON por línea en producción
+│  │  │  │  └─ errors.ts              # AppError + helpers (notFound, badRequest, ...)
 │  │  │  ├─ db/
-│  │  │  │  ├─ connection.ts
-│  │  │  │  └─ tenantScoped.plugin.ts # exige companyId en queries de modelos de empresa
+│  │  │  │  ├─ connection.ts          # startDatabase / stopDatabase / getDatabaseStatus
+│  │  │  │  └─ tenantScoped.plugin.ts # (Etapa 2) exige companyId en queries de modelos de empresa
 │  │  │  ├─ middleware/
-│  │  │  │  ├─ requireAuth.ts
-│  │  │  │  ├─ requireCompanyAccess.ts
-│  │  │  │  ├─ validate.ts            # valida body/params/query con schemas de contracts
-│  │  │  │  └─ errorHandler.ts        # errores → ApiError de contracts
+│  │  │  │  ├─ requestLogger.ts       # requestId (X-Request-Id) + log por petición
+│  │  │  │  ├─ notFound.ts
+│  │  │  │  ├─ errorHandler.ts        # errores → ApiError de contracts
+│  │  │  │  ├─ requireAuth.ts         # (Etapa 3)
+│  │  │  │  ├─ requireCompanyAccess.ts# (Etapa 4)
+│  │  │  │  └─ validate.ts            # (Etapa 3) valida body/params/query con schemas de contracts
 │  │  │  ├─ modules/
-│  │  │  │  ├─ auth/        user.model · auth.service · auth.routes
-│  │  │  │  ├─ companies/   company.model · company.service · company.routes · onboarding.routes
-│  │  │  │  ├─ brand/       brandDna.model · brandAnalysis.service · brandAnalysis.job · brand.routes
-│  │  │  │  ├─ avatar/      avatarProfile.model · avatarDesign.service · avatar.routes
-│  │  │  │  ├─ chat/        conversation.model · message.model · contextBuilder · pixelChat.service · chat.routes
-│  │  │  │  └─ memory/      creativeMemory.model · memory.service · memory.routes
+│  │  │  │  ├─ index.ts           # registro único de módulos y sus rutas
+│  │  │  │  ├─ health/            GET /api/health
+│  │  │  │  ├─ auth/              user.model · auth.service · auth.routes
+│  │  │  │  ├─ companies/         company.model · company.service · companies.routes (+ onboarding)
+│  │  │  │  ├─ brand-dna/         brandDna.model · brandAnalysis.service · brandAnalysis.job · brand-dna.routes
+│  │  │  │  ├─ avatars/           avatarProfile.model · avatarDesign.service · avatars.routes
+│  │  │  │  ├─ conversations/     conversation.model · message.model · contextBuilder · pixelChat.service · conversations.routes
+│  │  │  │  └─ creative-memory/   creativeMemory.model · creativeMemory.service · creative-memory.routes
 │  │  │  └─ ai/
 │  │  │     ├─ AIProvider.ts           # interfaz
 │  │  │     ├─ structured.ts           # generateObject + validación Zod + 1 reintento
@@ -75,18 +83,20 @@ flowchart TB
 │  │  │     └─ index.ts                # createAIProvider(env)
 │  │  └─ test/
 │  └─ web/
+│     ├─ .env.example · vite.config.ts (proxy /api)
 │     └─ src/
-│        ├─ main.tsx · App.tsx (router)
+│        ├─ main.tsx · index.css (tokens de tema Tailwind)
+│        ├─ app/                       # router, AppShell, Sidebar, Header, navigation
+│        ├─ components/                # Icon, PixelMark, PageHeader, EmptyState (sin librería de UI)
 │        ├─ lib/api.ts                 # cliente fetch tipado, valida respuestas con contracts
-│        ├─ features/
-│        │  ├─ auth/        LoginPage · RegisterPage · AuthProvider · RequireAuth
-│        │  ├─ companies/   CompaniesPage · CreateCompanyForm
-│        │  ├─ onboarding/  OnboardingWizard · steps/*
-│        │  ├─ brand/       AnalysisPage · BrandDnaSummary
-│        │  ├─ avatar/      PixelAvatar · archetypes/* · faces/* · motion.ts · profileToScene.ts · AvatarRationale
-│        │  ├─ chat/        ChatPage · MessageList · Composer
-│        │  └─ memory/      MemoryPanel
-│        └─ components/ui/  # botones, inputs, layout (Tailwind, sin librería de componentes)
+│        └─ features/
+│           ├─ auth/        LoginPage (+ RegisterPage, AuthProvider en Etapa 3)
+│           ├─ dashboard/   DashboardPage
+│           ├─ companies/   CompaniesPage · CompanyOverviewPage (+ onboarding en Etapa 4)
+│           ├─ brand/       BrandPage (+ AnalysisPage, BrandDnaSummary)
+│           ├─ pixel/       PixelPage (+ PixelAvatar, archetypes, profileToScene, AvatarRationale)
+│           ├─ chat/        ChatPage (+ MessageList, Composer, MemoryPanel)
+│           └─ system/      ApiStatus · useApiHealth · NotFoundPage
 ├─ packages/
 │  └─ contracts/
 │     └─ src/
@@ -259,18 +269,37 @@ Prefijo `/api`. JSON. Errores con forma `ApiError { code, message, details? }`.
 - `helmet` no es imprescindible en 0.1; rate limiting de login queda en backlog (riesgo aceptado para el MVP).
 - Nunca se loguean contraseñas, tokens ni prompts completos con datos de la empresa en producción.
 
-## 10. Configuración (`.env.example`)
+## 10. Configuración
+
+Cada app tiene su `.env` (ignorado por git) y su `.env.example` versionado.
+
+`apps/api/.env`:
 
 ```
-# api
+NODE_ENV=development
 PORT=4000
-MONGODB_URI=mongodb://localhost:27017/pixel
-JWT_SECRET=change-me
-AI_PROVIDER=mock
-AI_MODEL=
-AI_API_KEY=
-ANALYSIS_TIMEOUT_MS=180000
-CHAT_HISTORY_LIMIT=20
+MONGODB_URI=mongodb://127.0.0.1:27017/pixel
+CORS_ORIGINS=http://localhost:5173
+LOG_LEVEL=info
+# Se añaden en etapas posteriores: JWT_SECRET (3), AI_PROVIDER / AI_MODEL / AI_API_KEY (5),
+# ANALYSIS_TIMEOUT_MS (6), CHAT_HISTORY_LIMIT (8)
+```
+
+`apps/web/.env`:
+
+```
+VITE_API_URL=                               # vacío = mismo origen (/api) vía proxy de Vite
+VITE_API_PROXY_TARGET=http://localhost:4000
+```
+
+### Health check
+
+`GET /api/health` → `200` con `status: "ok"` si MongoDB está conectado; `503` con
+`status: "degraded"` si no. La API arranca aunque MongoDB no esté disponible y reintenta la conexión
+cada 5 s.
+
+```json
+{ "status": "ok", "service": "pixel-api", "version": "0.1.0", "uptimeSeconds": 12, "database": "connected", "timestamp": "..." }
 ```
 
 ## 11. Testing

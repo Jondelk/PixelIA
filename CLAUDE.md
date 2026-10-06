@@ -88,10 +88,15 @@ registro/login → crea empresa → onboarding de marca → Pixel analiza
 - TypeScript `strict`. Prohibido `any` explícito (usar `unknown` + validación Zod).
 - ESM en todo el monorepo (`"type": "module"`).
 - Validar en los bordes: env vars, requests HTTP, respuestas de la IA, datos de formularios.
-- Backend organizado por módulos de dominio (`modules/<dominio>/{*.model,*.service,*.routes}.ts`).
-- Frontend organizado por features (`src/features/<feature>/`).
+- Backend organizado por módulos de dominio en `apps/api/src/modules/` (`auth`, `companies`, `brand-dna`,
+  `avatars`, `conversations`, `creative-memory`), cada uno con `*.model`, `*.service` y `*.routes`.
+  Los módulos se registran solo en `modules/index.ts`.
+- Frontend organizado por features (`src/features/<feature>/`); shell y router en `src/app/`.
+  Rutas de empresa: `/company/:companyId/...`.
+- Errores HTTP: lanzar `AppError` (o helpers de `lib/errors.ts`); el `errorHandler` central responde
+  con la forma `ApiError` de contracts. Logs con `lib/logger.ts`, nunca `console.log`.
 - Nombres de código en inglés; textos de producto/UI y documentación en español.
-- Secretos solo en `.env` del backend (nunca en el frontend ni en el repo). Mantener `.env.example`.
+- Secretos solo en `apps/api/.env` (nunca en el frontend ni en el repo). Mantener los `.env.example` de cada app.
 - Mensajes de commit claros, en imperativo.
 
 ## Forma de trabajar
@@ -119,7 +124,7 @@ Al terminar cada etapa:
 
 **No continuar automáticamente con funcionalidades no pedidas.** Al cerrar una etapa, detenerse y reportar.
 
-## Comandos (disponibles a partir de la Etapa 0)
+## Comandos
 
 ```bash
 npm install            # instala todos los workspaces
@@ -128,4 +133,5 @@ npm run typecheck      # tsc en todos los workspaces
 npm run lint           # eslint
 npm run test           # vitest en todos los workspaces
 npm run build          # contracts → api → web
+npm run format         # prettier --write
 ```

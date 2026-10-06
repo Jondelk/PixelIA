@@ -1,0 +1,35 @@
+{
+  "name": "pixel",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "npm run build -w @pixel/contracts && concurrently -k -n contracts,api,web -c gray,cyan,blue \"npm:dev -w @pixel/contracts\" \"npm:dev -w @pixel/api\" \"npm:dev -w @pixel/web\"",
+    "build": "npm run build -w @pixel/contracts && npm run build -w @pixel/api && npm run build -w @pixel/web",
+    "typecheck": "npm run build -w @pixel/contracts && npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "npm run build -w @pixel/contracts && npm run test --workspaces --if-present",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.20.5",
+    "concurrently": "^10.0.5",
+    "eslint": "^10.12.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.9",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.1",
+    "vitest": "^5.0.3"
+  }
+}

@@ -58,19 +58,23 @@ flowchart LR
 
 ### 3.1 Paso a paso
 
+Rutas del frontend: `/login`, `/dashboard`, `/companies` y, por empresa, `/company/:companyId`
+(resumen), `/company/:companyId/brand`, `/company/:companyId/pixel`, `/company/:companyId/chat`.
+La API mantiene el prefijo REST `/api/companies/:companyId/...`.
+
 | # | Paso | Frontend (`apps/web`) | Backend (`apps/api`) | Resultado / estado |
 |---|---|---|---|---|
 | 1 | Registro | `/register` | `POST /api/auth/register` → crea `User` (hash bcrypt), emite cookie JWT | Usuario autenticado |
 | 2 | Login | `/login` | `POST /api/auth/login` · `GET /api/auth/me` | Sesión activa |
 | 3 | Crear empresa | `/companies` | `POST /api/companies` | `Company.status = draft` |
-| 4 | Onboarding | `/companies/:id/onboarding` (pasos: Identidad → Oferta y audiencia → Personalidad y voz → Visual → Revisión) | `PUT /api/companies/:id/onboarding` (borrador, validación parcial) | `status = onboarding` |
-| 5 | Enviar onboarding | Botón "Que Pixel analice mi marca" | `POST /api/companies/:id/onboarding/submit` (validación completa) → lanza job en proceso, responde `202` | `status = analyzing` |
-| 6 | Pixel analiza | `/companies/:id/analysis` con avatar genérico "pensando" y polling cada 2 s a `GET /api/companies/:id` | `BrandAnalysisService` → `AIProvider.generateObject(BrandDNASchema)` | `BrandDNA v1` guardado |
+| 4 | Onboarding | `/company/:companyId/onboarding` (pasos: Identidad → Oferta y audiencia → Personalidad y voz → Visual → Revisión) | `PUT /api/companies/:companyId/onboarding` (borrador, validación parcial) | `status = onboarding` |
+| 5 | Enviar onboarding | Botón "Que Pixel analice mi marca" | `POST /api/companies/:companyId/onboarding/submit` (validación completa) → lanza job en proceso, responde `202` | `status = analyzing` |
+| 6 | Pixel analiza | `/company/:companyId/analysis` con avatar genérico "pensando" y polling cada 2 s a `GET /api/companies/:companyId` | `BrandAnalysisService` → `AIProvider.generateObject(BrandDNASchema)` | `BrandDNA v1` guardado |
 | 7 | Genera AvatarProfile | (mismo polling) | `AvatarDesignService` recibe **solo el BrandDNA** → `generateObject(AvatarProfileSchema)` | `AvatarProfile v1` guardado, `status = ready` |
-| 8 | Render del avatar | `/companies/:id` — `<PixelAvatar profile={...} state="idle" />` + resumen del ADN + panel "Por qué me veo así" | `GET /api/companies/:id/brand-dna` · `GET /api/companies/:id/avatar-profile` | Avatar visible |
-| 9 | Abrir chat | `/companies/:id/chat` | `POST /api/companies/:id/conversations` | Conversación creada |
-| 10 | Conversar | Avatar en estado `thinking` mientras espera y `talking` al recibir | `POST /api/companies/:id/conversations/:cid/messages` → `PixelChatService` (ContextBuilder: BrandDNA + memorias + últimos N mensajes, todo filtrado por `companyId`) | Mensajes `user` y `pixel` persistidos |
-| 11 | Fijar memoria (opcional) | Acción "Recordar esto" en un mensaje | `POST /api/companies/:id/memories` | Memoria activa usada en siguientes respuestas |
+| 8 | Render del avatar | `/company/:companyId/pixel` — `<PixelAvatar profile={...} state="idle" />` + panel "Por qué me veo así"; `/company/:companyId/brand` — resumen del ADN | `GET /api/companies/:companyId/brand-dna` · `GET /api/companies/:companyId/avatar-profile` | Avatar visible |
+| 9 | Abrir chat | `/company/:companyId/chat` | `POST /api/companies/:companyId/conversations` | Conversación creada |
+| 10 | Conversar | Avatar en estado `thinking` mientras espera y `talking` al recibir | `POST /api/companies/:companyId/conversations/:cid/messages` → `PixelChatService` (ContextBuilder: BrandDNA + memorias + últimos N mensajes, todo filtrado por `companyId`) | Mensajes `user` y `pixel` persistidos |
+| 11 | Fijar memoria (opcional) | Acción "Recordar esto" en un mensaje | `POST /api/companies/:companyId/memories` | Memoria activa usada en siguientes respuestas |
 
 ### 3.2 Estados de la empresa
 

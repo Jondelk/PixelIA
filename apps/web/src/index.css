@@ -1,0 +1,46 @@
+@import 'tailwindcss';
+
+/* Identidad provisional de Pixel: oscuro, preciso, con acentos cyan / azul eléctrico. */
+@theme {
+  --color-canvas: #04060c;
+  --color-surface: #070b15;
+  --color-elevated: #0c1221;
+  --color-line: #141c2e;
+  --color-line-strong: #22304b;
+  --color-fg: #e7edf7;
+  --color-muted: #8b97ae;
+  --color-subtle: #586379;
+  --color-accent: #22d3ee;
+  --color-accent-soft: #67e8f9;
+  --color-electric: #2f6bff;
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: 'Space Grotesk', 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-canvas font-sans text-fg antialiased;
+  }
+
+  ::selection {
+    background: rgb(34 211 238 / 0.28);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}
+
+@utility bg-grid {
+  background-image:
+    linear-gradient(to right, rgb(139 151 174 / 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(139 151 174 / 0.06) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 20%, transparent 75%);
+}

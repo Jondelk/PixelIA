@@ -9,7 +9,7 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 | Etapa | Nombre | Estado |
 |---|---|---|
 | — | Contexto y documentación (CLAUDE.md, docs/) | ✅ |
-| 0 | Fundaciones del monorepo | ⬜ |
+| 0 | Fundaciones del monorepo | ✅ |
 | 1 | Contratos de dominio | ⬜ |
 | 2 | Persistencia y aislamiento | ⬜ |
 | 3 | Autenticación | ⬜ |
@@ -23,20 +23,25 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 
 ---
 
-## Etapa 0 — Fundaciones del monorepo
+## Etapa 0 — Fundaciones del monorepo ✅
 
 **Objetivo:** esqueleto ejecutable, sin funcionalidades de producto.
 
-- [ ] `package.json` raíz con npm workspaces (`apps/*`, `packages/*`) y scripts `dev`, `build`, `typecheck`, `lint`, `test`, `format`.
-- [ ] `tsconfig.base.json` (strict, ESM) y tsconfig por workspace.
-- [ ] ESLint flat config + typescript-eslint + reglas React; Prettier.
-- [ ] Vitest configurado en los tres workspaces.
-- [ ] `packages/contracts`: paquete `@pixel/contracts` con `zod`, build a `dist/`, export de ejemplo (`HealthResponseSchema`).
-- [ ] `apps/api`: Express + `config/env.ts` (Zod) + `createApp()` + `GET /api/health` + `errorHandler`; `tsx watch` en dev.
-- [ ] `apps/web`: Vite + React + TS + Tailwind; página que consume `/api/health` vía proxy de Vite.
-- [ ] `.env.example`, `.gitignore`, README con instrucciones de arranque.
+- [x] `package.json` raíz con npm workspaces (`apps/*`, `packages/*`) y scripts `dev`, `build`, `typecheck`, `lint`, `test`, `format`.
+- [x] `tsconfig.base.json` (strict, ESM) y tsconfig por workspace.
+- [x] ESLint flat config + typescript-eslint + reglas React; Prettier; regla que restringe SDKs de IA a `apps/api/src/ai/`.
+- [x] Vitest configurado en los tres workspaces.
+- [x] `packages/contracts`: `@pixel/contracts` con `zod`, build a `dist/`; `HealthResponseSchema`, `ApiErrorSchema`, `ObjectIdSchema`.
+- [x] `apps/api`: Express 5 + `config/env.ts` (Zod) + `createApp()` + logger + requestId + CORS + `errorHandler`/`notFound` centralizados + conexión MongoDB con reintentos + apagado limpio + `GET /api/health`.
+- [x] `apps/api`: módulos `auth`, `companies`, `brand-dna`, `avatars`, `conversations`, `creative-memory` registrados (routers vacíos, sin endpoints aún).
+- [x] `apps/web`: Vite + React 19 + TS + Tailwind 4 + React Router 7; shell (sidebar, header, área principal, navegación responsive con drawer móvil), tema oscuro, indicador real del estado de la API y pantallas vacías: `/login`, `/dashboard`, `/companies`, `/company/:companyId`, `/company/:companyId/brand`, `/company/:companyId/pixel`, `/company/:companyId/chat`.
+- [x] `.env.example` por app, `.gitignore`, `.nvmrc`, README con instrucciones de arranque.
 
 **Aceptación:** `npm install && npm run typecheck && npm run lint && npm run test && npm run build` en verde; `npm run dev` levanta api y web, y la web muestra el estado de salud de la API.
+
+**Notas:**
+- React Three Fiber y Drei se instalarán en la Etapa 7 (no se usan antes).
+- La conexión real a MongoDB no pudo probarse en el entorno de desarrollo en la nube (red sin acceso a binarios de MongoDB); el modo sin base de datos (`degraded` + reintentos) sí se verificó.
 
 ## Etapa 1 — Contratos de dominio
 
