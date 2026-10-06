@@ -10,10 +10,10 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 |---|---|---|
 | — | Contexto y documentación (CLAUDE.md, docs/) | ✅ |
 | 0 | Fundaciones del monorepo | ✅ |
-| 1 | Contratos de dominio | ⬜ |
-| 2 | Persistencia y aislamiento | ⬜ |
-| 3 | Autenticación | ⬜ |
-| 4 | Empresas y onboarding | ⬜ |
+| 1 | Contratos de dominio | 🟨 (auth, user, company hechos) |
+| 2 | Persistencia y aislamiento | 🟨 (User, Company, infra de tests hechos) |
+| 3 | Autenticación | ✅ |
+| 4 | Empresas y onboarding | 🟨 (empresas hechas; onboarding pendiente) |
 | 5 | Capa de IA | ⬜ |
 | 6 | Análisis de marca: BrandDNA → AvatarProfile | ⬜ |
 | 7 | Avatar 3D | ⬜ |
@@ -47,8 +47,9 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 
 **Objetivo:** fuente única de verdad para todas las entidades y DTOs.
 
-- [ ] `common.ts` (ObjectId string, HexColor, timestamps), `errors.ts` (`ApiError`, códigos).
-- [ ] Schemas: `User` (DTO público), `auth` (register/login), `Company`, `CompanyStatus`, `BrandOnboardingInput` (completo y parcial/borrador).
+- [x] `common.ts` (ObjectId string, timestamps), `errors.ts` (`ApiError`, códigos). Falta `HexColor`.
+- [x] Schemas: `User` (DTO público), `auth` (register/login), `Company`, `CompanyStatus`, create/update de empresa.
+- [ ] `BrandOnboardingInput` (completo y parcial/borrador).
 - [ ] `BrandDNASchema` con todos los bloques de `ENTITIES.md §3`.
 - [ ] `AvatarProfileSchema` con catálogos cerrados (`enum`) y `rationale` (mín. 5).
 - [ ] `Conversation`, `Message`, `CreativeMemory` y DTOs de request/response de cada endpoint.
@@ -61,30 +62,32 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 
 **Objetivo:** modelos Mongoose y garantías de aislamiento antes de exponer endpoints.
 
-- [ ] Conexión Mongo (`MONGODB_URI`), cierre limpio, `health` reporta estado de DB.
-- [ ] Modelos: `User`, `Company`, `BrandDNA`, `AvatarProfile`, `Conversation`, `Message`, `CreativeMemory` con índices de `ENTITIES.md`.
+- [x] Conexión Mongo (`MONGODB_URI`), cierre limpio, `health` reporta estado de DB.
+- [x] Modelos `User` y `Company` con sus índices.
+- [ ] Modelos `BrandDNA`, `AvatarProfile`, `Conversation`, `Message`, `CreativeMemory` (se crean en sus etapas).
 - [ ] Plugin `tenantScoped` aplicado a los 5 modelos de empresa.
-- [ ] Mappers `toDTO` hacia los schemas de contracts.
-- [ ] Infra de tests de integración (mongodb-memory-server o `MONGODB_URI_TEST`).
+- [x] Mappers `toDTO` hacia los schemas de contracts (User, Company).
+- [x] Infra de tests de integración (mongodb-memory-server o `MONGODB_URI_TEST`).
 - [ ] Tests: el plugin lanza error sin `companyId`; índices únicos de versión funcionan.
 
 **Aceptación:** tests de modelos en verde; la API inicia conectada a Mongo.
 
 ## Etapa 3 — Autenticación
 
-- [ ] `POST /auth/register`, `/auth/login`, `/auth/logout`, `GET /auth/me`.
-- [ ] Hash con `bcryptjs`, JWT en cookie httpOnly, middleware `requireAuth`.
-- [ ] Web: `RegisterPage`, `LoginPage`, `AuthProvider`, rutas protegidas, cliente `lib/api.ts`.
-- [ ] Tests: registro duplicado, credenciales inválidas, `me` sin sesión → 401, `passwordHash` nunca expuesto.
+- [x] `POST /auth/register`, `/auth/login`, `/auth/logout`, `GET /auth/me`.
+- [x] Hash con `bcryptjs`, JWT en cookie httpOnly, middleware `requireAuth`, `originGuard`.
+- [x] Web: `RegisterPage`, `LoginPage`, `AuthProvider`, rutas protegidas, cliente `lib/api.ts`, menú de usuario con logout.
+- [x] Tests: registro, registro duplicado, validación, login, credenciales inválidas, `me` sin sesión/token manipulado → 401, `passwordHash` nunca expuesto, logout.
 
 **Aceptación:** un usuario se registra, inicia sesión, recarga la página y sigue autenticado, y cierra sesión.
 
 ## Etapa 4 — Empresas y onboarding
 
-- [ ] `GET/POST /companies`, `GET /companies/:companyId`, middleware `requireCompanyAccess`.
+- [x] `GET/POST /companies`, `GET/PATCH /companies/:companyId`, middleware reutilizable `requireCompanyAccess` (también protege los submódulos).
 - [ ] `PUT /companies/:companyId/onboarding` (borrador) y `POST .../onboarding/submit` (validación completa; en esta etapa solo cambia estado, sin IA).
-- [ ] Web: `CompaniesPage`, creación de empresa, `OnboardingWizard` de 5 pasos con guardado de borrador y validación con schemas de contracts.
-- [ ] **Suite de aislamiento** (inicio): usuario B no puede listar, leer ni modificar empresas de A (404).
+- [x] Web: dashboard "Tus Pixels", `CompaniesPage`, creación de empresa, vista de empresa (`CompanyLayout`), estados de carga/error/vacío.
+- [ ] Web: `OnboardingWizard` de 5 pasos con guardado de borrador. Edición de empresa (PATCH) en la UI.
+- [x] **Suite de aislamiento** (inicio): usuario B no puede listar, leer ni modificar empresas de A ni sus submódulos (404).
 
 **Aceptación:** un usuario crea una empresa, completa el onboarding en varias sesiones y lo envía.
 

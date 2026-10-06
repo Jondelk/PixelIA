@@ -4,6 +4,7 @@ import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { createApp } from '../src/app.js';
+import { testEnv } from './support/testApp.js';
 import { notFound } from '../src/lib/errors.js';
 import { createLogger } from '../src/lib/logger.js';
 import { errorHandler } from '../src/middleware/errorHandler.js';
@@ -12,7 +13,7 @@ const logger = createLogger({ level: 'silent', format: 'json' });
 
 function buildApp(database: DatabaseStatus = 'connected') {
   return createApp({
-    env: { CORS_ORIGINS: ['http://localhost:5173'] },
+    env: testEnv,
     logger,
     getDatabaseStatus: () => database,
   });
@@ -44,7 +45,7 @@ describe('manejo de errores', () => {
 
   it('devuelve 400 ante JSON malformado', async () => {
     const res = await request(buildApp())
-      .post('/api/auth')
+      .post('/api/auth/login')
       .set('Content-Type', 'application/json')
       .send('{malformado');
     expect(res.status).toBe(400);
@@ -90,5 +91,22 @@ describe('CORS', () => {
   it('no autoriza orígenes desconocidos', async () => {
     const res = await request(buildApp()).get('/api/health').set('Origin', 'https://evil.example');
     expect(res.headers['access-control-allow-origin']).toBeUndefined();
+  });
+});
+
+describe('originGuard', () => {
+  it('rechaza mutaciones desde orígenes no permitidos', async () => {
+    const res = await request(buildApp())
+      .post('/api/auth/logout')
+      .set('Origin', 'https://evil.example');
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('FORBIDDEN');
+  });
+
+  it('permite mutaciones desde orígenes configurados', async () => {
+    const res = await request(buildApp())
+      .post('/api/auth/logout')
+      .set('Origin', 'http://localhost:5173');
+    expect(res.status).toBe(204);
   });
 });

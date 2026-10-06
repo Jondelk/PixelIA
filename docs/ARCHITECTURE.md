@@ -134,7 +134,7 @@ flowchart TB
 Defensa en capas — basta con que una falle para que otra lo detenga:
 
 1. **Ruta**: recursos de empresa siempre bajo `/api/companies/:companyId/...`.
-2. **Middleware** `requireCompanyAccess`: carga `Company` con `{ _id: companyId, ownerUserId: req.user.id }`.
+2. **Middleware** `requireCompanyAccess`: carga `Company` con `{ _id: companyId, ownerId: req.user.id }`.
    Si no existe → `404 COMPANY_NOT_FOUND`. Expone `req.company`.
 3. **Servicios**: `companyId` es el primer parámetro; jamás se toma del body.
 4. **Consultas**: siempre `{ companyId, ... }`; para un documento concreto, `{ _id, companyId }`.
@@ -236,6 +236,7 @@ Prefijo `/api`. JSON. Errores con forma `ApiError { code, message, details? }`.
 | GET | `/companies` | Empresas del usuario |
 | POST | `/companies` | Crear empresa |
 | GET | `/companies/:companyId` | Empresa + estado del análisis |
+| PATCH | `/companies/:companyId` | Actualizar `name`, `industry`, `description`, `logoUrl` (slug y estado no editables) |
 | PUT | `/companies/:companyId/onboarding` | Guardar borrador del onboarding |
 | POST | `/companies/:companyId/onboarding/submit` | Validar y lanzar análisis (`202`) |
 | POST | `/companies/:companyId/analysis/retry` | Reintentar/regenerar análisis (`202`) |
@@ -262,9 +263,15 @@ Prefijo `/api`. JSON. Errores con forma `ApiError { code, message, details? }`.
 
 ## 9. Seguridad
 
-- Contraseñas con `bcryptjs` (sin dependencias nativas). Email normalizado a minúsculas.
-- JWT firmado (`JWT_SECRET`), cookie `httpOnly`, `SameSite=Lax`, `Secure` en producción.
-- La API solo acepta `application/json` en mutaciones (mitiga CSRF junto con `SameSite`).
+- Contraseñas con `bcryptjs` (bcrypt en JS puro, sin compilación nativa; coste `BCRYPT_ROUNDS`, 12 por defecto). Email normalizado a minúsculas.
+- Sesión: JWT HS256 (`sub` = userId, expira en `SESSION_TTL_DAYS`) en la cookie `pixel_session`
+  `httpOnly`, `SameSite=Lax`, `Secure` en producción. El token nunca va en el cuerpo ni en localStorage.
+  `POST /auth/logout` borra la cookie.
+- Login: mismo mensaje y tiempo de respuesta similar (hash ficticio) si el email no existe o la contraseña falla.
+- `originGuard`: las mutaciones con un `Origin` fuera de `CORS_ORIGINS` → 403 (defensa CSRF junto con `SameSite`).
+- `requireAuth` → `req.auth.userId`; `requireCompanyAccess` → `req.company` (consulta `{ _id, ownerId }`;
+  id malformado, inexistente o ajeno → el mismo 404).
+- `JWT_SECRET` es obligatorio en producción; en desarrollo se usa uno de desarrollo con aviso en el log.
 - Validación Zod de todo input; límites de tamaño de body y de longitud de campos del onboarding y mensajes.
 - `helmet` no es imprescindible en 0.1; rate limiting de login queda en backlog (riesgo aceptado para el MVP).
 - Nunca se loguean contraseñas, tokens ni prompts completos con datos de la empresa en producción.
@@ -281,7 +288,10 @@ PORT=4000
 MONGODB_URI=mongodb://127.0.0.1:27017/pixel
 CORS_ORIGINS=http://localhost:5173
 LOG_LEVEL=info
-# Se añaden en etapas posteriores: JWT_SECRET (3), AI_PROVIDER / AI_MODEL / AI_API_KEY (5),
+JWT_SECRET=            # ≥ 32 caracteres; obligatorio en producción
+SESSION_TTL_DAYS=7
+BCRYPT_ROUNDS=12
+# Se añaden en etapas posteriores: AI_PROVIDER / AI_MODEL / AI_API_KEY (5),
 # ANALYSIS_TIMEOUT_MS (6), CHAT_HISTORY_LIMIT (8)
 ```
 
@@ -309,6 +319,11 @@ cada 5 s.
 | Contratos | Vitest | Schemas válidos/inválidos, fixtures de los 3 escenarios de demo |
 | API unit | Vitest | Servicios con `MockAIProvider`, `structured.ts` (reintento), `ContextBuilder` |
 | API integración | Vitest + Supertest + mongodb-memory-server | Endpoints, auth, **aislamiento entre empresas** |
+
+Los tests de integración de la API arrancan un MongoDB efímero una vez por ejecución
+(`apps/api/test/support/globalSetup.ts`), con una base de datos distinta por archivo. La primera vez
+`mongodb-memory-server` descarga el binario de MongoDB (~100 MB). Alternativas: `MONGODB_URI_TEST`
+(un MongoDB existente) o `MONGOMS_SYSTEM_BINARY` (un `mongod` ya instalado).
 | Web | Vitest | `profileToScene`, cliente API, validación de formularios |
 | E2E | Manual guiado (checklist) en 0.1 | Recorrido completo con `AI_PROVIDER=mock` |
 

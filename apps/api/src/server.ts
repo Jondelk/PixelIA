@@ -10,6 +10,10 @@ const logger = createLogger({
   format: env.NODE_ENV === 'production' ? 'json' : 'pretty',
 });
 
+if (env.usingDevJwtSecret) {
+  logger.warn('JWT_SECRET no definido: usando un secreto de desarrollo. Defínelo en apps/api/.env');
+}
+
 startDatabase(env.MONGODB_URI, logger);
 
 const app = createApp({ env, logger, getDatabaseStatus });

@@ -1,52 +1,81 @@
-import { Link } from 'react-router';
-import { Icon } from '../../components/Icon';
-import { PixelMark } from '../../components/PixelMark';
+import { LoginInputSchema } from '@pixel/contracts';
+import { useState, type FormEvent } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router';
+import { Alert } from '../../components/Alert';
+import { Button } from '../../components/Button';
+import { TextField } from '../../components/Field';
+import { errorMessage } from '../../lib/api';
+import { apiFieldErrors, zodFieldErrors, type FieldErrors } from '../../lib/forms';
+import { AuthLayout } from './AuthLayout';
+import { useAuth } from './authContext';
 
 export function LoginPage() {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: string } | null)?.from ?? '/dashboard';
+
+  const [values, setValues] = useState({ email: '', password: '' });
+  const [errors, setErrors] = useState<FieldErrors>({});
+  const [formError, setFormError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setFormError(null);
+    const parsed = LoginInputSchema.safeParse(values);
+    if (!parsed.success) {
+      setErrors(zodFieldErrors(parsed.error));
+      return;
+    }
+    setErrors({});
+    setSubmitting(true);
+    try {
+      await login(parsed.data);
+      navigate(from, { replace: true });
+    } catch (err) {
+      setErrors(apiFieldErrors(err));
+      setFormError(errorMessage(err));
+      setSubmitting(false);
+    }
+  }
+
   return (
-    <div className="relative grid min-h-dvh overflow-hidden bg-canvas lg:grid-cols-[1.1fr_1fr]">
-      <div className="bg-grid pointer-events-none absolute inset-0" aria-hidden="true" />
-      <div
-        className="pointer-events-none absolute -left-40 top-1/3 size-[520px] rounded-full bg-electric/15 blur-[120px]"
-        aria-hidden="true"
-      />
+    <AuthLayout>
+      <h2 className="font-display text-2xl font-semibold tracking-tight">Iniciar sesión</h2>
+      <p className="mt-2 text-sm text-muted">Entra para hablar con los Pixels de tus marcas.</p>
 
-      <section className="relative hidden flex-col justify-between border-r border-line p-12 lg:flex">
-        <div className="flex items-center gap-3">
-          <PixelMark className="size-9" />
-          <span className="font-display text-lg font-semibold tracking-tight">Pixel</span>
-        </div>
-        <div className="max-w-lg">
-          <PixelMark className="mb-10 size-24 drop-shadow-[0_0_40px_rgba(34,211,238,0.35)]" />
-          <h1 className="font-display text-5xl font-semibold leading-[1.05] tracking-tight">
-            Cada marca merece su propio director creativo.
-          </h1>
-          <p className="mt-5 text-base leading-relaxed text-muted">
-            Pixel estudia el ADN de tu marca y lo convierte en criterio, voz y un personaje que la
-            representa.
-          </p>
-        </div>
-        <p className="font-mono text-[11px] text-subtle">MVP 0.1</p>
-      </section>
+      <form className="mt-8 space-y-5" onSubmit={onSubmit} noValidate>
+        {formError && <Alert>{formError}</Alert>}
+        <TextField
+          label="Email"
+          type="email"
+          name="email"
+          autoComplete="email"
+          value={values.email}
+          error={errors.email}
+          onChange={(event) => setValues({ ...values, email: event.target.value })}
+        />
+        <TextField
+          label="Contraseña"
+          type="password"
+          name="password"
+          autoComplete="current-password"
+          value={values.password}
+          error={errors.password}
+          onChange={(event) => setValues({ ...values, password: event.target.value })}
+        />
+        <Button type="submit" className="w-full" loading={submitting}>
+          Entrar
+        </Button>
+      </form>
 
-      <section className="relative flex items-center justify-center px-4 py-12 sm:px-8">
-        <div className="w-full max-w-sm">
-          <div className="mb-10 flex items-center gap-3 lg:hidden">
-            <PixelMark className="size-9" />
-            <span className="font-display text-lg font-semibold tracking-tight">Pixel</span>
-          </div>
-          <h2 className="font-display text-2xl font-semibold tracking-tight">Iniciar sesión</h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted">
-            El registro y el inicio de sesión se habilitan en la Etapa 3.
-          </p>
-          <Link
-            to="/dashboard"
-            className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-line-strong bg-elevated px-4 py-2.5 text-sm font-medium transition-colors hover:border-accent/50"
-          >
-            Explorar la interfaz <Icon name="arrowRight" className="size-4 text-accent" />
-          </Link>
-        </div>
-      </section>
-    </div>
+      <p className="mt-8 text-center text-sm text-muted">
+        ¿Aún no tienes cuenta?{' '}
+        <Link to="/register" className="font-medium text-accent hover:text-accent-soft">
+          Crear cuenta
+        </Link>
+      </p>
+    </AuthLayout>
   );
 }

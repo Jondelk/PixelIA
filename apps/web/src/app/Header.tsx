@@ -2,6 +2,7 @@ import { useMatches } from 'react-router';
 import { Icon } from '../components/Icon';
 import { ApiStatus } from '../features/system/ApiStatus';
 import { isRouteHandle } from './navigation';
+import { UserMenu } from './UserMenu';
 
 export function Header({ onOpenNav }: { onOpenNav: () => void }) {
   const handle = useMatches()
@@ -31,8 +32,10 @@ export function Header({ onOpenNav }: { onOpenNav: () => void }) {
         )}
       </nav>
 
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-3">
         <ApiStatus />
+        <span className="h-6 w-px bg-line" aria-hidden="true" />
+        <UserMenu />
       </div>
     </header>
   );

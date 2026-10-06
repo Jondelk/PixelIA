@@ -1,9 +1,13 @@
 import { createBrowserRouter, Navigate } from 'react-router';
 import { LoginPage } from '../features/auth/LoginPage';
+import { RegisterPage } from '../features/auth/RegisterPage';
+import { PublicOnly, RequireAuth } from '../features/auth/RouteGuards';
 import { BrandPage } from '../features/brand/BrandPage';
 import { ChatPage } from '../features/chat/ChatPage';
 import { CompaniesPage } from '../features/companies/CompaniesPage';
+import { CompanyLayout } from '../features/companies/CompanyLayout';
 import { CompanyOverviewPage } from '../features/companies/CompanyOverviewPage';
+import { NewCompanyPage } from '../features/companies/NewCompanyPage';
 import { DashboardPage } from '../features/dashboard/DashboardPage';
 import { PixelPage } from '../features/pixel/PixelPage';
 import { NotFoundPage } from '../features/system/NotFoundPage';
@@ -17,14 +21,35 @@ const handle = (title: string, section: RouteHandle['section'] = 'General'): Rou
 
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/dashboard" replace /> },
-  { path: '/login', element: <LoginPage /> },
   {
-    element: <AppShell />,
+    path: '/login',
+    element: (
+      <PublicOnly>
+        <LoginPage />
+      </PublicOnly>
+    ),
+  },
+  {
+    path: '/register',
+    element: (
+      <PublicOnly>
+        <RegisterPage />
+      </PublicOnly>
+    ),
+  },
+  {
+    element: (
+      <RequireAuth>
+        <AppShell />
+      </RequireAuth>
+    ),
     children: [
-      { path: '/dashboard', element: <DashboardPage />, handle: handle('Dashboard') },
+      { path: '/dashboard', element: <DashboardPage />, handle: handle('Tus Pixels') },
       { path: '/companies', element: <CompaniesPage />, handle: handle('Empresas') },
+      { path: '/companies/new', element: <NewCompanyPage />, handle: handle('Nueva empresa') },
       {
         path: '/company/:companyId',
+        element: <CompanyLayout />,
         children: [
           { index: true, element: <CompanyOverviewPage />, handle: handle('Resumen', 'Empresa') },
           { path: 'brand', element: <BrandPage />, handle: handle('ADN de marca', 'Empresa') },

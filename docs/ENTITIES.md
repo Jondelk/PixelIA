@@ -8,13 +8,13 @@ Convenciones comunes:
 - Todas tienen `id`, `createdAt`, `updatedAt` (en Mongo: `_id` + `timestamps: true`).
 - **Entidades de empresa** (`BrandDNA`, `AvatarProfile`, `Conversation`, `Message`, `CreativeMemory`)
   tienen `companyId` **requerido e indexado** y usan el plugin `tenantScoped`.
-- `User` y `Company` son las raíces: `Company.ownerUserId` define el acceso.
+- `User` y `Company` son las raíces: `Company.ownerId` define el acceso.
 
 ## Diagrama
 
 ```mermaid
 erDiagram
-  USER ||--o{ COMPANY : "posee (ownerUserId)"
+  USER ||--o{ COMPANY : "posee (ownerId)"
   COMPANY ||--o{ BRAND_DNA : "versiones (companyId)"
   COMPANY ||--o{ AVATAR_PROFILE : "versiones (companyId)"
   BRAND_DNA ||--o{ AVATAR_PROFILE : "origina (brandDnaId)"
@@ -34,11 +34,12 @@ Persona que usa Pixel. No pertenece a una empresa (puede tener varias).
 
 | Campo | Tipo | Reglas |
 |---|---|---|
-| `email` | string | Único, minúsculas, formato email |
-| `passwordHash` | string | bcrypt. **Nunca** sale en DTOs |
 | `name` | string | 1–80 caracteres |
+| `email` | string | Único, minúsculas, formato email |
+| `passwordHash` | string | bcrypt (`bcryptjs`). `select: false`. **Nunca** sale en DTOs |
+| `createdAt` / `updatedAt` | Date | Automáticos |
 
-Índices: `{ email: 1 }` único.
+Índices: `{ email: 1 }` único. ✅ Implementado (`apps/api/src/modules/auth/user.model.ts`).
 
 ## 2. Company
 
@@ -47,10 +48,14 @@ entidad aparte en 0.1).
 
 | Campo | Tipo | Reglas |
 |---|---|---|
-| `ownerUserId` | ObjectId → User | Requerido. Único dueño en 0.1 |
-| `name` | string | 1–120 |
-| `industry` | string | Opcional al crear; requerido al enviar onboarding |
-| `status` | `draft \| onboarding \| analyzing \| ready \| failed` | Ver máquina de estados en `MVP.md` |
+| `ownerId` | ObjectId → User | Requerido. Único dueño en 0.1. Siempre sale de la sesión, nunca del body ✅ |
+| `name` | string | 2–120 ✅ |
+| `slug` | string | Generado del nombre (`cafe-tinto`), único por dueño (`cafe-tinto-2`…). No cambia al renombrar ✅ |
+| `industry` | string | 2–80, requerido ✅ |
+| `description` | string | 0–2000, por defecto `''` ✅ |
+| `logoUrl` | string \| null | URL http(s) opcional ✅ |
+| `status` | `draft \| onboarding \| analyzing \| ready \| failed` | Por defecto `draft`. No editable por PATCH. Ver máquina de estados en `MVP.md` ✅ |
+| `createdAt` / `updatedAt` | Date | Automáticos ✅ |
 | `onboarding.data` | `BrandOnboardingInput` (parcial en borrador) | Validación completa solo al enviar |
 | `onboarding.submittedAt` | Date \| null | |
 | `analysis.startedAt` / `finishedAt` | Date \| null | |
@@ -59,7 +64,9 @@ entidad aparte en 0.1).
 | `activeBrandDnaId` | ObjectId \| null | Versión vigente |
 | `activeAvatarProfileId` | ObjectId \| null | Versión vigente |
 
-Índices: `{ ownerUserId: 1, createdAt: -1 }`, `{ status: 1, 'analysis.startedAt': 1 }` (recuperación de jobs).
+Índices: `{ ownerId: 1, createdAt: -1 }`, `{ ownerId: 1, slug: 1 }` único ✅; `{ status: 1, 'analysis.startedAt': 1 }` (recuperación de jobs, Etapa 6).
+
+✅ = implementado. Los campos `onboarding.*`, `analysis.*` y `active*Id` llegan en las Etapas 4 y 6.
 
 ### BrandOnboardingInput (contrato, embebido en Company)
 

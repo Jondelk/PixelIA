@@ -1,13 +1,13 @@
-import { useParams } from 'react-router';
 import { EmptyState } from '../../components/EmptyState';
 import { PageHeader } from '../../components/PageHeader';
+import { useCompany } from '../companies/companyContext';
 
 export function ChatPage() {
-  const { companyId } = useParams();
+  const { company } = useCompany();
   return (
     <>
       <PageHeader
-        eyebrow={`Empresa · ${companyId}`}
+        eyebrow={company.name}
         title="Chat"
         description="Conversa con el Pixel de esta empresa. Responde con su voz, su criterio y su memoria creativa."
       />

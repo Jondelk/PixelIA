@@ -41,6 +41,14 @@ const paths = {
   menu: <path d="M4 7h16M4 12h16M4 17h10" />,
   chevron: <path d="m9 6 6 6-6 6" />,
   arrowRight: <path d="M5 12h14M13 6l6 6-6 6" />,
+  arrowLeft: <path d="M19 12H5M11 18l-6-6 6-6" />,
+  plus: <path d="M12 5v14M5 12h14" />,
+  logout: (
+    <>
+      <path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4" />
+      <path d="M9 16l-4-4 4-4M5 12h10" />
+    </>
+  ),
 } as const;
 
 export type IconName = keyof typeof paths;

@@ -1,13 +1,13 @@
-import { useParams } from 'react-router';
 import { EmptyState } from '../../components/EmptyState';
 import { PageHeader } from '../../components/PageHeader';
+import { useCompany } from '../companies/companyContext';
 
 export function BrandPage() {
-  const { companyId } = useParams();
+  const { company } = useCompany();
   return (
     <>
       <PageHeader
-        eyebrow={`Empresa · ${companyId}`}
+        eyebrow={company.name}
         title="ADN de marca"
         description="Identidad, audiencia, personalidad, voz, criterio creativo y dirección visual: lo que la empresa es."
       />

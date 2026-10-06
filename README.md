@@ -3,7 +3,7 @@
 Director creativo asistido por IA. Cada empresa tiene su propio **Pixel**: un director creativo que
 entiende el ADN de su marca y se materializa como un avatar 3D derivado de ese ADN.
 
-> Estado: **MVP 0.1 — Etapa 0 (base técnica) completada.** Ver [`docs/BACKLOG.md`](./docs/BACKLOG.md).
+> Estado: **MVP 0.1 — base técnica, autenticación y empresas listas.** Ver [`docs/BACKLOG.md`](./docs/BACKLOG.md).
 
 ## Requisitos
 
@@ -30,8 +30,12 @@ cp apps/web/.env.example apps/web/.env
 npm run dev
 ```
 
-- Web: http://localhost:5173
+- Web: http://localhost:5173 (crea una cuenta en `/register`)
 - API: http://localhost:4000/api/health (también accesible desde la web vía proxy en `/api/health`)
+
+Define `JWT_SECRET` en `apps/api/.env` (≥ 32 caracteres; obligatorio en producción). Para generarlo:
+`node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`. Sin él, en desarrollo se
+usa un secreto de desarrollo y la API lo avisa en el log.
 
 La API arranca aunque MongoDB no esté disponible: `/api/health` responde `503` con
 `"status": "degraded"` y reintenta la conexión cada 5 s. El header de la web muestra ese estado.
@@ -43,7 +47,7 @@ La API arranca aunque MongoDB no esté disponible: `/api/health` responde `503` 
 | `npm run dev` | Compila contracts y levanta contracts (watch), API (`tsx watch`) y web (Vite) |
 | `npm run typecheck` | TypeScript en todos los workspaces |
 | `npm run lint` | ESLint |
-| `npm run test` | Vitest en todos los workspaces |
+| `npm run test` | Vitest en todos los workspaces (la API usa un MongoDB efímero; la primera vez descarga ~100 MB) |
 | `npm run build` | Build de producción: contracts → api → web |
 | `npm run format` | Prettier |
 | `npm run start -w @pixel/api` | API compilada (`dist/`) tras `npm run build` |
