@@ -5,6 +5,7 @@ import { initialForms, STEP_META } from './steps';
 
 const company: Company = {
   id: '507f1f77bcf86cd799439011',
+  workspaceId: '507f1f77bcf86cd799439021',
   ownerId: '507f1f77bcf86cd799439012',
   name: 'Café Tinto',
   slug: 'cafe-tinto',

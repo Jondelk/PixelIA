@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { companyNav, isRouteHandle } from './navigation';
+import { companyNav, enterpriseRedirectPath, isRouteHandle, workspaceBasePath } from './navigation';
 
 describe('companyNav', () => {
   it('genera rutas bajo /company/:companyId', () => {
@@ -25,5 +25,29 @@ describe('isRouteHandle', () => {
     expect(isRouteHandle({ title: 'Chat', section: 'Empresa' })).toBe(true);
     expect(isRouteHandle(undefined)).toBe(false);
     expect(isRouteHandle({ title: 1 })).toBe(false);
+  });
+});
+
+describe('rutas de workspace', () => {
+  const company = '507f1f77bcf86cd799439011';
+
+  it('la entrada de un Pixel es /workspace/:workspaceId', () => {
+    expect(workspaceBasePath('abc')).toBe('/workspace/abc');
+    expect(workspaceBasePath('a/b')).toBe('/workspace/a%2Fb');
+  });
+
+  it('un Pixel de empresa redirige a la misma subruta de su empresa', () => {
+    expect(enterpriseRedirectPath('/workspace/w1', company)).toBe(`/company/${company}`);
+    expect(enterpriseRedirectPath('/workspace/w1/', company)).toBe(`/company/${company}`);
+    expect(enterpriseRedirectPath('/workspace/w1/chat', company)).toBe(`/company/${company}/chat`);
+    expect(enterpriseRedirectPath('/workspace/w1/pixel', company)).toBe(
+      `/company/${company}/pixel`,
+    );
+  });
+
+  it('no depende de cómo venga escrito el id en la URL', () => {
+    expect(enterpriseRedirectPath('/workspace/%3507f1f77bcf86cd799439021/chat', company)).toBe(
+      `/company/${company}/chat`,
+    );
   });
 });

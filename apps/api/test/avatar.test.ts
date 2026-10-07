@@ -5,6 +5,7 @@ import { AvatarProfileModel } from '../src/modules/avatars/avatarProfile.model.j
 import { cafeTinto, novaLabs } from './fixtures/onboarding.js';
 import { completeOnboarding, createCompany, saveStep } from './support/brandBrain.js';
 import { buildTestApp, registerUser, useTestDatabase } from './support/testApp.js';
+import { workspaceIdOf } from './support/workspaces.js';
 
 useTestDatabase();
 const app = buildTestApp();
@@ -67,7 +68,9 @@ describe('Avatar: generación y versiones', () => {
     expect(second.body.avatar.engine.variation).toBe(1);
     expect(second.body.avatar.name).not.toBe(first.body.avatar.name);
     expect(second.body.history.map((item: { version: number }) => item.version)).toEqual([2, 1]);
-    expect(await AvatarProfileModel.countDocuments({ companyId })).toBe(2);
+    expect(
+      await AvatarProfileModel.countDocuments({ workspaceId: await workspaceIdOf(companyId) }),
+    ).toBe(2);
   });
 
   it('detecta cuando el ADN cambió y regenera desde el ADN nuevo', async () => {
@@ -102,7 +105,9 @@ describe('Avatar: aislamiento por empresa', () => {
     expect(read.status).toBe(404);
     expect(JSON.stringify(read.body)).not.toContain('Grano');
     await bob.agent.post(`/api/companies/${companyId}/avatar/generate`).expect(404);
-    expect(await AvatarProfileModel.countDocuments({ companyId })).toBe(1);
+    expect(
+      await AvatarProfileModel.countDocuments({ workspaceId: await workspaceIdOf(companyId) }),
+    ).toBe(1);
   });
 
   it('dos empresas del mismo dueño tienen avatares independientes', async () => {

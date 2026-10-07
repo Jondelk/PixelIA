@@ -10,6 +10,7 @@ import { cafeTinto, novaLabs } from './fixtures/onboarding.js';
 import { completeOnboarding, createCompany } from './support/brandBrain.js';
 import { jaccard } from './support/similarity.js';
 import { buildTestApp, registerUser, useTestDatabase } from './support/testApp.js';
+import { workspaceIdOf } from './support/workspaces.js';
 
 useTestDatabase();
 
@@ -152,7 +153,9 @@ describe('Chat con Pixel: flujo completo', () => {
     const res = await send(owner, companyId, conversationId, 'Hola');
     expect(res.status).toBe(503);
     expect(res.body.error.code).toBe('SERVICE_UNAVAILABLE');
-    expect(await MessageModel.countDocuments({ companyId })).toBe(0);
+    expect(await MessageModel.countDocuments({ workspaceId: await workspaceIdOf(companyId) })).toBe(
+      0,
+    );
 
     provider.failWith = new AIProviderError('refused', 'no');
     const refused = await send(owner, companyId, conversationId, 'Hola');
@@ -184,7 +187,9 @@ describe('Chat con Pixel: aislamiento por empresa', () => {
       .get(`/api/companies/${companyId}/conversations/${conversationId}/messages`)
       .expect(404);
     await send(bob, companyId, conversationId, 'Intruso').expect(404);
-    expect(await MessageModel.countDocuments({ companyId })).toBe(2);
+    expect(await MessageModel.countDocuments({ workspaceId: await workspaceIdOf(companyId) })).toBe(
+      2,
+    );
   });
 
   it('una conversación de una empresa no se puede usar desde otra empresa del mismo dueño', async () => {
@@ -201,7 +206,7 @@ describe('Chat con Pixel: aislamiento por empresa', () => {
     expect(novaList.body.conversations).toEqual([]);
   });
 
-  it('los modelos exigen companyId en cada consulta', async () => {
+  it('los modelos exigen workspaceId en cada consulta', async () => {
     await expect(MessageModel.find({})).rejects.toBeInstanceOf(TenantScopeError);
     await expect(ConversationModel.find({})).rejects.toBeInstanceOf(TenantScopeError);
   });

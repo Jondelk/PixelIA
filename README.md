@@ -1,7 +1,9 @@
 # PixelIA
 
-Director creativo asistido por IA de **PIXELES**. **Pixel** estudia el ADN de cada marca y lo
-materializa en un personaje 3D derivado de ese ADN. Identidad visual: ver `CLAUDE.md` › Identidad visual.
+Director creativo asistido por IA de **PIXELES**. Cada usuario tiene sus **Pixels** (workspaces):
+uno por cada marca (**Pixel Enterprise**: estudia el ADN de la marca y lo materializa en un personaje
+3D) y uno personal (**Pixel Personal**, en preparación). Ver `docs/WORKSPACES.md` y, para la identidad
+visual, `CLAUDE.md` › Identidad visual.
 
 > Estado: **MVP 0.1 — base técnica, autenticación y empresas listas.** Ver [`docs/BACKLOG.md`](./docs/BACKLOG.md).
 
@@ -55,6 +57,7 @@ La API arranca aunque MongoDB no esté disponible: `/api/health` responde `503` 
 | `npm run test` | Vitest en todos los workspaces (la API usa un MongoDB efímero; la primera vez descarga ~100 MB) |
 | `npm run build` | Build de producción: contracts → api → web |
 | `npm run format` | Prettier |
+| `npm run migrate:workspaces` | Migra empresas anteriores a los workspaces (`-- --dry-run` para simular). Ver `docs/WORKSPACE-MIGRATION.md` |
 | `npm run start -w @pixel/api` | API compilada (`dist/`) tras `npm run build` |
 
 ## Estructura
@@ -73,3 +76,5 @@ docs/               MVP, arquitectura, entidades, backlog
 - [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — arquitectura, capa de IA, API, seguridad, riesgos.
 - [`docs/ENTITIES.md`](./docs/ENTITIES.md) — entidades y reglas de aislamiento.
 - [`docs/BACKLOG.md`](./docs/BACKLOG.md) — backlog técnico por etapas.
+- [`docs/WORKSPACES.md`](./docs/WORKSPACES.md) — Workspaces: Enterprise y Personal.
+- [`docs/WORKSPACE-MIGRATION.md`](./docs/WORKSPACE-MIGRATION.md) — migración Company → Workspace.

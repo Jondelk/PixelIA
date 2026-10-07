@@ -23,3 +23,17 @@ export async function createCompany(input: CreateCompanyInput): Promise<Company>
     await apiRequest('/api/companies', CompanyResponseSchema, { method: 'POST', body: input })
   ).company;
 }
+
+/** Completa un Pixel de empresa que se creó sin empresa. */
+export async function createWorkspaceCompany(
+  workspaceId: string,
+  input: CreateCompanyInput,
+): Promise<Company> {
+  return (
+    await apiRequest(
+      `/api/workspaces/${encodeURIComponent(workspaceId)}/company`,
+      CompanyResponseSchema,
+      { method: 'POST', body: input },
+    )
+  ).company;
+}

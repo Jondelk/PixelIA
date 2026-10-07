@@ -11,6 +11,9 @@ import { NewCompanyPage } from '../features/companies/NewCompanyPage';
 import { OnboardingPage } from '../features/onboarding/OnboardingPage';
 import { DashboardPage } from '../features/dashboard/DashboardPage';
 import { PixelPage } from '../features/pixel/PixelPage';
+import { NewPixelPage } from '../features/workspaces/NewPixelPage';
+import { WorkspaceHomePage } from '../features/workspaces/WorkspaceHomePage';
+import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { NotFoundPage } from '../features/system/NotFoundPage';
 import { AppShell } from './AppShell';
 import type { RouteHandle } from './navigation';
@@ -45,7 +48,26 @@ export const router = createBrowserRouter([
       </RequireAuth>
     ),
     children: [
-      { path: '/dashboard', element: <DashboardPage />, handle: handle('Tus marcas') },
+      { path: '/dashboard', element: <DashboardPage />, handle: handle('Tus Pixels') },
+      { path: '/pixels/new', element: <NewPixelPage />, handle: handle('Nuevo Pixel') },
+      {
+        // Entrada única de cada Pixel. Enterprise con empresa redirige a /company/:companyId.
+        path: '/workspace/:workspaceId',
+        element: <WorkspaceLayout />,
+        children: [
+          { index: true, element: <WorkspaceHomePage />, handle: handle('Resumen', 'Pixel') },
+          {
+            path: 'chat',
+            element: <WorkspaceHomePage section="chat" />,
+            handle: handle('Chat', 'Pixel'),
+          },
+          {
+            path: 'pixel',
+            element: <WorkspaceHomePage section="pixel" />,
+            handle: handle('Personaje', 'Pixel'),
+          },
+        ],
+      },
       { path: '/companies', element: <CompaniesPage />, handle: handle('Empresas') },
       { path: '/companies/new', element: <NewCompanyPage />, handle: handle('Nueva empresa') },
       {

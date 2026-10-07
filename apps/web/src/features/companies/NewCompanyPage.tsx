@@ -1,6 +1,6 @@
 import { CreateCompanyInputSchema } from '@pixel/contracts';
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { Alert } from '../../components/Alert';
 import { Button } from '../../components/Button';
 import { TextAreaField, TextField } from '../../components/Field';
@@ -9,10 +9,12 @@ import { PageHeader } from '../../components/PageHeader';
 import { companyBasePath } from '../../app/navigation';
 import { errorMessage } from '../../lib/api';
 import { apiFieldErrors, zodFieldErrors, type FieldErrors } from '../../lib/forms';
-import { createCompany } from './companiesApi';
+import { createCompany, createWorkspaceCompany } from './companiesApi';
 
 export function NewCompanyPage() {
   const navigate = useNavigate();
+  // Con ?workspace=<id> la empresa completa un Pixel de empresa que se creó sin ella.
+  const workspaceId = useSearchParams()[0].get('workspace') ?? undefined;
   const [values, setValues] = useState({ name: '', industry: '', description: '', logoUrl: '' });
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -35,7 +37,9 @@ export function NewCompanyPage() {
     setErrors({});
     setSubmitting(true);
     try {
-      const company = await createCompany(parsed.data);
+      const company = workspaceId
+        ? await createWorkspaceCompany(workspaceId, parsed.data)
+        : await createCompany(parsed.data);
       navigate(companyBasePath(company.id));
     } catch (err) {
       setErrors(apiFieldErrors(err));
@@ -47,13 +51,13 @@ export function NewCompanyPage() {
   return (
     <div className="max-w-2xl">
       <Link
-        to="/companies"
+        to="/pixels/new"
         className="mb-6 inline-flex items-center gap-2 text-sm text-muted hover:text-fg"
       >
-        <Icon name="arrowLeft" className="size-4" /> Empresas
+        <Icon name="arrowLeft" className="size-4" /> Nuevo Pixel
       </Link>
       <PageHeader
-        eyebrow="Nueva empresa"
+        eyebrow="Pixel Enterprise"
         title="Crea una empresa"
         description="Empieza con lo básico. Después, Pixel estudiará el ADN de la marca en el onboarding."
       />
@@ -99,7 +103,7 @@ export function NewCompanyPage() {
         />
         <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
           <Link
-            to="/companies"
+            to="/dashboard"
             className="inline-flex justify-center px-4 py-2.5 text-sm text-muted hover:text-fg"
           >
             Cancelar

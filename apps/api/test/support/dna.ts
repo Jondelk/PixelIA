@@ -19,11 +19,16 @@ export function brandDnaFor(
   };
 }
 
-export async function avatarFor(dna: BrandDna): Promise<AvatarProfile> {
+export async function avatarFor(
+  dna: BrandDna,
+  workspaceId = '507f1f77bcf86cd799439021',
+): Promise<AvatarProfile> {
   const concept = await rulesAvatarEngine.generate({ brandDna: dna, variation: 0 });
   return {
     ...concept,
     id: '507f1f77bcf86cd799439098',
+    workspaceId,
+    sourceType: 'brand',
     companyId: dna.companyId,
     version: 1,
     brandDnaVersion: dna.version,

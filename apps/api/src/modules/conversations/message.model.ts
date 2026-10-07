@@ -3,7 +3,10 @@ import { model, Schema, type HydratedDocument, type Types } from 'mongoose';
 import { tenantScoped } from '../../db/tenantScoped.plugin.js';
 
 export interface MessageAttrs {
-  companyId: Types.ObjectId;
+  /** Contexto principal (clave de aislamiento), el de su conversación. */
+  workspaceId: Types.ObjectId;
+  /** Legacy/enterprise. Ausente en mensajes personales. */
+  companyId?: Types.ObjectId;
   conversationId: Types.ObjectId;
   /** Usuario de la conversación (también en los mensajes de Pixel). */
   userId: Types.ObjectId;
@@ -24,7 +27,8 @@ export type MessageDocument = HydratedDocument<MessageAttrs>;
 
 const messageSchema = new Schema<MessageAttrs>(
   {
-    companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true },
+    workspaceId: { type: Schema.Types.ObjectId, ref: 'Workspace', required: true },
+    companyId: { type: Schema.Types.ObjectId, ref: 'Company' },
     conversationId: { type: Schema.Types.ObjectId, ref: 'Conversation', required: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     role: { type: String, enum: ['user', 'pixel'], required: true },
@@ -35,8 +39,8 @@ const messageSchema = new Schema<MessageAttrs>(
   { versionKey: false },
 );
 
-messageSchema.index({ companyId: 1, conversationId: 1, createdAt: -1 });
-messageSchema.plugin(tenantScoped);
+messageSchema.index({ workspaceId: 1, conversationId: 1, createdAt: -1 });
+messageSchema.plugin(tenantScoped, { key: 'workspaceId' });
 
 export const MessageModel = model<MessageAttrs>('Message', messageSchema);
 
@@ -47,7 +51,8 @@ export function toMessageDTO(
   return MessageSchema.parse({
     id: doc._id.toString(),
     conversationId: doc.conversationId.toString(),
-    companyId: doc.companyId.toString(),
+    workspaceId: doc.workspaceId.toString(),
+    companyId: doc.companyId?.toString() ?? null,
     userId: doc.userId.toString(),
     role: doc.role,
     content: doc.content,

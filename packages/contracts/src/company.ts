@@ -11,6 +11,9 @@ const LogoUrlSchema = z
 
 export const CompanySchema = z.object({
   id: ObjectIdSchema,
+  /** Workspace enterprise al que pertenece (1 empresa por workspace). */
+  workspaceId: ObjectIdSchema,
+  /** Legacy: dueño directo de la empresa. Se conserva por compatibilidad; coincide con el del workspace. */
   ownerId: ObjectIdSchema,
   name: z.string(),
   slug: z.string(),
@@ -33,6 +36,11 @@ const companyFields = {
   description: z.string().trim().max(2000, 'Máximo 2000 caracteres'),
 };
 
+/**
+ * POST /api/companies (crea también su Workspace enterprise) y
+ * POST /api/workspaces/:workspaceId/company (completa un Workspace enterprise vacío). El workspace
+ * nunca viaja en el cuerpo: sale de la ruta ya autorizada.
+ */
 export const CreateCompanyInputSchema = z.object({
   name: companyFields.name,
   industry: companyFields.industry,

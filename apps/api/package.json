@@ -8,7 +8,8 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "migrate:workspaces": "tsx scripts/migrate-companies-to-workspaces.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

@@ -11,13 +11,34 @@ export interface NavItem {
 /** Metadatos de cada ruta (en `handle`) para el header. */
 export interface RouteHandle {
   title: string;
-  section: 'General' | 'Empresa';
+  section: 'General' | 'Empresa' | 'Pixel';
 }
 
 export const primaryNav: NavItem[] = [
-  { to: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
+  { to: '/dashboard', label: 'Tus Pixels', icon: 'dashboard' },
   { to: '/companies', label: 'Empresas', icon: 'companies' },
 ];
+
+/** Entrada única de cada Pixel (workspace). Enterprise redirige a sus rutas de empresa. */
+export function workspaceBasePath(workspaceId: string): string {
+  return `/workspace/${encodeURIComponent(workspaceId)}`;
+}
+
+/** Navegación de un workspace sin rutas propias aún (Personal o empresa sin configurar). */
+export function workspaceNav(workspaceId: string): NavItem[] {
+  return [{ to: workspaceBasePath(workspaceId), label: 'Resumen', icon: 'overview', end: true }];
+}
+
+/**
+ * Destino de /workspace/:workspaceId/<resto> para un Pixel de empresa: la misma subruta bajo
+ * /company/:companyId. Se calcula por segmentos (no por longitud) porque el id de la URL puede venir
+ * escrito de otra forma (p. ej. codificado) y seguir siendo el mismo workspace.
+ */
+export function enterpriseRedirectPath(pathname: string, companyId: string): string {
+  const rest = pathname.split('/').filter(Boolean).slice(2).join('/');
+  const target = companyBasePath(companyId);
+  return rest ? `${target}/${rest}` : target;
+}
 
 export function companyBasePath(companyId: string): string {
   return `/company/${encodeURIComponent(companyId)}`;

@@ -6,23 +6,29 @@ persisten con **modelos Mongoose en `apps/api`**. Los IDs viajan como `string` (
 Convenciones comunes:
 
 - Todas tienen `id`, `createdAt`, `updatedAt` (en Mongo: `_id` + `timestamps: true`).
-- **Entidades de empresa** (`BrandDNA`, `AvatarProfile`, `Conversation`, `Message`, `CreativeMemory`)
-  tienen `companyId` **requerido e indexado** y usan el plugin `tenantScoped`.
-- `User` y `Company` son las raíces: `Company.ownerId` define el acceso.
+- **Workspace es la frontera de aislamiento** (`docs/WORKSPACES.md`). Los recursos del workspace
+  (`AvatarProfile`, `Conversation`, `Message`, `CreativeMemory`) tienen `workspaceId` **requerido e
+  indexado** y usan `tenantScoped` con clave `workspaceId`.
+- `BrandDNA` es un dato propio de la empresa: `companyId` requerido y `tenantScoped` con clave
+  `companyId`. Su workspace se deriva de `Company.workspaceId`.
+- Raíces de acceso: `Workspace.ownerId` y `Company.ownerId` (legacy, igual al del workspace).
+- Campos legacy que se conservan por compatibilidad: `Company.ownerId` y `companyId` en
+  `AvatarProfile`, `Conversation` y `Message` (`docs/WORKSPACE-MIGRATION.md`).
 
 ## Diagrama
 
 ```mermaid
 erDiagram
-  USER ||--o{ COMPANY : "posee (ownerId)"
+  USER ||--o{ WORKSPACE : "posee (ownerId)"
+  WORKSPACE ||--o| COMPANY : "enterprise (workspaceId)"
   COMPANY ||--o{ BRAND_DNA : "versiones (companyId)"
-  COMPANY ||--o{ AVATAR_PROFILE : "versiones (companyId)"
-  BRAND_DNA ||--o{ AVATAR_PROFILE : "origina (brandDnaId)"
-  COMPANY ||--o{ CONVERSATION : "companyId"
+  WORKSPACE ||--o{ AVATAR_PROFILE : "versiones (workspaceId)"
+  BRAND_DNA ||--o{ AVATAR_PROFILE : "origina (brandDnaVersion)"
+  WORKSPACE ||--o{ CONVERSATION : "workspaceId"
   USER ||--o{ CONVERSATION : "userId"
   CONVERSATION ||--o{ MESSAGE : "conversationId"
-  COMPANY ||--o{ MESSAGE : "companyId"
-  COMPANY ||--o{ CREATIVE_MEMORY : "companyId"
+  WORKSPACE ||--o{ MESSAGE : "workspaceId"
+  WORKSPACE ||--o{ CREATIVE_MEMORY : "workspaceId"
   MESSAGE |o--o{ CREATIVE_MEMORY : "source.messageId"
 ```
 
@@ -41,14 +47,21 @@ Persona que usa Pixel. No pertenece a una empresa (puede tener varias).
 
 Índices: `{ email: 1 }` único. ✅ Implementado (`apps/api/src/modules/auth/user.model.ts`).
 
+## 1b. Workspace ✅
+
+Contenedor contextual de un Pixel: `enterprise` (una empresa) o `personal` (uno por usuario).
+Campos, índices y reglas en [`WORKSPACES.md`](./WORKSPACES.md#modelo).
+
 ## 2. Company
 
-Empresa cuyo Pixel se construye. Contiene el **onboarding crudo** como subdocumento (no es una
+Empresa cuyo Pixel se construye (Pixel Enterprise). Pertenece a un workspace enterprise
+(`workspaceId`, único: 1 empresa por workspace). Contiene el **onboarding crudo** como subdocumento (no es una
 entidad aparte en 0.1).
 
 | Campo | Tipo | Reglas |
 |---|---|---|
-| `ownerId` | ObjectId → User | Requerido. Único dueño en 0.1. Siempre sale de la sesión, nunca del body ✅ |
+| `workspaceId` | ObjectId → Workspace | Workspace enterprise (índice único parcial). Las empresas anteriores a los workspaces lo reciben al migrarse ✅ |
+| `ownerId` | ObjectId → User | Requerido. Legacy: igual al dueño del workspace. Siempre sale de la sesión, nunca del body ✅ |
 | `name` | string | 2–120 ✅ |
 | `slug` | string | Generado del nombre (`cafe-tinto`), único por dueño (`cafe-tinto-2`…). No cambia al renombrar ✅ |
 | `industry` | string | 2–80, requerido ✅ |
@@ -124,7 +137,7 @@ onboarding crudo). Cada generación crea una versión nueva; la vigente está en
 
 | Campo | Contenido |
 |---|---|
-| meta | `companyId`, `version`, `brandDnaVersion` (ADN del que salió), `engine { kind, version, variation }`, `createdAt` |
+| meta | `workspaceId`, `sourceType` (`brand` \| `personal`), `companyId` (legacy; obligatorio si `brand`), `version`, `brandDnaVersion` (ADN del que salió), `engine { kind, version, variation }`, `createdAt` |
 | `name` | Nombre conceptual ("Grano Anfitrión") |
 | `avatarType` | `anthropomorphic_object` · `creature` · `geometric_entity` · `structural_character` · `organic_character` · `abstract_character` |
 | `concept` | Descripción del personaje |
@@ -142,7 +155,8 @@ onboarding crudo). Cada generación crea una versión nueva; la vigente está en
 | `rationale` | `{ summary, decisions[{ attribute, value, reason, sources[] }] }` — `sources` son rutas del BrandDNA |
 | `renderHints` | `{ archetype (seed/crystal/block/blob/drop/capsule), roundness, finish, surfaceDetail }` para el renderer 3D |
 
-Índices: `{ companyId: 1, version: -1 }` único, `{ companyId: 1, brandDnaVersion: 1 }`.
+Índices: `{ workspaceId: 1, version: -1 }` único parcial, `{ workspaceId: 1, brandDnaVersion: 1 }`;
+legacy `{ companyId: 1, version: -1 }` único y `{ companyId: 1, brandDnaVersion: 1 }`.
 
 ### Avatar Concept Engine
 
@@ -176,14 +190,16 @@ Colección `conversations` (plugin `tenantScoped`). Contrato: `ConversationSchem
 
 | Campo | Tipo | Reglas |
 |---|---|---|
-| `companyId` | ObjectId → Company | Requerido, indexado |
-| `userId` | ObjectId → User | Quien conversa; las consultas filtran por `{ companyId, userId }` |
+| `workspaceId` | ObjectId → Workspace | Requerido, indexado (clave de aislamiento) |
+| `contextType` | `enterprise \| personal` | Tipo del workspace: con qué contexto habla Pixel |
+| `companyId` | ObjectId → Company | Legacy/enterprise (ausente en Personal) |
+| `userId` | ObjectId → User | Quien conversa; las consultas filtran por `{ workspaceId, userId }` |
 | `title` | string | Primer mensaje del usuario (60 caracteres) o "Nueva conversación" |
 | `messageCount` | number | |
 | `lastMessageAt` | Date \| null | |
 | `createdAt` / `updatedAt` | Date | |
 
-Índices: `{ companyId: 1, userId: 1, updatedAt: -1 }`.
+Índices: `{ workspaceId: 1, userId: 1, updatedAt: -1 }`.
 
 ## 6. Message ✅
 
@@ -191,31 +207,35 @@ Colección `messages` (plugin `tenantScoped`). Contrato: `MessageSchema`.
 
 | Campo | Tipo | Reglas |
 |---|---|---|
-| `companyId` | ObjectId | Requerido (redundante a propósito: aislamiento sin joins) |
-| `conversationId` | ObjectId → Conversation | De la misma empresa |
+| `workspaceId` | ObjectId | Requerido (redundante a propósito: aislamiento sin joins) |
+| `companyId` | ObjectId | Legacy/enterprise |
+| `conversationId` | ObjectId → Conversation | Del mismo workspace |
 | `userId` | ObjectId → User | Usuario de la conversación (también en los mensajes de Pixel) |
 | `role` | `user \| pixel` | |
 | `content` | string | Usuario: 1–4000 caracteres |
 | `meta` | `{ provider, model, mode: ai\|demo, latencyMs, brandDnaVersion, avatarVersion } \| null` | Solo en mensajes de Pixel: con qué ADN, avatar y modelo respondió |
 | `createdAt` | Date | |
 
-Índices: `{ companyId: 1, conversationId: 1, createdAt: -1 }`.
+Índices: `{ workspaceId: 1, conversationId: 1, createdAt: -1 }`.
 
 ## 7. CreativeMemory
 
-Conocimiento creativo acumulado de la empresa (preferencias, decisiones, rechazos). En 0.1 se crea
-**solo de forma explícita** por el usuario; la extracción automática queda para después.
+Conocimiento creativo acumulado del workspace (preferencias, decisiones, rechazos). Hoy existen el
+contrato (`CreativeMemorySchema`) y el modelo (`creative_memories`), sin endpoints; se creará **solo de
+forma explícita** por el usuario y la extracción automática queda para después.
 
 | Campo | Tipo | Reglas |
 |---|---|---|
-| `companyId` | ObjectId | Requerido, indexado |
+| `workspaceId` | ObjectId | Requerido, indexado (clave de aislamiento) |
+| `memoryScope` | `enterprise \| personal` | |
+| `companyId` | ObjectId | Enterprise (opcional) |
 | `kind` | `preference \| decision \| insight \| rejection` | |
 | `content` | string | 1–1000 caracteres |
-| `source` | `{ type: 'message' \| 'manual', conversationId?, messageId? }` | Referencias del mismo `companyId` |
+| `source` | `{ type: 'message' \| 'manual', conversationId?, messageId? }` | Referencias del mismo `workspaceId` |
 | `createdByUserId` | ObjectId → User | |
 | `active` | boolean | `DELETE` = desactivar |
 
-Índices: `{ companyId: 1, active: 1, createdAt: -1 }`.
+Índices: `{ workspaceId: 1, active: 1, createdAt: -1 }`.
 
-Uso en chat: las memorias activas más recientes (límite configurable) se incluyen en el system prompt
-de `PixelChatService`, siempre filtradas por `companyId`.
+Uso en chat: `EnterpriseContextBuilder` ya incluye las memorias activas más recientes del workspace
+(máx. 10) en el system prompt, siempre filtradas por `workspaceId`. Hoy no se crea ninguna.

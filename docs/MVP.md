@@ -58,9 +58,11 @@ flowchart LR
 
 ### 3.1 Paso a paso
 
-Rutas del frontend: `/login`, `/dashboard`, `/companies` y, por empresa, `/company/:companyId`
+Rutas del frontend: `/login`, `/dashboard` ("Tus Pixels"), `/pixels/new` (Personal o Empresa),
+`/workspace/:workspaceId` (entrada de cada Pixel), `/companies` y, por empresa, `/company/:companyId`
 (resumen), `/company/:companyId/brand`, `/company/:companyId/pixel`, `/company/:companyId/chat`.
-La API mantiene el prefijo REST `/api/companies/:companyId/...`.
+La API expone `/api/workspaces/:workspaceId/...` y mantiene `/api/companies/:companyId/...` para
+Enterprise (`docs/WORKSPACES.md`).
 
 | # | Paso | Frontend (`apps/web`) | Backend (`apps/api`) | Resultado / estado |
 |---|---|---|---|---|

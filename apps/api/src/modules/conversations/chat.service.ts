@@ -1,23 +1,24 @@
 import type { Conversation, Message, SendMessageResponse } from '@pixel/contracts';
 import { Types } from 'mongoose';
 import { AIProviderError, type AIProvider } from '../../ai/index.js';
-import { AppError, conflict, notFound } from '../../lib/errors.js';
+import { AppError, notFound } from '../../lib/errors.js';
 import type { Logger } from '../../lib/logger.js';
 import { isObjectIdString } from '../../lib/mongo.js';
-import { AvatarProfileModel, toAvatarProfileDTO } from '../avatars/avatarProfile.model.js';
-import { BrandDnaModel, toBrandDnaDTO } from '../brand-dna/brandDna.model.js';
-import type { CompanyDocument } from '../companies/company.model.js';
+import type { WorkspaceDocument } from '../workspaces/workspace.model.js';
+import { findWorkspaceCompany } from '../workspaces/workspace.service.js';
+import { resolveContextBuilder } from './context/index.js';
 import {
   ConversationModel,
   toConversationDTO,
   type ConversationDocument,
 } from './conversation.model.js';
 import { MessageModel, toMessageDTO } from './message.model.js';
-import { buildPixelContext } from './pixelContext.builder.js';
 
 /*
- * Conversaciones con Pixel. Toda consulta va filtrada por el companyId de la empresa ya
- * autorizada (requireCompanyAccess) y por el usuario; los modelos aplican tenantScoped.
+ * Conversaciones con Pixel: recursos del workspace. Toda consulta va filtrada por el workspaceId
+ * del workspace ya autorizado (requireWorkspaceAccess o requireCompanyAccess) y por el usuario;
+ * los modelos aplican tenantScoped por workspaceId. El contexto de dominio (marca o perfil
+ * personal) lo pone la estrategia de contexto del tipo de workspace.
  */
 
 const MESSAGES_PAGE = 200;
@@ -30,38 +31,49 @@ export interface ChatDeps {
   logger: Logger;
 }
 
-async function findConversation(company: CompanyDocument, userId: string, conversationId: string) {
+async function findConversation(
+  workspace: WorkspaceDocument,
+  userId: string,
+  conversationId: string,
+) {
   if (!isObjectIdString(conversationId)) return null;
-  return ConversationModel.findOne({ _id: conversationId, companyId: company._id, userId });
+  return ConversationModel.findOne({ _id: conversationId, workspaceId: workspace._id, userId });
 }
 
 export async function listConversations(
-  company: CompanyDocument,
+  workspace: WorkspaceDocument,
   userId: string,
 ): Promise<Conversation[]> {
-  const docs = await ConversationModel.find({ companyId: company._id, userId })
+  const docs = await ConversationModel.find({ workspaceId: workspace._id, userId })
     .sort({ updatedAt: -1 })
     .limit(CONVERSATIONS_PAGE);
   return docs.map(toConversationDTO);
 }
 
 export async function createConversation(
-  company: CompanyDocument,
+  workspace: WorkspaceDocument,
   userId: string,
 ): Promise<Conversation> {
-  const doc = await ConversationModel.create({ companyId: company._id, userId });
+  // Enterprise guarda también su empresa (compatibilidad con datos y consultas legacy).
+  const company = await findWorkspaceCompany(workspace);
+  const doc = await ConversationModel.create({
+    workspaceId: workspace._id,
+    contextType: workspace.type,
+    ...(company ? { companyId: company._id } : {}),
+    userId,
+  });
   return toConversationDTO(doc);
 }
 
 export async function getConversationMessages(
-  company: CompanyDocument,
+  workspace: WorkspaceDocument,
   userId: string,
   conversationId: string,
 ): Promise<{ conversation: Conversation; messages: Message[] }> {
-  const conversation = await findConversation(company, userId, conversationId);
+  const conversation = await findConversation(workspace, userId, conversationId);
   if (!conversation) throw notFound(NOT_FOUND);
   const messages = await MessageModel.find({
-    companyId: company._id,
+    workspaceId: workspace._id,
     conversationId: conversation._id,
   })
     .sort({ createdAt: -1, _id: -1 })
@@ -96,42 +108,28 @@ function toAppError(err: AIProviderError): AppError {
 }
 
 /**
- * Flujo de un mensaje: conversación → empresa → BrandDNA → AvatarProfile → historial →
- * contexto → IA → persistencia. Los dos mensajes se guardan solo si la IA respondió, para que
- * un fallo no deje conversaciones a medias.
+ * Flujo de un mensaje: conversación del workspace → historial → estrategia de contexto según
+ * workspace.type (Enterprise: Company → BrandDNA → AvatarProfile → CreativeMemory) → IA →
+ * persistencia. Los dos mensajes se guardan solo si la IA respondió, para que un fallo no deje
+ * conversaciones a medias.
  */
 export async function sendMessage(
-  company: CompanyDocument,
+  workspace: WorkspaceDocument,
   userId: string,
   conversationId: string,
   content: string,
   deps: ChatDeps,
 ): Promise<SendMessageResponse> {
   const conversation: ConversationDocument | null = await findConversation(
-    company,
+    workspace,
     userId,
     conversationId,
   );
   if (!conversation) throw notFound(NOT_FOUND);
 
-  if (!company.brandDnaVersion) {
-    throw conflict('Pixel aún no conoce esta marca: completa el onboarding para conversar con él');
-  }
-  const dnaDoc = await BrandDnaModel.findOne({
-    companyId: company._id,
-    version: company.brandDnaVersion,
-  });
-  if (!dnaDoc) throw conflict('No se encontró el ADN de marca vigente');
-  const brandDna = toBrandDnaDTO(dnaDoc);
-
-  const avatarDoc = company.avatarVersion
-    ? await AvatarProfileModel.findOne({ companyId: company._id, version: company.avatarVersion })
-    : null;
-  const avatar = avatarDoc ? toAvatarProfileDTO(avatarDoc) : null;
-
   const history = deps.historyLimit
     ? (
-        await MessageModel.find({ companyId: company._id, conversationId: conversation._id })
+        await MessageModel.find({ workspaceId: workspace._id, conversationId: conversation._id })
           .sort({ createdAt: -1, _id: -1 })
           .limit(deps.historyLimit)
           .select({ role: 1, content: 1 })
@@ -139,14 +137,20 @@ export async function sendMessage(
       ).reverse()
     : [];
 
-  const context = buildPixelContext({
-    company: { name: company.name },
-    brandDna,
-    avatar,
+  const result = await resolveContextBuilder(workspace.type).build({
+    workspace,
     history: history.map((message) => ({ role: message.role, content: message.content })),
     userMessage: content,
-    limits: { historyMessages: deps.historyLimit },
+    historyLimit: deps.historyLimit,
   });
+  if (result.status === 'not_configured') {
+    throw new AppError(409, 'CONFLICT', result.message, { reason: result.reason });
+  }
+  const { context, companyId, meta } = result;
+  const logContext = {
+    workspaceId: workspace._id.toString(),
+    workspaceType: workspace.type,
+  };
 
   const askedAt = new Date();
   const author = new Types.ObjectId(userId);
@@ -161,7 +165,7 @@ export async function sendMessage(
   } catch (err) {
     if (err instanceof AIProviderError) {
       deps.logger.error('Pixel no pudo generar respuesta', {
-        companyId: company._id.toString(),
+        ...logContext,
         kind: err.kind,
         err: err.cause ?? err,
       });
@@ -170,9 +174,10 @@ export async function sendMessage(
     throw err;
   }
 
+  const scope = { workspaceId: workspace._id, ...(companyId ? { companyId } : {}) };
   const [userMessage, pixelMessage] = await MessageModel.insertMany([
     {
-      companyId: company._id,
+      ...scope,
       conversationId: conversation._id,
       userId: author,
       role: 'user',
@@ -180,7 +185,7 @@ export async function sendMessage(
       createdAt: askedAt,
     },
     {
-      companyId: company._id,
+      ...scope,
       conversationId: conversation._id,
       userId: author,
       role: 'pixel',
@@ -191,8 +196,8 @@ export async function sendMessage(
         model: reply.model,
         mode: reply.mode,
         latencyMs: reply.latencyMs,
-        brandDnaVersion: brandDna.version,
-        avatarVersion: avatar?.version ?? null,
+        brandDnaVersion: meta.brandDnaVersion,
+        avatarVersion: meta.avatarVersion,
       },
     },
   ]);
@@ -200,13 +205,13 @@ export async function sendMessage(
   const set: Record<string, unknown> = { lastMessageAt: new Date() };
   if (conversation.messageCount === 0) set.title = content.replace(/\s+/g, ' ').slice(0, 60);
   const updated = await ConversationModel.findOneAndUpdate(
-    { _id: conversation._id, companyId: company._id, userId },
+    { _id: conversation._id, workspaceId: workspace._id, userId },
     { $set: set, $inc: { messageCount: 2 } },
     { returnDocument: 'after' },
   );
 
   deps.logger.info('Pixel respondió', {
-    companyId: company._id.toString(),
+    ...logContext,
     provider: reply.provider,
     latencyMs: reply.latencyMs,
     historyMessages: context.stats.historyMessages,
