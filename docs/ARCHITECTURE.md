@@ -146,86 +146,99 @@ Defensa en capas — basta con que una falle para que otra lo detenga:
 7. **Tests**: suite dedicada "isolation" con dos usuarios y dos empresas que prueba cada endpoint
    (lectura y escritura cruzada → 404) y el contenido del contexto de IA.
 
-## 5. Capa de IA
-
-> **Estado actual:** aún no hay IA. El BrandDNA se genera con reglas determinísticas
-> (`brandDna.generator.ts`) para validar la arquitectura de punta a punta. El servicio de IA
-> (`BrandAnalysisService`) producirá el mismo contrato `BrandDnaContentSchema`, así que el resto del
-> producto no cambia al activarla.
-
-### 5.1 Interfaz
-
-```ts
-// apps/api/src/ai/AIProvider.ts
-export interface AIChatTurn { role: 'user' | 'assistant'; content: string }
-
-export interface AIUsage { inputTokens?: number; outputTokens?: number }
-
-export interface AIProvider {
-  readonly name: string;   // 'mock' | 'anthropic' | ...
-  readonly model: string;
-
-  /** Respuesta de texto libre (chat). */
-  generateText(input: {
-    system: string;
-    messages: AIChatTurn[];
-    maxTokens?: number;
-    temperature?: number;
-  }): Promise<{ text: string; usage?: AIUsage }>;
-
-  /** Respuesta JSON cruda; la validación la hace generateObject() en structured.ts. */
-  generateJson(input: {
-    system: string;
-    prompt: string;
-    jsonSchema: Record<string, unknown>; // derivado del schema Zod
-    maxTokens?: number;
-  }): Promise<{ json: unknown; usage?: AIUsage }>;
-}
-```
-
-```ts
-// apps/api/src/ai/structured.ts
-generateObject<T>(provider, { system, prompt, schema: ZodType<T>, schemaName }): Promise<T>
-// 1. pide JSON al proveedor  2. valida con Zod
-// 3. si falla, 1 reintento incluyendo los errores de validación  4. si vuelve a fallar → AIOutputError
-```
-
-### 5.2 Servicios de dominio sobre la IA
-
-| Servicio | Entrada | Salida | Notas |
-|---|---|---|---|
-| `BrandAnalysisService` | `companyId`, `BrandOnboardingInput` | `BrandDNA` (validado) | Prompt versionado (`promptVersion`) guardado en el documento |
-| `AvatarConceptEngine` (✅ reglas `avatar-rules-1`; IA pendiente) | `BrandDNA`, `variation` | `AvatarConcept` (validado) | **Solo recibe el BrandDNA**. Valores visuales de catálogos cerrados que el renderer conoce. Devuelve `rationale` con fuentes. Ver `ENTITIES.md §4` |
-| `PixelChatService` | `companyId`, `conversationId`, mensaje del usuario | Mensaje de Pixel | System prompt = rol de director creativo + BrandDNA + memorias activas; historial de últimos N mensajes |
-
-### 5.3 Selección de proveedor
-
-- `AI_PROVIDER=mock|<real>` y `AI_MODEL=<id>` en `.env`. `createAIProvider(env)` devuelve la implementación.
-- `MockAIProvider`: determinista, sin red. Deriva BrandDNA/AvatarProfile plausibles del input
-  (p. ej. palabras clave "café" → `seed`, "tecnología" → `crystal`, "construcción" → `block`) para
-  poder recorrer el flujo completo en dev y en tests.
-- Las claves de API viven solo en el backend.
-
-## 6. Avatar 3D (renderer paramétrico)
-
-No se generan mallas con IA. El avatar se **compone** en el cliente con primitivas/geometrías
-procedurales de Three.js a partir del `AvatarProfile`:
+## 5. Capa de IA ✅
 
 ```
-AvatarProfile ──profileToScene()──▶ SceneSpec ──▶ <PixelAvatar>
-   (datos validados)   (función pura, testeable)    ├─ <Archetype body>   seed | crystal | block | blob | drop | capsule
-                                                    ├─ <Face>             ojos, boca, cejas, rubor
-                                                    ├─ material            meshStandard/Physical según MaterialStyle
-                                                    ├─ motion              idle + estados idle/thinking/talking (useFrame)
-                                                    └─ entorno Drei        Environment, ContactShadows, OrbitControls limitados
+apps/api/src/ai/
+├─ AIProvider.ts            interfaz: generateText() y generateStructuredOutput()
+├─ errors.ts                AIProviderError { kind: unavailable | rate_limited | refused | invalid_output | misconfigured }
+├─ brief.ts                 CreativeBrief (contexto de marca estructurado, <brand_context> en el prompt)
+├─ providers/
+│  ├─ anthropic.provider.ts SDK oficial @anthropic-ai/sdk
+│  └─ demo.provider.ts      respuestas locales sin IA (desarrollo sin clave y tests)
+└─ index.ts                 createAIProvider(env)
 ```
 
-- `profileToScene` es una función pura: se testea sin WebGL.
-- Catálogo cerrado (`enum` en contracts): la IA solo puede elegir valores que existen en el renderer.
-- El componente 3D se carga con `React.lazy` para no penalizar el bundle inicial.
-- Sin WebGL → fallback 2D con la paleta y el nombre del arquetipo.
-- Estados del avatar: `idle`, `thinking` (mientras espera respuesta de la IA), `talking`
-  (animación simple de boca/escala durante ~N ms según largo del texto; **no** es lip-sync).
+- **Nada fuera de `src/ai/` importa SDKs de IA** (regla ESLint `no-restricted-imports`). Las rutas y
+  servicios reciben un `AIProvider` inyectado (`createApp({ ai })`), así que los tests usan
+  proveedores falsos o el demo.
+- **Anthropic**: modelo `AI_MODEL` (por defecto `claude-opus-5-5`), esfuerzo `medium` explícito, sin
+  `temperature` (el modelo no la acepta), system prompt con `cache_control` (estable por empresa y
+  versión de ADN), `fallbacks: "default"` (beta `server-side-fallback-2026-07-01`: si el modelo
+  declina, el servidor reintenta con el modelo recomendado), revisión de `stop_reason: "refusal"`,
+  errores tipados del SDK → `AIProviderError`. Salida estructurada con `beta.messages.parse` +
+  `betaZodOutputFormat`, revalidada con Zod.
+- **Selección**: `AI_PROVIDER=anthropic|demo`; si se omite, `anthropic` cuando hay `ANTHROPIC_API_KEY`
+  y `demo` si no. El modo demo se avisa en el log y en la interfaz.
+- **Pendiente**: generar BrandDNA y AvatarProfile con IA usando `generateStructuredOutput()`
+  (hoy son determinísticos).
+
+### 5.1 PixelContextBuilder
+
+`apps/api/src/modules/conversations/pixelContext.builder.ts` — función pura que construye el
+contexto del Pixel de **una** empresa a partir de datos ya cargados y aislados por `companyId`.
+
+- **Rol**: director creativo propio de la empresa, que habla en primera persona del plural.
+- **Criterio, no recitación**: instrucciones explícitas para usar el ADN como criterio (nunca
+  describir la marca ni enumerar rasgos), aterrizar en piezas y copy, no inventar datos, una sola
+  pregunta al final si hace falta, ~220 palabras.
+- **Palancas creativas** derivadas del ADN: origen, diferenciadores como prueba, tensión del
+  público (problema → necesidad), postura del arquetipo y recursos visuales. Se ordenan según el
+  tema detectado en la petición (`detectFocus`: social, campaign, launch, naming, visual, avatar,
+  audience).
+- **Conocimiento de marca** compacto en `<brand_context>` (identidad, propósito, público,
+  personalidad, tono, estilo visual, diferenciadores, preferencias y restricciones).
+- **AvatarProfile** solo cuando la petición es visual o sobre el personaje.
+- **Límites**: historial de la conversación ≤ `CHAT_HISTORY_LIMIT` mensajes y ≤ 12 000 caracteres
+  (se descartan los más antiguos; siempre empieza por un turno de usuario); listas del brief ≤ 5
+  elementos de ≤ 180 caracteres; mensaje del usuario ≤ 4 000 caracteres (validado con Zod).
+
+### 5.2 Flujo de un mensaje
+
+`POST /companies/:companyId/conversations/:conversationId/messages`:
+requireAuth → requireCompanyAccess (empresa) → conversación `{ _id, companyId, userId }` →
+BrandDNA vigente (409 si no hay) → AvatarProfile vigente (opcional) → historial → contexto →
+`ai.generateText()` → se guardan **juntos** el mensaje del usuario y el de Pixel (si la IA falla no
+se guarda nada: 503, o 422 si el modelo declina) → respuesta. El frontend pone el avatar en
+`thinking` durante la petición, en `speaking` mientras revela la respuesta y vuelve a `idle`.
+
+## 6. Avatar 3D (renderer paramétrico) ✅
+
+No se generan mallas con IA. El avatar se **compone** en el cliente con primitivas y geometrías
+procedurales de Three.js (React Three Fiber + Drei) a partir del `AvatarProfile`. Tres capas
+separadas (`apps/web/src/features/avatar3d/`):
+
+```
+BrandDNA ──(API: Avatar Concept Engine, reglas de negocio)──▶ AvatarProfile
+AvatarProfile ──profileToScene() (traducción visual pura)──▶ SceneSpec
+estado + tiempo ──poseAt() (función pura)──▶ Pose objetivo
+
+<PixelAvatar profile state>                Canvas, cámara responsiva, controles limitados
+ ├─ <AvatarEnvironment>                    luces, sombras, environment procedural (Lightformers)
+ └─ <PresentationControls snap>            giro acotado que vuelve solo al frente; sin zoom ni pan
+     └─ <AvatarController>                 interpola la pose (damp) y la aplica cada frame
+         ├─ <AvatarBody>                   seed | crystal | block | blob | drop | capsule (+ ranura, líneas)
+         ├─ <AvatarFace>                   <AvatarEyes> <AvatarMouth> + rubor
+         ├─ <AvatarLimbs>                  brazos y piernas (mano con accesorio)
+         ├─ <AvatarAccessory>              hoja, taza, anillo orbital, casco, insignia
+         └─ <ThinkingDots>
+```
+
+- **Sin reglas de negocio en Three.js**: los componentes solo leen `SceneSpec` y la pose.
+  `profileToScene` y `poseAt` se testean sin WebGL.
+- **Estados**: `idle` (movimiento sutil según `idleBehavior` + parpadeo y mirada),
+  `thinking` (mira arriba, mano a la barbilla, puntos), `listening` (se inclina, asiente),
+  `speaking` (boca con aperturas tipo sílaba y pausas, gestos de cabeza y brazos; **no** es
+  lip-sync), `happy` (salta, brazos arriba, ojos en arco). Las transiciones se interpolan.
+  La expresividad y la energía del perfil escalan amplitud y velocidad.
+- En `/pixel`: "Pensando" mientras se genera el concepto y "Feliz" al recibirlo. En desarrollo
+  aparece un controlador manual de estados (`import.meta.env.DEV`).
+- **Cámara**: encuadra al personaje completo calculando la distancia por alto y por ancho del
+  lienzo (escritorio y móvil). `PresentationControls` en vez de OrbitControls: rotación acotada
+  (±43° horizontal, poca vertical) con retorno automático al frente.
+- **Rendimiento**: `dpr` máx. 1,75, sombras PCF de 1024 px + ContactShadows, sin HDRI externos.
+  El renderer se carga con `React.lazy` (paquete aparte, ~280 kB gzip, solo en `/pixel`).
+- **Fallback**: sin WebGL o si la escena falla (ErrorBoundary) se muestra la vista SVG provisional.
 
 ## 7. API REST
 
@@ -248,10 +261,10 @@ Prefijo `/api`. JSON. Errores con forma `ApiError { code, message, details? }`.
 | POST | `/companies/:companyId/analysis/retry` | Reintentar/regenerar análisis (`202`) |
 | GET | `/companies/:companyId/avatar` | Avatar vigente, historial (máx. 20) e `isStale` ✅ |
 | POST | `/companies/:companyId/avatar/generate` | Crea/regenera el concepto (nueva versión, `201`); `409` sin BrandDNA ✅ |
-| GET | `/companies/:companyId/conversations` | Conversaciones |
-| POST | `/companies/:companyId/conversations` | Nueva conversación |
-| GET | `/companies/:companyId/conversations/:conversationId/messages` | Mensajes |
-| POST | `/companies/:companyId/conversations/:conversationId/messages` | Enviar mensaje → `{ userMessage, pixelMessage }` |
+| GET | `/companies/:companyId/conversations` | Conversaciones del usuario en la empresa ✅ |
+| POST | `/companies/:companyId/conversations` | Nueva conversación ✅ |
+| GET | `/companies/:companyId/conversations/:conversationId/messages` | Mensajes (últimos 200) ✅ |
+| POST | `/companies/:companyId/conversations/:conversationId/messages` | Enviar mensaje → `{ conversation, userMessage, pixelMessage }` ✅ |
 | GET | `/companies/:companyId/memories` | Memorias activas |
 | POST | `/companies/:companyId/memories` | Crear memoria |
 | DELETE | `/companies/:companyId/memories/:memoryId` | Desactivar memoria |
@@ -297,7 +310,7 @@ LOG_LEVEL=info
 JWT_SECRET=            # ≥ 32 caracteres; obligatorio en producción
 SESSION_TTL_DAYS=7
 BCRYPT_ROUNDS=12
-# Se añaden en etapas posteriores: AI_PROVIDER / AI_MODEL / AI_API_KEY (5),
+# Se añaden en etapas posteriores: (chat ✅: AI_PROVIDER, AI_MODEL, ANTHROPIC_API_KEY, AI_TIMEOUT_MS, CHAT_HISTORY_LIMIT),
 # ANALYSIS_TIMEOUT_MS (6), CHAT_HISTORY_LIMIT (8)
 ```
 

@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { createAIProvider } from './ai/index.js';
 import { createApp } from './app.js';
 import { loadEnv, SERVICE_NAME, SERVICE_VERSION } from './config/env.js';
 import { getDatabaseStatus, startDatabase, stopDatabase } from './db/connection.js';
@@ -16,7 +17,7 @@ if (env.usingDevJwtSecret) {
 
 startDatabase(env.MONGODB_URI, logger);
 
-const app = createApp({ env, logger, getDatabaseStatus });
+const app = createApp({ env, logger, getDatabaseStatus, ai: createAIProvider(env, logger) });
 const server = app.listen(env.PORT, () => {
   logger.info(`${SERVICE_NAME} v${SERVICE_VERSION} escuchando en http://localhost:${env.PORT}`, {
     env: env.NODE_ENV,

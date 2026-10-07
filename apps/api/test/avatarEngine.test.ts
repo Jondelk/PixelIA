@@ -123,8 +123,26 @@ describe('Avatar Concept Engine (reglas)', () => {
         history: 'Fundada por dos socios tras años de trabajo conjunto.',
         origin: null,
       },
+      purpose: {
+        mission: 'Ayudar a equipos directivos a decidir mejor y más rápido.',
+        vision: 'Ser el aliado de confianza de los comités de dirección.',
+        purpose: 'Dar claridad cuando todo es incierto.',
+        values: ['Rigor', 'Confianza'],
+      },
+      audience: {
+        targetAudience: 'Comités de dirección de empresas medianas en momentos de cambio.',
+        needs: ['Claridad'],
+        problems: ['Decisiones lentas'],
+        characteristics: ['Exigentes'],
+      },
       visual: { ...novaLabs.visual, recurringElements: [] },
       competition: { competitors: [], differentiators: ['Método propio'] },
+      creative: {
+        likes: ['Diagramas claros'],
+        dislikes: [],
+        visualReferences: [],
+        restrictions: [],
+      },
     });
     expect(avatar.baseObject.id).toBe('prism');
     expect(avatar.rationale.decisions[0]!.reason).toMatch(/Ningún objeto concreto domina/);

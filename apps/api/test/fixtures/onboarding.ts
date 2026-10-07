@@ -68,6 +68,19 @@ export const novaLabs: OnboardingInput = {
     history: 'Fundada en 2022 por ingenieros que automatizaban procesos a mano.',
     origin: null,
   },
+  purpose: {
+    mission:
+      'Eliminar el trabajo repetitivo de los equipos de operaciones con automatización fiable.',
+    vision: 'Que ningún equipo pierda horas en tareas que una máquina puede hacer mejor.',
+    purpose: 'Devolverle a la gente tiempo para el trabajo que importa.',
+    values: ['Precisión', 'Transparencia', 'Velocidad'],
+  },
+  audience: {
+    targetAudience: 'Líderes de operaciones en empresas medianas que gestionan procesos manuales.',
+    needs: ['Ahorrar horas de trabajo manual', 'Integrarse con sus herramientas actuales'],
+    problems: ['Hojas de cálculo frágiles', 'Errores al copiar datos entre sistemas'],
+    characteristics: ['Analíticos', 'Escépticos ante promesas de IA', 'Orientados a resultados'],
+  },
   personality: { attributes: ['innovadora', 'tecnológica', 'minimalista', 'precisa'] },
   communication: {
     tone: ['directo', 'experto'],
@@ -90,6 +103,16 @@ export const novaLabs: OnboardingInput = {
     recurringElements: ['Cuadrícula'],
     avoid: ['Texturas rústicas'],
   },
+  competition: {
+    competitors: ['Zapier', 'Consultoras de RPA'],
+    differentiators: ['Integración en un día', 'Flujos auditables paso a paso'],
+  },
+  creative: {
+    likes: ['Interfaces reales en pantalla', 'Datos claros'],
+    dislikes: ['Robots humanoides', 'Promesas exageradas sobre IA'],
+    visualReferences: ['Linear', 'Stripe'],
+    restrictions: ['No prometer reemplazar personas'],
+  },
 };
 
 /** Constructora: debería resultar sólida, confiable y estructural. */
@@ -101,6 +124,19 @@ export const constructoraNorte: OnboardingInput = {
     description: 'Construimos vivienda y edificaciones comerciales en el norte del país.',
     history: 'Más de 30 años levantando proyectos residenciales y comerciales.',
     origin: 'Barranquilla',
+  },
+  purpose: {
+    mission: 'Construir vivienda y espacios comerciales que duren generaciones.',
+    vision: 'Ser la constructora de referencia del norte del país por su cumplimiento.',
+    purpose: 'Dar a las familias y empresas espacios seguros en los que crecer.',
+    values: ['Cumplimiento', 'Seguridad', 'Calidad'],
+  },
+  audience: {
+    targetAudience:
+      'Familias que compran su primera vivienda e inversionistas comerciales de la región.',
+    needs: ['Entregas a tiempo', 'Seguridad estructural'],
+    problems: ['Obras que se retrasan', 'Acabados que se deterioran pronto'],
+    characteristics: ['Prudentes', 'Comparan mucho antes de decidir'],
   },
   personality: { attributes: ['sólida', 'confiable', 'experta', 'seria'] },
   communication: {
@@ -123,6 +159,16 @@ export const constructoraNorte: OnboardingInput = {
     references: [],
     recurringElements: ['Vigas'],
     avoid: ['Formas blandas'],
+  },
+  competition: {
+    competitors: ['Grandes constructoras nacionales'],
+    differentiators: ['Entrega en la fecha pactada', 'Seguimiento de obra en línea'],
+  },
+  creative: {
+    likes: ['Fotografía de obra real', 'Planos y detalles técnicos'],
+    dislikes: ['Renders irreales'],
+    visualReferences: [],
+    restrictions: ['No mostrar obras sin elementos de seguridad'],
   },
 };
 

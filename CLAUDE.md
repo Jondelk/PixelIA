@@ -92,6 +92,8 @@ registro/login → crea empresa → onboarding de marca → Pixel analiza
   `avatars`, `conversations`, `creative-memory`), cada uno con `*.model`, `*.service` y `*.routes`.
   Los módulos se registran solo en `modules/index.ts`.
 - Frontend organizado por features (`src/features/<feature>/`); shell y router en `src/app/`.
+  El renderer 3D (`src/features/avatar3d/`) solo recibe un `AvatarProfile`: nunca contiene reglas
+  de negocio (esas viven en la API). Traducción visual en `profileToScene`, poses en `poseAt`.
   Rutas de empresa: `/company/:companyId/...`.
 - Errores HTTP: lanzar `AppError` (o helpers de `lib/errors.ts`); el `errorHandler` central responde
   con la forma `ApiError` de contracts. Logs con `lib/logger.ts`, nunca `console.log`.

@@ -9,7 +9,8 @@ import { createAvatarsRouter } from './avatars/avatars.routes.js';
 import type { AvatarConceptEngine } from './avatars/engine/index.js';
 import { brandDnaRouter } from './brand-dna/brand-dna.routes.js';
 import { companiesRouter, companyRouter } from './companies/companies.routes.js';
-import { conversationsRouter } from './conversations/conversations.routes.js';
+import { createConversationsRouter } from './conversations/conversations.routes.js';
+import type { ChatDeps } from './conversations/chat.service.js';
 import { creativeMemoryRouter } from './creative-memory/creative-memory.routes.js';
 import { createHealthRouter } from './health/health.routes.js';
 
@@ -18,6 +19,7 @@ export interface ApiDependencies {
   authService: AuthService;
   session: SessionConfig;
   avatarEngine: AvatarConceptEngine;
+  chat: ChatDeps;
 }
 
 /**
@@ -41,7 +43,7 @@ export function createApiRouter(deps: ApiDependencies): Router {
   company.use('/', companyRouter);
   company.use('/brand-dna', brandDnaRouter);
   company.use('/avatar', createAvatarsRouter(deps));
-  company.use('/conversations', conversationsRouter);
+  company.use('/conversations', createConversationsRouter(deps.chat));
   company.use('/memories', creativeMemoryRouter);
   api.use('/companies/:companyId', company);
 

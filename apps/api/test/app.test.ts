@@ -3,6 +3,7 @@ import express from 'express';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
+import { DemoProvider } from '../src/ai/providers/demo.provider.js';
 import { createApp } from '../src/app.js';
 import { testEnv } from './support/testApp.js';
 import { notFound } from '../src/lib/errors.js';
@@ -16,6 +17,7 @@ function buildApp(database: DatabaseStatus = 'connected') {
     env: testEnv,
     logger,
     getDatabaseStatus: () => database,
+    ai: new DemoProvider(),
   });
 }
 

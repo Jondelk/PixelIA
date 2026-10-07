@@ -3,6 +3,7 @@ export * from './avatarProfile.js';
 export * from './brandDna.js';
 export * from './brandOnboarding.js';
 export * from './common.js';
+export * from './conversation.js';
 export * from './company.js';
 export * from './errors.js';
 export * from './health.js';
