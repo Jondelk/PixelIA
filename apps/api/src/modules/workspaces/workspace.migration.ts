@@ -172,6 +172,8 @@ export interface MigrationReport {
     resourcesWithoutWorkspace: BackfillCounts;
     /** Workspaces de migración cuya empresa no apunta a ellos (interrupción a medias). */
     unlinkedMigrationWorkspaces: number;
+    /** Empresas cuyo workspaceId no es un workspace enterprise existente del mismo dueño. */
+    companiesWithBrokenWorkspace: number;
     ok: boolean;
   };
   errors: { companyId: string; message: string }[];
@@ -198,15 +200,29 @@ async function verify(): Promise<MigrationReport['verification']> {
     });
     if (!linked) unlinkedMigrationWorkspaces += 1;
   }
+  let companiesWithBrokenWorkspace = 0;
+  const linked = CompanyModel.find({ workspaceId: { $ne: null } }, { workspaceId: 1, ownerId: 1 })
+    .lean()
+    .cursor();
+  for await (const company of linked) {
+    const exists = await WorkspaceModel.exists({
+      _id: company.workspaceId,
+      ownerId: company.ownerId,
+      type: 'enterprise',
+    });
+    if (!exists) companiesWithBrokenWorkspace += 1;
+  }
   const resourcesWithoutWorkspace = { avatarProfiles, conversations, messages };
   return {
     companiesWithoutWorkspace,
     resourcesWithoutWorkspace,
     unlinkedMigrationWorkspaces,
+    companiesWithBrokenWorkspace,
     ok:
       companiesWithoutWorkspace === 0 &&
       avatarProfiles + conversations + messages === 0 &&
-      unlinkedMigrationWorkspaces === 0,
+      unlinkedMigrationWorkspaces === 0 &&
+      companiesWithBrokenWorkspace === 0,
   };
 }
 
@@ -229,6 +245,7 @@ export async function migrateCompaniesToWorkspaces(
       companiesWithoutWorkspace: 0,
       resourcesWithoutWorkspace: ZERO,
       unlinkedMigrationWorkspaces: 0,
+      companiesWithBrokenWorkspace: 0,
       ok: false,
     },
     errors: [],

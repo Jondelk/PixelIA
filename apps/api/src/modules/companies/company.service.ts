@@ -59,6 +59,11 @@ async function insertCompany(
  * MongoDB local (standalone) no admite transacciones, así que si la empresa falla se deshace el
  * workspace (rollback lógico).
  */
+async function rollbackEmptyWorkspace(ownerId: string, workspaceId: Types.ObjectId) {
+  if (await CompanyModel.exists({ workspaceId, ownerId })) return;
+  await WorkspaceModel.deleteOne({ _id: workspaceId, ownerId, type: 'enterprise' });
+}
+
 export async function createCompany(
   ownerId: string,
   rawInput: CreateCompanyInput,
@@ -68,9 +73,11 @@ export async function createCompany(
   try {
     return await insertCompany(ownerId, input, workspace._id);
   } catch (err) {
-    // Rollback lógico: no dejar workspaces huérfanos. Si incluso esto fallara, el workspace queda
-    // como "Pixel de empresa sin configurar" y se puede completar desde la app.
-    await WorkspaceModel.deleteOne({ _id: workspace._id, ownerId }).catch(() => undefined);
+    // Rollback lógico: no dejar workspaces huérfanos. Solo si la empresa de verdad no se guardó:
+    // sin retryable writes (MongoDB standalone) un corte de red puede llegar DESPUÉS de que el
+    // insert se confirmara, y borrar el workspace dejaría esa empresa sin él. Si el rollback no se
+    // puede hacer, el workspace queda como "Pixel de empresa sin configurar" y se completa en la app.
+    await rollbackEmptyWorkspace(ownerId, workspace._id).catch(() => undefined);
     throw err;
   }
 }

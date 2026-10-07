@@ -32,17 +32,23 @@ export function NewPixelPage() {
       const { workspace } = await createWorkspace({ type: 'personal', name });
       navigate(workspaceBasePath(workspace.id));
     } catch (err) {
+      let failure: unknown = err;
       // Ya existía (p. ej. creado en otra pestaña): se abre el que hay.
       if (err instanceof ApiRequestError && err.status === 409) {
-        const existing = (await listWorkspaces()).find(
-          (item) => item.workspace.type === 'personal',
-        );
-        if (existing) {
-          navigate(workspaceBasePath(existing.workspace.id));
-          return;
+        try {
+          const existing = (await listWorkspaces()).find(
+            (item) => item.workspace.type === 'personal',
+          );
+          if (existing) {
+            navigate(workspaceBasePath(existing.workspace.id));
+            return;
+          }
+        } catch (lookupError) {
+          failure = lookupError;
         }
       }
-      setError(errorMessage(err));
+      // Pase lo que pase, el botón vuelve a estar disponible y se ve el error.
+      setError(errorMessage(failure));
       setCreating(false);
     }
   }

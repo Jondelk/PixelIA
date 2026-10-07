@@ -3,7 +3,7 @@ import { buttonClasses } from '../../components/buttonClasses';
 import { ErrorState } from '../../components/ErrorState';
 import { PageHeader } from '../../components/PageHeader';
 import { Spinner } from '../../components/Spinner';
-import { companyBasePath, workspaceBasePath } from '../../app/navigation';
+import { enterpriseRedirectPath } from '../../app/navigation';
 import { ApiRequestError } from '../../lib/api';
 import { useResource } from '../../lib/useResource';
 import type { WorkspaceOutletContext } from './workspaceContext';
@@ -53,8 +53,7 @@ export function WorkspaceLayout() {
 
   const { workspace, company } = state.data;
   if (workspace.type === 'enterprise' && company) {
-    const rest = pathname.slice(workspaceBasePath(workspace.id).length);
-    return <Navigate to={`${companyBasePath(company.id)}${rest}`} replace />;
+    return <Navigate to={enterpriseRedirectPath(pathname, company.id)} replace />;
   }
 
   const context: WorkspaceOutletContext = { overview: state.data, reload };

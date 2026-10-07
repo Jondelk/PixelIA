@@ -161,6 +161,19 @@ describe('Migración Company → Workspace', () => {
   });
 });
 
+describe('Verificación de la migración', () => {
+  it('detecta una empresa enlazada a un workspace que no existe', async () => {
+    const jhon = await registerUser(app, 'Jhon');
+    const companyId = await createCompany(jhon, 'TINTO');
+    await CompanyModel.collection.updateOne(
+      { _id: new ObjectId(companyId) },
+      { $set: { workspaceId: new ObjectId() } },
+    );
+    const report = await migrateCompaniesToWorkspaces();
+    expect(report.verification).toMatchObject({ companiesWithBrokenWorkspace: 1, ok: false });
+  });
+});
+
 describe('Migración perezosa: los datos legacy siguen funcionando sin ejecutar el script', () => {
   it('la empresa aparece en "Tus Pixels" y su avatar y conversaciones siguen ahí', async () => {
     const jhon = await registerUser(app, 'Jhon');

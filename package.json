@@ -17,7 +17,7 @@
     "lint:fix": "eslint . --fix",
     "test": "npm run build -w @pixel/contracts && npm run test --workspaces --if-present",
     "format": "prettier --write .",
-    "migrate:workspaces": "npm run migrate:workspaces -w @pixel/api --",
+    "migrate:workspaces": "npm run build -w @pixel/contracts && npm run migrate:workspaces -w @pixel/api --",
     "format:check": "prettier --check ."
   },
   "devDependencies": {

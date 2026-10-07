@@ -60,6 +60,24 @@ describe('Enterprise: crear empresa crea su Workspace', () => {
     expect(await WorkspaceModel.countDocuments({ ownerId: jhon.user.id })).toBe(0);
   });
 
+  it('no deshace el workspace si la empresa sí llegó a guardarse (corte tras el insert)', async () => {
+    const jhon = await registerUser(app, 'Jhon');
+    const original = CompanyModel.create.bind(CompanyModel);
+    // El insert se confirma pero la respuesta "se pierde": el driver devuelve un error de red.
+    vi.spyOn(CompanyModel, 'create').mockImplementationOnce((async (doc: object) => {
+      await original(doc);
+      throw new Error('conexión cerrada');
+    }) as unknown as typeof CompanyModel.create);
+    await jhon.agent.post('/api/companies').send({ name: 'TINTO', industry: 'Café' }).expect(500);
+
+    const company = await CompanyModel.findOne({ ownerId: jhon.user.id });
+    expect(company?.workspaceId).toBeDefined();
+    expect(
+      await WorkspaceModel.exists({ _id: company!.workspaceId, ownerId: jhon.user.id }),
+    ).toBeTruthy();
+    await jhon.agent.get(`/api/companies/${company!._id.toString()}`).expect(200);
+  });
+
   it('completa un Workspace enterprise creado vacío; no admite personales, ajenos ni ocupados', async () => {
     const jhon = await registerUser(app, 'Jhon');
     const bob = await registerUser(app, 'Bob');

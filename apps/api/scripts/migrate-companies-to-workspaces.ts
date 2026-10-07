@@ -78,6 +78,7 @@ async function main(): Promise<number> {
   out(`  Conversation sin workspace:        ${v.resourcesWithoutWorkspace.conversations}`);
   out(`  Message sin workspace:             ${v.resourcesWithoutWorkspace.messages}`);
   out(`  Workspaces de migración sin enlace: ${v.unlinkedMigrationWorkspaces}`);
+  out(`  Empresas con workspace roto:        ${v.companiesWithBrokenWorkspace}`);
   for (const error of report.errors) out(`  ERROR empresa ${error.companyId}: ${error.message}`);
   out(v.ok && report.errors.length === 0 ? 'OK: todo migrado.' : 'PENDIENTE: revisa lo anterior.');
   return dryRun || (v.ok && report.errors.length === 0) ? 0 : 1;

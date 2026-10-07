@@ -88,7 +88,9 @@ npm run migrate:workspaces -- --sync-indexes
 ```
 
 Se puede ejecutar cuantas veces se quiera: una segunda ejecución no crea nada y devuelve el mismo
-resultado. Sale con código `1` si la verificación no queda limpia.
+resultado. Sale con código `1` si la verificación no queda limpia. Desde la raíz del monorepo, el
+comando compila antes `packages/contracts` (la API lo importa ya compilado), así que funciona aunque
+aún no se haya ejecutado `npm run build` tras actualizar el código.
 
 Salida real con datos creados por la versión anterior (3 empresas, 2 con avatar y chat):
 
@@ -107,6 +109,7 @@ Verificación:
   Conversation sin workspace:        0
   Message sin workspace:             0
   Workspaces de migración sin enlace: 0
+  Empresas con workspace roto:        0
 OK: todo migrado.
 ```
 
@@ -124,6 +127,9 @@ db.conversations.countDocuments({ workspaceId: { $exists: false } })    // 0
 db.messages.countDocuments({ workspaceId: { $exists: false } })         // 0
 db.workspaces.countDocuments({ type: 'enterprise' })  // ≥ número de empresas
 ```
+
+La verificación del script también comprueba que cada `company.workspaceId` apunta a un workspace
+enterprise existente del mismo dueño ("Empresas con workspace roto").
 
 Tests que lo cubren: `apps/api/test/migration.test.ts` (empresa sin workspace genera uno, una ya
 migrada no duplica, dos ejecuciones dan el mismo resultado, dry-run no escribe, recuperación tras
