@@ -124,3 +124,28 @@ describe('PersonalDNA', () => {
     ).toBe(false);
   });
 });
+
+describe('Correcciones manuales del ADN', () => {
+  it('están acotadas: sin nombres vacíos ni textos o listas gigantes', () => {
+    expect(
+      UpdatePersonalDnaSchema.safeParse({
+        identity: { name: '  ', professionalIdentity: [], summary: null, interests: [] },
+      }).success,
+    ).toBe(false);
+    expect(
+      UpdatePersonalDnaSchema.safeParse({
+        identity: {
+          name: 'Jhon',
+          professionalIdentity: [],
+          summary: 'x'.repeat(90_000),
+          interests: [],
+        },
+      }).success,
+    ).toBe(false);
+    expect(
+      UpdatePersonalDnaSchema.safeParse({
+        preferences: Array.from({ length: 41 }, (_, i) => `p${i}`),
+      }).success,
+    ).toBe(false);
+  });
+});

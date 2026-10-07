@@ -16,9 +16,16 @@ export interface PersonalDnaAttrs extends PersonalDnaContent {
   /**
    * Hash de las respuestas del onboarding + versión del generador. Una edición manual conserva el
    * hash de las respuestas de las que partió: volver a guardar las mismas respuestas no la pisa.
+   * Dos versiones seguidas con el mismo hash y las mismas correcciones no se crean (deduplicación).
    */
   sourceHash: string;
   generator: { kind: PersonalDnaGeneratorKind; version: string };
+  /**
+   * Secciones corregidas a mano (PUT …/personal-dna), acumuladas. Se vuelven a aplicar sobre el ADN
+   * regenerado cuando cambian las respuestas, para que una corrección no se pierda en silencio.
+   * "Regenerar desde mis respuestas" las descarta. null = sin correcciones. No sale en el DTO.
+   */
+  overrides: Partial<PersonalDnaContent> | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -54,6 +61,7 @@ const personalDnaSchema = new Schema<PersonalDnaAttrs>(
     supportNeeds: section,
     preferences: section,
     restrictions: section,
+    overrides: { type: Schema.Types.Mixed, default: null },
   },
   { timestamps: true, minimize: false },
 );

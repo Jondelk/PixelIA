@@ -713,7 +713,7 @@ function palette(dna: Dna) {
     const accentHex =
       accent?.hex ?? (secondary ? mix(primary!.hex, secondary.hex) : shade(primary!.hex, -0.3));
     return {
-      fromStyle: null,
+      origin: { kind: 'colors' as const, label: null, path: 'creativeIdentity.colors' },
       primaryColor: { hex: primary!.hex, name: describeColor(primary!.hex, primary!.name) },
       secondaryColor: {
         hex: secondaryHex,
@@ -722,14 +722,24 @@ function palette(dna: Dna) {
       accentColor: { hex: accentHex, name: describeColor(accentHex, accent?.name ?? null) },
     };
   }
-  // El primer estilo (o rasgo) que la persona eligió y tiene paleta asociada manda.
-  const preset = [...dna.creativeIdentity.styles, ...dna.personality.traits]
-    .map((value) => normalize(value))
-    .map((value) => STYLE_PALETTES.find((item) => item.terms.some((term) => matches(value, term))))
-    .find(Boolean);
-  const [p, s2, a] = preset?.hexes ?? DEFAULT_PALETTE;
+  // El primer estilo (o, si no, el primer rasgo) que la persona eligió y tiene paleta asociada manda.
+  const presetFrom = (values: string[], path: string) =>
+    values
+      .map((value) => {
+        const preset = STYLE_PALETTES.find((item) =>
+          item.terms.some((term) => matches(normalize(value), term)),
+        );
+        return preset ? { preset, value, path } : null;
+      })
+      .find(Boolean) ?? null;
+  const found =
+    presetFrom(dna.creativeIdentity.styles, 'creativeIdentity.styles') ??
+    presetFrom(dna.personality.traits, 'personality.traits');
+  const [p, s2, a] = found?.preset.hexes ?? DEFAULT_PALETTE;
   return {
-    fromStyle: preset?.label ?? null,
+    origin: found
+      ? { kind: 'preset' as const, label: found.value, path: found.path }
+      : { kind: 'default' as const, label: null, path: null },
     primaryColor: { hex: p, name: describeColor(p, null) },
     secondaryColor: { hex: s2, name: describeColor(s2, null) },
     accentColor: { hex: a, name: describeColor(a, null) },
@@ -955,9 +965,14 @@ function buildConcept(dna: Dna, variation: number): AvatarConcept {
     const paths = unique(items.map((item) => item.path));
     return paths.length ? paths : [fallback];
   };
-  const colorReason = colors.fromStyle
-    ? `No elegiste colores, así que salen de tu estilo ${colors.fromStyle}: ${colors.primaryColor.name}, ${colors.secondaryColor.name} y ${colors.accentColor.name}.`
-    : `El cuerpo usa tu color principal, ${colors.primaryColor.name}; el secundario y el acento salen de tu paleta.`;
+  const { origin } = colors;
+  const colorList = `${colors.primaryColor.name}, ${colors.secondaryColor.name} y ${colors.accentColor.name}`;
+  const colorReason =
+    origin.kind === 'colors'
+      ? `El cuerpo usa tu color principal, ${colors.primaryColor.name}; el secundario y el acento salen de tu paleta.`
+      : origin.kind === 'preset'
+        ? `No elegiste colores, así que salen de tu ${origin.path === 'personality.traits' ? 'rasgo' : 'estilo'} «${origin.label}»: ${colorList}.`
+        : `No elegiste colores ni un estilo con paleta propia, así que Pixel usa una paleta neutra (${colorList}) hasta que le cuentes los tuyos.`;
 
   const decisions: Decision[] = [
     {
@@ -982,7 +997,7 @@ function buildConcept(dna: Dna, variation: number): AvatarConcept {
       attribute: 'colors',
       value: `${colors.primaryColor.hex} · ${colors.secondaryColor.hex} · ${colors.accentColor.hex}`,
       reason: colorReason,
-      sources: colors.fromStyle ? ['creativeIdentity.styles'] : ['creativeIdentity.colors'],
+      sources: origin.path ? [origin.path] : ['creativeIdentity.colors', 'creativeIdentity.styles'],
     },
     {
       attribute: 'materials',

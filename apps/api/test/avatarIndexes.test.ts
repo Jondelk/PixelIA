@@ -72,6 +72,24 @@ describe('Índices de AvatarProfile', () => {
     await AvatarProfileModel.collection.insertOne(personal());
   });
 
+  it('funciona en el orden real de una base anterior (solo índices legacy, sin los nuevos)', async () => {
+    await AvatarProfileModel.collection.drop().catch(() => undefined);
+    await AvatarProfileModel.collection.createIndex(
+      { companyId: 1, version: -1 },
+      { unique: true, name: 'companyId_1_version_-1' },
+    );
+    await AvatarProfileModel.collection.createIndex(
+      { companyId: 1, brandDnaVersion: 1 },
+      { name: 'companyId_1_brandDnaVersion_1' },
+    );
+    expect(await upgradeAvatarProfileIndexes()).toEqual(LEGACY_AVATAR_INDEXES);
+    const names = (await AvatarProfileModel.collection.indexes()).map((index) => index.name);
+    expect(names).toEqual(
+      expect.arrayContaining(['brand_company_version', 'brand_company_dna_version']),
+    );
+    await AvatarProfileModel.collection.insertMany([personal(), personal()]);
+  });
+
   it('en una base nueva no hay nada que retirar', async () => {
     await AvatarProfileModel.collection.drop().catch(() => undefined);
     expect(await upgradeAvatarProfileIndexes()).toEqual([]);

@@ -1,6 +1,5 @@
 import {
   BRAND_ARCHETYPES,
-  BrandArchetypeSchema,
   PersonalDnaContentSchema,
   PersonalOnboardingSchema,
   type BrandArchetype,
@@ -18,9 +17,9 @@ import { traitArchetypes } from './personalDna.lexicon.js';
  * 1. Reglas determinísticas: cada campo del ADN sale de una respuesta concreta. Lo que la persona no
  *    contó queda vacío (null / []); nunca se rellena con suposiciones.
  * 2. Enriquecimiento IA opcional (solo con un modelo real): salida estructurada validada con Zod y
- *    limitada a tres huecos — resumen (si no hay bio ni titular), fortalezas y arquetipos (si los
- *    rasgos no los revelan). Cada propuesta se contrasta con las respuestas y se descarta si no se
- *    apoya en ellas. Si la IA falla, queda el resultado determinístico.
+ *    limitada a dos huecos — resumen (si no hay bio ni titular) y fortalezas. Cada propuesta debe
+ *    apoyarse por completo en las respuestas (todas sus palabras y cifras); si no, se descarta.
+ *    Si la IA falla, queda el resultado determinístico.
  */
 
 /** Cambia esta versión si cambian las reglas: forzará una versión nueva del ADN. */
@@ -36,6 +35,8 @@ export interface GeneratedPersonalDna {
 export interface PersonalDnaGenerator {
   /** Versión de las reglas (con `+ai` si enriquece con IA). Forma parte del hash de origen. */
   readonly version: string;
+  /** true si intenta enriquecer con un modelo real (si falla, guarda el resultado de reglas). */
+  readonly usesAi: boolean;
   generate(input: PersonalOnboardingInput): Promise<GeneratedPersonalDna>;
 }
 
@@ -155,31 +156,105 @@ export function generatePersonalDnaContent(rawInput: PersonalOnboardingInput): P
 
 // ---------- Enriquecimiento IA (opcional y verificado) ----------
 
+/*
+ * La IA solo puede proponer un resumen (si no hay bio ni frase) y fortalezas. Los arquetipos NO se
+ * delegan: salen únicamente de los rasgos (si Pixel no reconoce ninguno, quedan vacíos).
+ * Verificación estricta: TODAS las palabras con contenido y TODAS las cifras de una propuesta deben
+ * aparecer en las respuestas; si sobra una sola ("premiada", "Cannes", "500"), se descarta entera.
+ */
 export const PersonalDnaEnrichmentSchema = z.object({
   summary: z.string().trim().max(400).nullable(),
   strengths: z.array(z.string().trim().min(2).max(80)).max(5),
-  archetypes: z.array(BrandArchetypeSchema).max(MAX_ARCHETYPES),
 });
 export type PersonalDnaEnrichment = z.infer<typeof PersonalDnaEnrichmentSchema>;
 
 const ENRICH_SYSTEM = `Eres el analista de Pixel, un director creativo personal. Recibes las respuestas
-reales de una persona a su onboarding. Devuelve SOLO lo que se deduce directamente de ellas:
-- summary: 1–2 frases en segunda persona que resuman quién es y qué busca, usando sus propias
-  palabras. null si no hay base suficiente.
-- strengths: hasta 5 fortalezas que aparezcan en sus habilidades, roles, rasgos o en cómo quiere
-  que la perciban. Nada que no esté respaldado por sus respuestas.
-- archetypes: hasta 2 arquetipos de la lista cerrada que encajen con sus rasgos. [] si no está claro.
-Nunca inventes datos, cifras, logros, clientes ni experiencia. Ante la duda, deja el campo vacío.`;
+reales de una persona a su onboarding. Devuelve SOLO lo que dicen sus respuestas, con sus palabras:
+- summary: 1–2 frases en segunda persona que resuman quién es y qué busca, usando exclusivamente
+  palabras de sus respuestas. null si no hay base suficiente.
+- strengths: hasta 5 fortalezas tomadas de sus habilidades, roles, rasgos o de cómo quiere que la
+  perciban, con las mismas palabras. [] si no hay.
+Nunca añadas datos, cifras, lugares, premios, logros, clientes ni experiencia. Ante la duda, vacío.`;
 
-/** Palabras con contenido (≥ 4 letras), normalizadas y sin terminaciones de género/número. */
-function contentWords(textValue: string): string[] {
-  return textValue
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
+/** Palabras de enlace que una frase de resumen puede usar sin que estén en las respuestas. */
+const CONNECTORS = new Set(
+  [
+    'eres',
+    'quieres',
+    'buscas',
+    'trabajas',
+    'ayudas',
+    'haces',
+    'creas',
+    'tienes',
+    'hablas',
+    'dedicas',
+    'quiere',
+    'busca',
+    'trabaja',
+    'ayuda',
+    'hace',
+    'crea',
+    'tiene',
+    'habla',
+    'dedica',
+    'persona',
+    'alguien',
+    'para',
+    'como',
+    'desde',
+    'entre',
+    'sobre',
+    'hacia',
+    'hasta',
+    'donde',
+    'cuando',
+    'mientras',
+    'tambien',
+    'ademas',
+    'pero',
+    'porque',
+    'cada',
+    'todo',
+    'toda',
+    'todos',
+    'todas',
+    'esta',
+    'este',
+    'estos',
+    'estas',
+    'tus',
+    'sus',
+    'con',
+    'que',
+    'una',
+    'unos',
+    'unas',
+    'mas',
+    'muy',
+    'manera',
+    'forma',
+  ].map((word) => stem(word)),
+);
+
+function normalizeText(value: string): string {
+  return value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
+
+/** Raíz de una palabra (sin terminaciones de género/número). */
+function stem(word: string): string {
+  return word.length > 5 ? word.replace(/(as|os|es|a|o|e|s)$/, '') : word;
+}
+
+/** Palabras con contenido (≥ 4 letras, por su raíz) y cifras (todas, de cualquier longitud). */
+function tokens(textValue: string): { words: string[]; numbers: string[] } {
+  const parts = normalizeText(textValue)
     .split(/[^a-z0-9ñ]+/)
-    .filter((word) => word.length >= 4)
-    .map((word) => (word.length > 5 ? word.replace(/(as|os|es|a|o|e|s)$/, '') : word));
+    .filter(Boolean);
+  return {
+    words: parts.filter((part) => /[a-zñ]/.test(part) && part.length >= 4).map(stem),
+    numbers: parts.filter((part) => /\d/.test(part)),
+  };
 }
 
 /** Vocabulario de las respuestas (solo valores escritos o elegidos, no los nombres de campo). */
@@ -187,22 +262,38 @@ function vocabularyOf(input: PersonalOnboardingInput): Set<string> {
   const values: string[] = [];
   const collect = (value: unknown): void => {
     if (typeof value === 'string') values.push(value);
+    else if (typeof value === 'number') values.push(String(value));
     else if (Array.isArray(value)) value.forEach(collect);
     else if (typeof value === 'object' && value !== null) Object.values(value).forEach(collect);
   };
   collect(input);
-  return new Set(values.flatMap(contentWords));
+  return new Set(
+    values.flatMap((value) => {
+      const { words, numbers } = tokens(value);
+      return [...words, ...numbers];
+    }),
+  );
 }
 
-/** Una fortaleza se acepta solo si comparte vocabulario con las respuestas. */
-function isGrounded(candidate: string, vocabulary: Set<string>, minRatio: number): boolean {
-  const words = contentWords(candidate);
-  if (words.length === 0) return false;
-  const hits = words.filter((word) => vocabulary.has(word)).length;
-  return hits > 0 && hits / words.length >= minRatio;
+/**
+ * Una propuesta se acepta solo si cada palabra con contenido y cada cifra aparece en las respuestas
+ * (los conectores de una frase quedan exentos) y al menos una palabra se apoya en ellas.
+ */
+export function isGrounded(
+  candidate: string,
+  vocabulary: Set<string>,
+  options: { allowConnectors: boolean },
+): boolean {
+  const { words, numbers } = tokens(candidate);
+  const content = options.allowConnectors ? words.filter((word) => !CONNECTORS.has(word)) : words;
+  if (content.length === 0) return false;
+  return (
+    content.every((word) => vocabulary.has(word)) &&
+    numbers.every((number) => vocabulary.has(number))
+  );
 }
 
-/** Aplica solo las propuestas de la IA que se apoyan en las respuestas reales. */
+/** Aplica solo las propuestas de la IA que se apoyan por completo en las respuestas reales. */
 export function applyEnrichment(
   base: PersonalDnaContent,
   enrichment: PersonalDnaEnrichment,
@@ -212,27 +303,23 @@ export function applyEnrichment(
   let applied = false;
   const content: PersonalDnaContent = structuredClone(base);
 
-  if (!content.identity.summary && enrichment.summary) {
-    if (isGrounded(enrichment.summary, vocabulary, 0.5)) {
-      content.identity.summary = enrichment.summary;
-      applied = true;
-    }
+  if (
+    !content.identity.summary &&
+    enrichment.summary &&
+    isGrounded(enrichment.summary, vocabulary, { allowConnectors: true })
+  ) {
+    content.identity.summary = enrichment.summary;
+    applied = true;
   }
 
   const strengths = unique(
-    enrichment.strengths.filter((strength) => isGrounded(strength, vocabulary, 0.5)),
+    enrichment.strengths.filter((strength) =>
+      isGrounded(strength, vocabulary, { allowConnectors: false }),
+    ),
   );
   if (content.professionalProfile.strengths.length === 0 && strengths.length > 0) {
     content.professionalProfile.strengths = strengths;
     applied = true;
-  }
-
-  if (content.personality.archetypes.length === 0 && content.personality.traits.length > 0) {
-    const archetypes = [...new Set(enrichment.archetypes)].slice(0, MAX_ARCHETYPES);
-    if (archetypes.length > 0) {
-      content.personality.archetypes = archetypes;
-      applied = true;
-    }
   }
 
   return { content: PersonalDnaContentSchema.parse(content), applied };
@@ -249,6 +336,7 @@ export function createPersonalDnaGenerator(deps: {
 
   return {
     version,
+    usesAi: useAi,
     async generate(rawInput) {
       const input = PersonalOnboardingSchema.parse(rawInput);
       const content = generatePersonalDnaContent(input);
@@ -259,12 +347,9 @@ export function createPersonalDnaGenerator(deps: {
       if (!useAi) return deterministic;
 
       try {
-        const archetypeList = ARCHETYPE_ORDER.map(
-          (id) => `${id} (${BRAND_ARCHETYPES[id].name})`,
-        ).join(', ');
         const { data } = await deps.ai.generateStructuredOutput({
           system: ENRICH_SYSTEM,
-          prompt: `Arquetipos posibles: ${archetypeList}.\n\nRespuestas del onboarding (JSON):\n${JSON.stringify(input)}`,
+          prompt: `Respuestas del onboarding (JSON):\n${JSON.stringify(input)}`,
           schema: PersonalDnaEnrichmentSchema,
           schemaName: 'personal_dna_enrichment',
           maxOutputTokens: 800,

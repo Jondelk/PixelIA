@@ -130,20 +130,30 @@ interface PersonalDnaGenerator {
    los rasgos, con el léxico de marca ampliado con rasgos personales
    (`personalDna.lexicon.ts`); un rasgo desconocido se conserva, pero no se adivina su arquetipo.
 2. **Enriquecimiento IA opcional** (solo con un proveedor real, `ai.mode === 'ai'`): salida
-   estructurada con `PersonalDnaEnrichmentSchema` (Zod) y limitada a tres huecos:
+   estructurada con `PersonalDnaEnrichmentSchema` (Zod), limitada a dos huecos:
    - `summary`, solo si no hay bio ni frase;
-   - `strengths`;
-   - `archetypes`, solo si los rasgos no revelan ninguno (lista cerrada).
+   - `strengths`.
 
-   Cada propuesta se contrasta con el vocabulario de las respuestas y se descarta si no se apoya en
-   ellas (p. ej. "ganó un premio en Cannes" no entra). Si la IA falla o devuelve algo inválido,
-   queda el resultado determinístico. Con el proveedor demo no se llama a la IA.
+   Verificación estricta (`isGrounded`): **todas** las palabras con contenido y **todas** las cifras
+   de una propuesta deben aparecer en las respuestas. Solo se eximen los conectores de una frase de
+   resumen ("eres", "quieres", "para"…). Si sobra una sola palabra o cifra ("premiada", "Medellín",
+   "Cannes", "500 clientes", "20 años"), se descarta la propuesta entera.
 
-**Versiones.** Cada cambio en las respuestas crea una versión nueva; las mismas respuestas no
-duplican versiones (`sourceHash` = hash de respuestas + versión del generador).
-`PUT …/personal-dna` crea una versión `manual` que conserva el hash de las respuestas de las que
-partió: volver a guardar esas respuestas no la pisa, y `POST …/personal-dna/generate` la regenera
-explícitamente desde las respuestas (el historial se conserva).
+   Los **arquetipos nunca los decide la IA**: salen solo de los rasgos; si Pixel no reconoce ninguno,
+   quedan vacíos. Si la IA falla o devuelve algo inválido, queda el resultado determinístico. Con el
+   proveedor demo no se llama a la IA.
+
+**Versiones.** Cada cambio en las respuestas crea una versión nueva y el historial se conserva:
+
+- **Sin duplicados.** Las mismas respuestas no crean otra versión (`sourceHash` = hash de las
+  respuestas + versión del generador). Tampoco dos guardados idénticos simultáneos: se deduplican
+  contra la última versión.
+- **Correcciones manuales.** `PUT …/personal-dna` crea una versión `manual` y acumula las secciones
+  corregidas en `overrides`. Si después cambian las respuestas, el ADN se regenera y esas secciones
+  se vuelven a aplicar encima: una corrección nunca se pierde en silencio.
+- **Regenerar.** `POST …/personal-dna/generate` ("Regenerar desde mis respuestas") descarta las
+  correcciones. Si la versión vigente se quedó con el resultado de reglas porque la IA falló, vuelve a
+  intentar el enriquecimiento. Si ya está al día, no crea nada.
 
 ## 5. "Así te entiende Pixel"
 
@@ -188,8 +198,9 @@ Las restricciones vetan tipos de personaje, rostros caricaturescos y accesorios.
 | `abstract_character` | Refinado/sereno, o cuando nada domina | `crystal` (preciso) o `drop` (fluido) |
 | `object_inspired` | Un objeto con evidencia fuerte en el ADN (cámara, auriculares, gafas, brote) | `block`/`capsule`/`seed` + accesorio |
 
-- **Colores**: los del ADN; sin colores, una paleta derivada del primer estilo elegido (y se dice
-  así en la razón creativa), nunca al azar.
+- **Colores**: los del ADN. Sin colores, una paleta derivada del primer estilo (o rasgo) con paleta
+  asociada; si no hay ninguno, una paleta neutra. La razón creativa dice siempre de dónde salen y
+  cita la ruta correcta del ADN; nunca son al azar.
 - **Nunca infantil**: el `avoid` incluye siempre "Estética infantil o de mascota genérica"; el rostro
   expresivo exige humor + informalidad y respeta "infantil/caricatura" en las restricciones.
 - **Rationale**: cada decisión cita rutas del PersonalDNA (`creativeIdentity.styles`,
@@ -307,7 +318,9 @@ personal v1 de cualquier usuario chocaba con el primero. Ahora:
 | `brand_company_dna_version` | `{ companyId, brandDnaVersion }`, **parcial** |
 
 `upgradeAvatarProfileIndexes()` (`avatarProfile.indexes.ts`) crea los nuevos y retira los dos legacy
-si existen. Es idempotente y no toca datos. Se ejecuta al arrancar la API (tras conectar) y en
+si existen. Es idempotente y no toca datos. Si un MongoDB antiguo rechaza crear el índice parcial
+mientras existe el legacy con la misma clave (conflicto 85/86), retira primero los legacy y después
+crea los nuevos. Se ejecuta al arrancar la API (tras conectar) y en
 `npm run migrate:workspaces`. Verificado sobre una base con datos de la versión anterior: retira
 `companyId_1_version_-1` y `companyId_1_brandDnaVersion_1`, conserva los avatares Enterprise y su
 historial, y los avatares personales se crean sin conflicto.
@@ -319,8 +332,14 @@ personales. Al volver a esta versión, el arranque deja los índices como arriba
 
 ## 12. Limitaciones
 
-- El enriquecimiento IA del ADN solo actúa con un proveedor real; su verificación es léxica (puede
-  descartar una fortaleza válida dicha con otras palabras; nunca acepta una sin apoyo).
+- El enriquecimiento IA del ADN solo actúa con un proveedor real. Su verificación es léxica y
+  estricta: descarta una fortaleza o un resumen válidos si usan palabras que la persona no escribió.
+  Es el precio de no aceptar datos inventados.
+- Si una corrección manual afecta a una sección cuyas respuestas cambian después, gana la corrección
+  hasta que se pulse "Regenerar desde mis respuestas".
+- Dos guardados de pasos distintos exactamente a la vez pueden dejar vigente, por un momento, un
+  ADN construido sin la última respuesta. Se corrige en el siguiente guardado; la web guarda los
+  pasos de uno en uno.
 - La edición manual del ADN existe en la API (`PUT …/personal-dna`) pero la web edita las respuestas
   del onboarding, no secciones sueltas.
 - El avatar personal es paramétrico (variantes existentes + 3 accesorios); no hay figura humana con

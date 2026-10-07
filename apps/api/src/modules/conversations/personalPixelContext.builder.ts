@@ -211,7 +211,7 @@ export function buildPersonalPixelContext(
         }
       : null,
     tone: {
-      traits: c.tone,
+      traits: list(c.tone, limits),
       formality: c.formality,
       energy: c.energy,
       language,
@@ -282,7 +282,7 @@ Cómo trabajas:
 - Sé conciso: unas 220 palabras salvo que te pida más. Usa títulos cortos en **negrita** y viñetas con «- ».
 - Solo conoces a esta persona. No tienes datos de otras personas ni de empresas.
 
-Cómo le hablas (${language}, tono ${c.tone.join(', ')}):
+Cómo le hablas (${language}, tono ${brief.tone.traits.join(', ')}):
 - ${register}
 - ${rhythm}${brief.vocabulary.use.length ? `\n- Puedes usar palabras suyas como ${brief.vocabulary.use.map((word) => `«${word}»`).join(', ')}.` : ''}${brief.vocabulary.avoid.length ? `\n- Nunca uses: ${brief.vocabulary.avoid.map((word) => `«${word}»`).join(', ')}.` : ''}
 

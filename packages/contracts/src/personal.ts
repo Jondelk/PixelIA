@@ -45,16 +45,25 @@ export type PersonalProfileResponse = z.infer<typeof PersonalProfileResponseSche
 
 // ---------- PersonalDNA ----------
 
-const strings = z.array(z.string());
+/*
+ * Límites del ADN: holgados respecto al onboarding (algunas secciones combinan dos respuestas), pero
+ * acotados, porque las correcciones manuales (PUT …/personal-dna) llegan directamente aquí y todo
+ * el ADN termina en el contexto que se envía a la IA.
+ */
+const strings = z.array(z.string().trim().min(1).max(200)).max(40);
+const longText = (max: number) => z.string().trim().min(1).max(max).nullable();
 
-export const PersonalColorSchema = z.object({ hex: HexColorSchema, name: z.string().nullable() });
+export const PersonalColorSchema = z.object({
+  hex: HexColorSchema,
+  name: z.string().trim().max(40).nullable(),
+});
 
 export const PersonalDnaContentSchema = z.object({
   identity: z.object({
-    name: z.string().min(1),
+    name: z.string().trim().min(1).max(120),
     /** Profesión y roles con los que se presenta. */
     professionalIdentity: strings,
-    summary: z.string().nullable(),
+    summary: longText(1000),
     /** Intereses declarados (alimentan el avatar y el criterio creativo). */
     interests: strings.default([]),
   }),
@@ -72,7 +81,7 @@ export const PersonalDnaContentSchema = z.object({
     longTerm: strings,
   }),
   audience: z.object({
-    primaryAudience: z.string().nullable(),
+    primaryAudience: longText(1000),
     secondaryAudiences: strings,
     needs: strings,
     problems: strings,
@@ -81,7 +90,7 @@ export const PersonalDnaContentSchema = z.object({
   personality: z.object({
     traits: strings,
     /** Arquetipos inferidos SOLO de los rasgos elegidos (mapa determinístico o IA con enum cerrado). */
-    archetypes: z.array(BrandArchetypeSchema),
+    archetypes: z.array(BrandArchetypeSchema).max(12),
   }),
   communication: z.object({
     tone: strings,
@@ -93,7 +102,7 @@ export const PersonalDnaContentSchema = z.object({
   }),
   creativeIdentity: z.object({
     styles: strings,
-    colors: z.array(PersonalColorSchema),
+    colors: z.array(PersonalColorSchema).max(8),
     references: strings,
     visualPreferences: strings,
     avoidVisuals: strings,
@@ -102,7 +111,7 @@ export const PersonalDnaContentSchema = z.object({
     themes: strings,
     preferredFormats: strings,
     platforms: strings,
-    frequencyPreference: z.string().nullable(),
+    frequencyPreference: longText(120),
   }),
   workStyle: z.object({
     preferredWorkTimes: strings,
@@ -114,7 +123,7 @@ export const PersonalDnaContentSchema = z.object({
   supportNeeds: z.object({
     wantsHelpWith: strings,
     /** "¿Qué esperas de tu Pixel Personal?" con las palabras de la persona. */
-    expectations: z.string().nullable(),
+    expectations: longText(1000),
   }),
   preferences: strings,
   restrictions: strings,

@@ -98,32 +98,49 @@ describe('PersonalDnaGenerator: enriquecimiento IA verificado', () => {
     identity: { ...photographer.identity, headline: '', bio: '' },
   });
 
-  it('acepta solo lo que se apoya en las respuestas y descarta lo inventado', async () => {
+  it('acepta solo lo que se apoya por completo en las respuestas', async () => {
     const ai = fakeAi({
-      summary: 'Fotógrafa de retrato editorial con luz natural que quiere vender sesiones premium.',
-      strengths: ['retrato editorial', 'dominio de la luz natural', 'ganó un premio en Cannes'],
-      archetypes: ['ruler'],
+      summary:
+        'Eres fotógrafa de retrato editorial y quieres vender sesiones premium con luz natural.',
+      strengths: ['retrato editorial', 'luz natural', 'dominio absoluto de la luz'],
     });
     const generator = createPersonalDnaGenerator({ ai, logger });
     expect(generator.version).toBe('personal-rules-1+ai');
+    expect(generator.usesAi).toBe(true);
 
     const { content, generator: meta } = await generator.generate(noSummary);
     expect(ai.calls).toBe(1);
     expect(meta.kind).toBe('ai');
-    expect(content.identity.summary).toContain('Fotógrafa de retrato');
-    expect(content.professionalProfile.strengths).toEqual([
-      'retrato editorial',
-      'dominio de la luz natural',
-    ]);
-    // Los rasgos ya revelan arquetipos: la IA no los sustituye.
+    expect(content.identity.summary).toBe(
+      'Eres fotógrafa de retrato editorial y quieres vender sesiones premium con luz natural.',
+    );
+    expect(content.professionalProfile.strengths).toEqual(['retrato editorial', 'luz natural']);
+    // Los arquetipos nunca los decide la IA: salen de los rasgos.
     expect(content.personality.archetypes).toEqual(['sage', 'innocent']);
+  });
+
+  it('descarta datos inventados aunque mezclen palabras reales (logros, lugares, cifras)', async () => {
+    const ai = fakeAi({
+      summary: 'Fotógrafa de retrato premiada internacionalmente en Medellín.',
+      strengths: [
+        'Más de 500 clientes',
+        'Retrato premiado',
+        'Retrato editorial en Cannes',
+        '20 años de retrato',
+      ],
+    });
+    const { content, generator } = await createPersonalDnaGenerator({ ai, logger }).generate(
+      noSummary,
+    );
+    expect(content.identity.summary).toBeNull();
+    expect(content.professionalProfile.strengths).toEqual([]);
+    expect(generator.kind).toBe('deterministic');
   });
 
   it('un resumen que no sale de las respuestas se descarta', async () => {
     const ai = fakeAi({
       summary: 'Campeona mundial de ajedrez y astronauta retirada.',
       strengths: [],
-      archetypes: [],
     });
     const { content, generator } = await createPersonalDnaGenerator({ ai, logger }).generate(
       noSummary,
@@ -132,22 +149,23 @@ describe('PersonalDnaGenerator: enriquecimiento IA verificado', () => {
     expect(generator.kind).toBe('deterministic');
   });
 
-  it('la IA solo completa arquetipos si los rasgos no los revelan (lista cerrada)', async () => {
+  it('con rasgos desconocidos los arquetipos quedan vacíos: la IA no los adivina', async () => {
     const custom = parse({ ...photographer, personality: { traits: ['nocturna', 'obsesiva'] } });
-    const ai = fakeAi({ summary: null, strengths: [], archetypes: ['creator'] });
+    const ai = fakeAi({
+      summary: null,
+      strengths: [],
+      archetypes: ['creator'],
+    } as unknown as PersonalDnaEnrichment);
     const { content } = await createPersonalDnaGenerator({ ai, logger }).generate(custom);
-    expect(content.personality.archetypes).toEqual(['creator']);
+    expect(content.personality.traits).toEqual(['nocturna', 'obsesiva']);
+    expect(content.personality.archetypes).toEqual([]);
   });
 
   it('si la IA falla o devuelve algo inválido, queda el ADN determinístico', async () => {
     const base: PersonalDnaContent = generatePersonalDnaContent(noSummary);
     for (const ai of [
       fakeAi(new Error('timeout')),
-      fakeAi({
-        summary: null,
-        strengths: [],
-        archetypes: ['robot'],
-      } as unknown as PersonalDnaEnrichment),
+      fakeAi({ summary: null, strengths: [42] } as unknown as PersonalDnaEnrichment),
     ]) {
       const result = await createPersonalDnaGenerator({ ai, logger }).generate(noSummary);
       expect(result).toEqual({

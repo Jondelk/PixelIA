@@ -158,7 +158,32 @@ function sourceHash(generatorVersion: string, answers: PersonalOnboarding): stri
     .digest('hex');
 }
 
-/** Guarda una versión nueva del ADN (historial) y la marca como vigente sin retroceder nunca. */
+type DnaOverrides = Partial<PersonalDnaContent> | null;
+
+/** Copia JSON plana (los Mixed de Mongoose pueden no ser objetos planos). */
+const plain = (value: DnaOverrides): unknown => JSON.parse(JSON.stringify(value)) as unknown;
+
+async function pointToVersion(
+  workspace: WorkspaceDocument,
+  profile: PersonalProfileDocument,
+  version: number,
+): Promise<void> {
+  // Nunca retrocede de versión si dos guardados compiten.
+  await PersonalProfileModel.updateOne(
+    {
+      _id: profile._id,
+      workspaceId: workspace._id,
+      $or: [{ personalDnaVersion: null }, { personalDnaVersion: { $lt: version } }],
+    },
+    { $set: { personalDnaVersion: version } },
+  );
+}
+
+/**
+ * Guarda una versión nueva del ADN (historial) y la marca como vigente. Con `dedupe`, si la última
+ * versión ya sale de las mismas respuestas, con el mismo tipo de generador y las mismas correcciones
+ * (p. ej. dos guardados idénticos a la vez), no crea otra: solo la marca como vigente.
+ */
 async function insertPersonalDnaVersion(
   workspace: WorkspaceDocument,
   profile: PersonalProfileDocument,
@@ -166,13 +191,25 @@ async function insertPersonalDnaVersion(
     content: PersonalDnaContent;
     sourceHash: string;
     generator: { kind: PersonalDnaGeneratorKind; version: string };
+    overrides: DnaOverrides;
+    dedupe: boolean;
   },
 ): Promise<void> {
   const content = PersonalDnaContentSchema.parse(data.content);
   for (let attempt = 0; ; attempt++) {
     const latest = await PersonalDnaModel.findOne({ workspaceId: workspace._id })
       .sort({ version: -1 })
-      .select({ version: 1 });
+      .select({ version: 1, sourceHash: 1, overrides: 1, generator: 1 });
+    if (
+      data.dedupe &&
+      latest &&
+      latest.sourceHash === data.sourceHash &&
+      latest.generator.kind === data.generator.kind &&
+      isDeepStrictEqual(plain(latest.overrides ?? null), plain(data.overrides))
+    ) {
+      await pointToVersion(workspace, profile, latest.version);
+      return;
+    }
     const version = (latest?.version ?? 0) + 1;
     try {
       await PersonalDnaModel.create({
@@ -181,16 +218,10 @@ async function insertPersonalDnaVersion(
         version,
         sourceHash: data.sourceHash,
         generator: data.generator,
+        overrides: data.overrides,
         ...content,
       });
-      await PersonalProfileModel.updateOne(
-        {
-          _id: profile._id,
-          workspaceId: workspace._id,
-          $or: [{ personalDnaVersion: null }, { personalDnaVersion: { $lt: version } }],
-        },
-        { $set: { personalDnaVersion: version } },
-      );
+      await pointToVersion(workspace, profile, version);
       return;
     } catch (err) {
       if (!isDuplicateKeyError(err) || attempt >= 3) throw err;
@@ -199,9 +230,11 @@ async function insertPersonalDnaVersion(
 }
 
 /**
- * Genera el ADN desde las respuestas si cambiaron respecto a la versión vigente. Las mismas
- * respuestas no crean versiones duplicadas; una edición manual se conserva salvo que se pida
- * regenerar explícitamente (`force`).
+ * Genera el ADN desde las respuestas.
+ * - Mismas respuestas (mismo hash) → se conserva la versión vigente, también si es manual.
+ * - Respuestas nuevas → versión nueva; las correcciones manuales vigentes se vuelven a aplicar.
+ * - `force` ("Regenerar desde mis respuestas") → descarta las correcciones y vuelve a intentar el
+ *   enriquecimiento IA si la versión vigente se quedó con el resultado de reglas.
  */
 async function syncPersonalDna(
   workspace: WorkspaceDocument,
@@ -213,13 +246,25 @@ async function syncPersonalDna(
   const generator = deps.personalDnaGenerator;
   const hash = sourceHash(generator.version, answers);
   const current = await activePersonalDna(workspace, profile);
-  if (current?.sourceHash === hash && !(force && current.generator.kind === 'manual')) return;
+  if (current?.sourceHash === hash) {
+    if (!force) return;
+    const upToDate =
+      !current.overrides &&
+      current.generator.kind !== 'manual' &&
+      (current.generator.kind === 'ai' || !generator.usesAi);
+    if (upToDate) return;
+  }
 
+  const overrides: DnaOverrides = force ? null : (current?.overrides ?? null);
   const generated = await generator.generate(answers);
   await insertPersonalDnaVersion(workspace, profile, {
-    content: generated.content,
+    content: overrides ? { ...generated.content, ...overrides } : generated.content,
     sourceHash: hash,
-    generator: generated.generator,
+    generator: overrides
+      ? { kind: 'manual', version: PERSONAL_DNA_MANUAL_VERSION }
+      : generated.generator,
+    overrides,
+    dedupe: true,
   });
 }
 
@@ -302,7 +347,8 @@ export async function generatePersonalDna(
 
 /**
  * PUT …/personal-dna: corrige secciones del ADN. Crea una versión manual (el historial se conserva)
- * que parte del hash de las mismas respuestas: volver a guardar esas respuestas no la pisa.
+ * que parte del hash de las mismas respuestas: volver a guardar esas respuestas no la pisa, y si
+ * cambian, las secciones corregidas se vuelven a aplicar sobre el ADN regenerado.
  */
 export async function updatePersonalDna(
   workspace: WorkspaceDocument,
@@ -322,6 +368,9 @@ export async function updatePersonalDna(
       content,
       sourceHash: current.sourceHash,
       generator: { kind: 'manual', version: PERSONAL_DNA_MANUAL_VERSION },
+      // Acumuladas: sobreviven a cambios posteriores en las respuestas.
+      overrides: { ...(current.overrides ?? {}), ...input },
+      dedupe: false,
     });
   }
   return toDnaResponse(workspace, await reloadProfile(workspace));

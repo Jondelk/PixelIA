@@ -8,19 +8,17 @@ import { AvatarProfileModel } from './avatarProfile.model.js';
  */
 export const LEGACY_AVATAR_INDEXES = ['companyId_1_version_-1', 'companyId_1_brandDnaVersion_1'];
 
-/**
- * Deja los índices de AvatarProfile listos para avatares personales. Idempotente y sin tocar datos:
- * 1. crea los índices declarados (incluidos los parciales nuevos), así la unicidad Enterprise nunca
- *    queda sin respaldo;
- * 2. elimina los índices legacy no parciales si existen.
- * Lo ejecutan el arranque de la API (al conectar con MongoDB) y `npm run migrate:workspaces`.
- * Devuelve los índices eliminados.
- */
-export async function upgradeAvatarProfileIndexes(): Promise<string[]> {
-  await AvatarProfileModel.createIndexes();
+/** Conflicto de índices: misma clave con otras opciones o con otro nombre (MongoDB antiguo). */
+const INDEX_CONFLICT_CODES = new Set([85, 86]);
+
+function errorCode(err: unknown): unknown {
+  return typeof err === 'object' && err !== null && 'code' in err ? err.code : undefined;
+}
+
+async function dropLegacyIndexes(): Promise<string[]> {
   const existing = await AvatarProfileModel.collection.indexes().catch((err: unknown) => {
     // La colección aún no existe (base nueva): no hay nada que retirar.
-    if (typeof err === 'object' && err !== null && 'code' in err && err.code === 26) return [];
+    if (errorCode(err) === 26) return [];
     throw err;
   });
   const dropped: string[] = [];
@@ -31,4 +29,26 @@ export async function upgradeAvatarProfileIndexes(): Promise<string[]> {
     }
   }
   return dropped;
+}
+
+/**
+ * Deja los índices de AvatarProfile listos para avatares personales. Idempotente y sin tocar datos:
+ * 1. crea los índices declarados (incluidos los parciales nuevos), así la unicidad Enterprise nunca
+ *    queda sin respaldo;
+ * 2. elimina los índices legacy no parciales si existen.
+ * Si el servidor no admite crear el índice parcial mientras existe el legacy con la misma clave
+ * (conflicto 85/86 en versiones antiguas de MongoDB), retira primero los legacy y luego los crea.
+ * Lo ejecutan el arranque de la API (al conectar con MongoDB) y `npm run migrate:workspaces`.
+ * Devuelve los índices eliminados.
+ */
+export async function upgradeAvatarProfileIndexes(): Promise<string[]> {
+  try {
+    await AvatarProfileModel.createIndexes();
+  } catch (err) {
+    if (!INDEX_CONFLICT_CODES.has(errorCode(err) as number)) throw err;
+    const dropped = await dropLegacyIndexes();
+    await AvatarProfileModel.createIndexes();
+    return dropped;
+  }
+  return dropLegacyIndexes();
 }

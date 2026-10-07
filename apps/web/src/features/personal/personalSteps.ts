@@ -192,22 +192,42 @@ export function initialPersonalForms(
 /** Clave de los errores de todo el paso (p. ej. "Añade al menos un objetivo"). */
 export const STEP_ERROR = '_step';
 
-/** Errores por ruta completa ("content.themes"): los pasos personales tienen bloques anidados. */
+/**
+ * Clave del campo de un error: la ruta hasta el primer índice de lista. Los pasos personales tienen
+ * bloques anidados ("content.themes"), y un elemento concreto ("roles.0", "colors.1.name") se marca
+ * en su campo ("roles", "colors").
+ */
+export function fieldKey(path: readonly (string | number)[]): string {
+  const segments: string[] = [];
+  for (const segment of path) {
+    if (typeof segment === 'number' || /^\d+$/.test(segment)) break;
+    segments.push(segment);
+  }
+  return segments.join('.') || STEP_ERROR;
+}
+
 export function personalZodErrors(error: z.ZodError): FieldErrors {
   const errors: FieldErrors = {};
   for (const issue of error.issues) {
-    const key = issue.path.map(String).join('.') || STEP_ERROR;
+    const key = fieldKey(
+      issue.path.map((segment) => (typeof segment === 'number' ? segment : String(segment))),
+    );
     if (!errors[key]) errors[key] = issue.message;
   }
   return errors;
 }
 
-/** Errores de la API ("data.content.themes" → "content.themes"). */
+/** Errores de la API ("data.content.themes.2" → "content.themes"). */
 export function personalApiErrors(err: unknown): FieldErrors {
   const errors: FieldErrors = {};
   if (!(err instanceof ApiRequestError)) return errors;
   for (const issue of err.fieldIssues) {
-    const key = issue.path.replace(/^data\.?/, '') || STEP_ERROR;
+    const key = fieldKey(
+      issue.path
+        .replace(/^data\.?/, '')
+        .split('.')
+        .filter(Boolean),
+    );
     if (!errors[key]) errors[key] = issue.message;
   }
   return errors;

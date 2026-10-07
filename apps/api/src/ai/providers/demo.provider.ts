@@ -133,7 +133,8 @@ function personalFormats(brief: PersonalBrief): string[] {
       : energy <= 2
         ? 'piezas pausadas, con pocas palabras, mucho aire y una sola idea por pieza'
         : 'piezas de ritmo tranquilo y claro';
-  const list = [`${capitalize(frequency ?? 'Tres piezas esta semana')}${where}: ${rhythm}.`];
+  // Sin frecuencia en su ADN no se propone una cifra: solo el ritmo que encaja con su energía.
+  const list = [`${capitalize(frequency ?? 'Esta semana')}${where}: ${rhythm}.`];
   if (formats.length) {
     list.push(
       `Formatos: ${joinEs(formats.slice(0, 3))}${themes[1] ? `; una de las piezas puede abrir «${themes[1]}»` : ''}.`,
@@ -148,7 +149,16 @@ function personalCopy(brief: PersonalBrief, lever: CreativeLever): string {
   const [first, second, third] = brief.vocabulary.use;
   if (brief.tone.energy >= 4) {
     const shout = capitalize(first ?? 'vamos');
-    return `¡${shout}! ${capitalize(brief.content.themes[0] ?? lever.title)} en directo${second ? `: ${lower(second)} de verdad` : ''}.`;
+    // "En directo" solo si su contenido ya es en vivo (plataformas, formatos, temas o profesión).
+    const live = /twitch|directo|stream|en vivo|live/i.test(
+      [
+        ...brief.content.platforms,
+        ...brief.content.formats,
+        ...brief.content.themes,
+        ...brief.professionalIdentity,
+      ].join(' '),
+    );
+    return `¡${shout}! ${capitalize(brief.content.themes[0] ?? lever.title)}${live ? ' en directo' : ''}${second ? `: ${lower(second)} de verdad` : ''}.`;
   }
   const words = [first, second, third].filter((word): word is string => Boolean(word));
   const need = brief.audience.needs[0];

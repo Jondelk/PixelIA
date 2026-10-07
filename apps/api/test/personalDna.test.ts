@@ -1,8 +1,10 @@
 import { PersonalDnaResponseSchema } from '@pixel/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
+import type { AIProvider } from '../src/ai/index.js';
 import { TenantScopeError } from '../src/db/tenantScoped.plugin.js';
 import { BrandDnaModel } from '../src/modules/brand-dna/brandDna.model.js';
 import { PersonalDnaModel } from '../src/modules/personal/personalDna.model.js';
+import { PersonalProfileModel } from '../src/modules/personal/personalProfile.model.js';
 import { photographer, streamer } from './fixtures/personal.js';
 import {
   completePersonalOnboarding,
@@ -126,6 +128,48 @@ describe('PersonalDNA: generación y versiones', () => {
     expect(await PersonalDnaModel.countDocuments({ workspaceId })).toBe(3);
   });
 
+  it('una corrección manual sobrevive cuando cambian otras respuestas', async () => {
+    await completePersonalOnboarding(jhon, workspaceId, photographer);
+    const current = (await jhon.agent.get(url()).expect(200)).body.personalDna;
+    await jhon.agent
+      .put(url())
+      .send({ identity: { ...current.identity, summary: 'Retrato editorial premium.' } })
+      .expect(200);
+
+    await savePersonalStep(jhon, workspaceId, 'goals', {
+      ...photographer,
+      goals: { ...photographer.goals!, professional: ['vender sesiones premium', 'dar talleres'] },
+    }).expect(200);
+    const res = await jhon.agent.get(url()).expect(200);
+    expect(res.body.personalDna).toMatchObject({
+      version: 3,
+      generator: { kind: 'manual' },
+      identity: { summary: 'Retrato editorial premium.' },
+      goals: { professional: ['vender sesiones premium', 'dar talleres'] },
+    });
+
+    // "Regenerar desde mis respuestas" descarta la corrección.
+    const regenerated = await jhon.agent.post(url('/generate')).expect(200);
+    expect(regenerated.body.personalDna).toMatchObject({
+      version: 4,
+      generator: { kind: 'deterministic' },
+      identity: { summary: 'Retratos editoriales con luz natural' },
+    });
+  });
+
+  it('guardados idénticos a la vez no duplican versiones', async () => {
+    await completePersonalOnboarding(jhon, workspaceId, photographer);
+    await PersonalDnaModel.deleteMany({ workspaceId });
+    await PersonalProfileModel.updateOne({ workspaceId }, { $set: { personalDnaVersion: null } });
+    await Promise.all(
+      [1, 2, 3, 4].map(() =>
+        savePersonalStep(jhon, workspaceId, 'support', photographer).expect(200),
+      ),
+    );
+    expect(await PersonalDnaModel.countDocuments({ workspaceId })).toBe(1);
+    expect((await jhon.agent.get(url()).expect(200)).body.personalDna.version).toBe(1);
+  });
+
   it('PUT valida con el schema del ADN (400) y rechaza secciones desconocidas', async () => {
     await completePersonalOnboarding(jhon, workspaceId, photographer);
     await jhon.agent.put(url()).send({}).expect(400);
@@ -164,5 +208,52 @@ describe('PersonalDNA: aislamiento', () => {
     await expect(PersonalDnaModel.findOne({ workspaceId: { $ne: ws } })).rejects.toBeInstanceOf(
       TenantScopeError,
     );
+  });
+});
+
+describe('PersonalDNA: regenerar con IA', () => {
+  /** Proveedor "real" que falla la primera vez y después propone una fortaleza verificable. */
+  class FlakyAi implements AIProvider {
+    readonly name = 'flaky';
+    readonly model = 'flaky-1';
+    readonly mode = 'ai' as const;
+    calls = 0;
+    generateText(): never {
+      throw new Error('no usado');
+    }
+    async generateStructuredOutput<T>() {
+      this.calls += 1;
+      if (this.calls === 1) throw new Error('timeout');
+      return {
+        data: { summary: null, strengths: ['retrato editorial'] } as T,
+        provider: this.name,
+        model: this.model,
+        mode: this.mode,
+        latencyMs: 1,
+      };
+    }
+  }
+
+  it('si la IA falló, "regenerar" vuelve a intentarlo; si ya está al día, no crea versiones', async () => {
+    const ai = new FlakyAi();
+    const flakyApp = buildTestApp(ai);
+    const jhon = await registerUser(flakyApp, 'Jhon');
+    const ws = await createPersonalWorkspace(jhon);
+    await completePersonalOnboarding(jhon, ws, photographer);
+    const url = `/api/workspaces/${ws}/personal-dna`;
+
+    const first = (await jhon.agent.get(url).expect(200)).body.personalDna;
+    expect(first.generator).toEqual({ kind: 'deterministic', version: 'personal-rules-1+ai' });
+
+    const retried = (await jhon.agent.post(`${url}/generate`).expect(200)).body.personalDna;
+    expect(retried).toMatchObject({
+      version: 2,
+      generator: { kind: 'ai' },
+      professionalProfile: { strengths: ['retrato editorial'] },
+    });
+
+    await jhon.agent.post(`${url}/generate`).expect(200);
+    expect(await PersonalDnaModel.countDocuments({ workspaceId: ws })).toBe(2);
+    expect(ai.calls).toBe(2);
   });
 });

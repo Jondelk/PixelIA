@@ -121,8 +121,20 @@ describe('PersonalAvatarConceptEngine', () => {
     };
     const avatar = await conceptOf(noColors);
     const colors = avatar.rationale.decisions.find((decision) => decision.attribute === 'colors');
-    expect(colors?.reason).toMatch(/salen de tu estilo minimalista/);
+    expect(colors?.reason).toMatch(/salen de tu estilo «minimalista»/);
     expect(colors?.sources).toEqual(['creativeIdentity.styles']);
+
+    // Sin colores ni estilo o rasgo con paleta: lo dice así (nunca cita colores que no existen).
+    const neutral = await conceptOf({
+      ...photographer,
+      personality: { traits: ['nocturna'] },
+      creative: { ...photographer.creative, colors: [], styles: ['barroco'] },
+    });
+    const fallback = neutral.rationale.decisions.find(
+      (decision) => decision.attribute === 'colors',
+    );
+    expect(fallback?.reason).toMatch(/paleta neutra/);
+    expect(fallback?.reason).not.toMatch(/tu color principal/);
   });
 
   it('es determinístico y regenerar explora otra alternativa', async () => {
