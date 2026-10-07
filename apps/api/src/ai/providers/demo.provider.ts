@@ -4,13 +4,20 @@ import type {
   GenerateStructuredInput,
   GenerateTextInput,
 } from '../AIProvider.js';
-import { extractBrief, type CreativeBrief, type CreativeLever } from '../brief.js';
+import {
+  extractBrief,
+  extractPersonalBrief,
+  type CreativeBrief,
+  type CreativeLever,
+  type PersonalBrief,
+} from '../brief.js';
 import { AIProviderError } from '../errors.js';
 
 /**
  * Proveedor local sin IA, para desarrollo sin credenciales y para tests deterministas.
- * Compone una propuesta creativa a partir del brief de marca (palancas, tono, formatos,
- * restricciones). No sustituye a un modelo: sirve para recorrer el producto de punta a punta.
+ * Compone una propuesta creativa a partir del brief del contexto: el de marca (Enterprise, en
+ * «nosotros») o el personal (Pixel Personal, en «tú»), con sus palancas, tono, formatos y
+ * restricciones. No sustituye a un modelo: sirve para recorrer el producto de punta a punta.
  */
 
 const pick = <T>(items: readonly T[], seed: number): T | undefined =>
@@ -111,6 +118,92 @@ export function composeCreativeReply(brief: CreativeBrief, request: string): str
   return lines.join('\n').trim();
 }
 
+// ---------- Pixel Personal ----------
+
+const joinEs = (items: readonly string[]) =>
+  items.length <= 1 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} y ${items.at(-1)}`;
+
+function personalFormats(brief: PersonalBrief): string[] {
+  const { energy } = brief.tone;
+  const { formats, platforms, frequency, themes } = brief.content;
+  const where = platforms.length ? ` en ${joinEs(platforms.slice(0, 3))}` : '';
+  const rhythm =
+    energy >= 4
+      ? 'clips cortos de 7 a 15 segundos, con el momento clave en el primer segundo y cortes rápidos'
+      : energy <= 2
+        ? 'piezas pausadas, con pocas palabras, mucho aire y una sola idea por pieza'
+        : 'piezas de ritmo tranquilo y claro';
+  const list = [`${capitalize(frequency ?? 'Tres piezas esta semana')}${where}: ${rhythm}.`];
+  if (formats.length) {
+    list.push(
+      `Formatos: ${joinEs(formats.slice(0, 3))}${themes[1] ? `; una de las piezas puede abrir «${themes[1]}»` : ''}.`,
+    );
+  }
+  const look = [...brief.creative.styles.slice(0, 2), ...brief.creative.preferences.slice(0, 2)];
+  if (look.length) list.push(`Mantén tu estética: ${joinEs(look)}.`);
+  return list;
+}
+
+function personalCopy(brief: PersonalBrief, lever: CreativeLever): string {
+  const [first, second, third] = brief.vocabulary.use;
+  if (brief.tone.energy >= 4) {
+    const shout = capitalize(first ?? 'vamos');
+    return `¡${shout}! ${capitalize(brief.content.themes[0] ?? lever.title)} en directo${second ? `: ${lower(second)} de verdad` : ''}.`;
+  }
+  const words = [first, second, third].filter((word): word is string => Boolean(word));
+  const need = brief.audience.needs[0];
+  return `${words.length ? `${capitalize(joinEs(words))}. ` : ''}${capitalize(need ?? lever.title)}.`;
+}
+
+export function composePersonalReply(brief: PersonalBrief, request: string): string {
+  const levers = brief.levers.length
+    ? brief.levers
+    : [
+        {
+          id: 'goal',
+          title: brief.person,
+          idea: 'Partamos de lo que quieres conseguir y de a quién le hablas.',
+          proof: 'Una sola idea, bien ejecutada.',
+        },
+      ];
+  const main = levers[0]!;
+  const support = levers.find((lever) => lever.id !== main.id);
+  const goal = brief.goals.professional[0] ?? brief.goals.content[0] ?? brief.goals.shortTerm[0];
+  const audience = brief.audience.primary;
+  const avoid = [
+    ...brief.creative.avoid,
+    ...brief.vocabulary.avoid.map((word) => `decir «${word}»`),
+  ].slice(0, 3);
+  const thisWeek = /\bsemana\b/i.test(request);
+
+  const lines = [
+    `**${thisWeek ? 'Mi propuesta para esta semana' : 'Mi propuesta'}: «${main.title}»**`,
+    `${main.idea} ${main.proof}`,
+    '',
+    '**Por qué encaja contigo**',
+    [
+      goal ? `Te acerca a «${goal}»` : 'Es coherente con quien eres',
+      audience ? ` y le habla a ${lower(audience)}.` : '.',
+      brief.archetype ? ` ${brief.archetype.stance}` : '',
+      support ? ` Lo reforzaría con otra palanca: ${lower(support.idea)}` : '',
+    ].join(''),
+    '',
+    '**Cómo lo aterrizaría**',
+    ...personalFormats(brief).map((item) => `- ${item}`),
+    '',
+    '**En tu voz**',
+    `«${personalCopy(brief, main)}»`,
+  ];
+  if (avoid.length) {
+    lines.push('', '**Qué evitaría**', ...avoid.map((item) => `- ${capitalize(item)}`));
+  }
+  if (brief.avatar && brief.focus.includes('avatar')) {
+    lines.push('', '**Tu personaje**', `${brief.avatar.name}: ${lower(brief.avatar.concept)}`);
+  }
+  lines.push('', '¿En qué estás trabajando ahora mismo? Lo convertimos en la primera pieza.');
+  return lines.join('\n').trim();
+}
+
 export class DemoProvider implements AIProvider {
   readonly name = 'demo';
   readonly model = 'pixel-demo-1';
@@ -127,12 +220,15 @@ export class DemoProvider implements AIProvider {
 
   async generateText(input: GenerateTextInput) {
     const start = Date.now();
-    const brief = extractBrief(input.system);
     const request =
       [...input.messages].reverse().find((turn) => turn.role === 'user')?.content ?? '';
-    const text = brief
-      ? composeCreativeReply(brief, request)
-      : 'Estoy en modo demo y no tengo contexto de marca para responder a eso.';
+    const personal = extractPersonalBrief(input.system);
+    const brief = personal ? null : extractBrief(input.system);
+    const text = personal
+      ? composePersonalReply(personal, request)
+      : brief
+        ? composeCreativeReply(brief, request)
+        : 'Estoy en modo demo y no tengo contexto para responder a eso.';
     return { text, ...this.meta(start) };
   }
 

@@ -14,7 +14,7 @@ flowchart TB
   end
   subgraph Server["apps/api (proceso Node único)"]
     HTTP[Express routes + middleware]
-    MOD[Módulos de dominio<br/>auth · companies · brand · avatar · chat · memory]
+    MOD[Módulos de dominio<br/>auth · workspaces · companies · brand · personal · avatar · chat · memory]
     AI["ai/<br/>AIProvider + adaptadores + prompts"]
     JOB[Jobs en proceso<br/>análisis de marca]
   end
@@ -177,6 +177,9 @@ apps/api/src/ai/
   `betaZodOutputFormat`, revalidada con Zod.
 - **Selección**: `AI_PROVIDER=anthropic|demo`; si se omite, `anthropic` cuando hay `ANTHROPIC_API_KEY`
   y `demo` si no. El modo demo se avisa en el log y en la interfaz.
+- **PersonalDNA**: `PersonalDnaGenerator` usa `generateStructuredOutput()` (schema Zod
+  `PersonalDnaEnrichmentSchema`) solo para enriquecer resumen, fortalezas y arquetipos cuando hay un
+  proveedor real, y descarta lo que no se apoya en las respuestas ([`PERSONAL.md` §4](./PERSONAL.md#4-generación-del-personaldna)).
 - **Pendiente**: generar BrandDNA y AvatarProfile con IA usando `generateStructuredOutput()`
   (hoy son determinísticos).
 
@@ -184,9 +187,12 @@ apps/api/src/ai/
 
 `apps/api/src/modules/conversations/context/`: `resolveContextBuilder(workspace.type)` elige
 `EnterpriseContextBuilder` (carga Company → BrandDNA → AvatarProfile → CreativeMemory del workspace) o
-`PersonalContextBuilder` (placeholder tipado que responde "contexto personal no configurado").
-Devuelven `ready` con el contexto, o `not_configured` con un motivo (→ 409). El AIProvider recibe el
-contexto ya preparado y nunca ve `companyId`.
+`PersonalContextBuilder` (carga PersonalProfile → PersonalDNA → AvatarProfile → CreativeMemory del
+workspace personal; compone con `buildPersonalPixelContext` el prompt del Director Creativo Personal,
+en segunda persona, con su brief en `<personal_context>`). Devuelven `ready` con el contexto, o
+`not_configured` con un motivo (→ 409: `brand_dna_missing`, `enterprise_company_missing`,
+`personal_context_not_configured`). El AIProvider recibe el contexto ya preparado y nunca ve
+`companyId` ni ids de perfiles. Detalle Personal en [`PERSONAL.md` §7](./PERSONAL.md#7-personalcontextbuilder).
 
 La composición Enterprise es la función pura `pixelContext.builder.ts` (`buildPixelContext`), que
 construye el contexto del Pixel de **una** marca a partir de datos ya cargados del mismo workspace.
@@ -265,13 +271,16 @@ Prefijo `/api`. JSON. Errores con forma `ApiError { code, message, details? }`.
 | POST | `/auth/login` | Inicia sesión (cookie httpOnly) |
 | POST | `/auth/logout` | Cierra sesión |
 | GET | `/auth/me` | Usuario actual |
-| GET | `/workspaces` | "Tus Pixels": workspaces del usuario con su empresa (si la tienen) ✅ |
+| GET | `/workspaces` | "Tus Pixels": workspaces del usuario con su empresa o su resumen personal ✅ |
 | POST | `/workspaces` | Crear workspace `{ type: enterprise \| personal, name }` (Personal: uno por usuario) ✅ |
-| GET | `/workspaces/:workspaceId` | Workspace + su empresa ✅ |
+| GET | `/workspaces/:workspaceId` | Workspace + su empresa (enterprise) o `personal` (resumen) ✅ |
 | PATCH | `/workspaces/:workspaceId` | `name`, `status` (el tipo no se edita) ✅ |
-| POST | `/workspaces/:workspaceId/company` | Completa un workspace enterprise vacío con su empresa ✅ |
-| GET/POST | `/workspaces/:workspaceId/avatar[/generate]` | Avatar del workspace (Enterprise; Personal → 409) ✅ |
-| GET/POST | `/workspaces/:workspaceId/conversations[/:id/messages]` | Conversaciones del workspace (Personal: enviar → 409) ✅ |
+| POST | `/workspaces/:workspaceId/company` | Completa un workspace enterprise vacío con su empresa (Personal → 400) ✅ |
+| GET/POST | `/workspaces/:workspaceId/avatar[/generate]` | Avatar del workspace: BrandDNA (Enterprise) o PersonalDNA (Personal); sin ADN → 409 ✅ |
+| GET/POST | `/workspaces/:workspaceId/conversations[/:id/messages]` | Conversaciones del workspace; sin ADN → 409 con `details.reason` ✅ |
+| GET/PUT | `/workspaces/:workspaceId/personal-profile` | Pixel Personal: perfil y onboarding por pasos (Enterprise → 400) ✅ |
+| GET/PUT | `/workspaces/:workspaceId/personal-dna` | Pixel Personal: ADN vigente y correcciones manuales ✅ |
+| POST | `/workspaces/:workspaceId/personal-dna/generate` | Pixel Personal: (re)genera el ADN desde el onboarding ✅ |
 | GET | `/companies` | Empresas del usuario (legacy) |
 | POST | `/companies` | Crear empresa: crea también su workspace enterprise |
 | GET | `/companies/:companyId` | Empresa + estado del análisis |

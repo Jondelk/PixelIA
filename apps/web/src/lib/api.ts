@@ -33,6 +33,14 @@ export class ApiRequestError extends Error {
   }
 }
 
+/** `details.reason` de un error de la API (p. ej. "personal_context_not_configured"). */
+export function errorReason(err: unknown): string | null {
+  if (!(err instanceof ApiRequestError)) return null;
+  const { details } = err;
+  if (typeof details !== 'object' || details === null || !('reason' in details)) return null;
+  return typeof details.reason === 'string' ? details.reason : null;
+}
+
 async function readJson(res: Response): Promise<unknown> {
   try {
     return await res.json();

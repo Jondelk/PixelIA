@@ -7,8 +7,9 @@ Convenciones comunes:
 
 - Todas tienen `id`, `createdAt`, `updatedAt` (en Mongo: `_id` + `timestamps: true`).
 - **Workspace es la frontera de aislamiento** (`docs/WORKSPACES.md`). Los recursos del workspace
-  (`AvatarProfile`, `Conversation`, `Message`, `CreativeMemory`) tienen `workspaceId` **requerido e
-  indexado** y usan `tenantScoped` con clave `workspaceId`.
+  (`AvatarProfile`, `Conversation`, `Message`, `CreativeMemory`) y los de Pixel Personal
+  (`PersonalProfile`, `PersonalDNA`) tienen `workspaceId` **requerido e indexado** y usan
+  `tenantScoped` con clave `workspaceId`.
 - `BrandDNA` es un dato propio de la empresa: `companyId` requerido y `tenantScoped` con clave
   `companyId`. Su workspace se deriva de `Company.workspaceId`.
 - Raíces de acceso: `Workspace.ownerId` y `Company.ownerId` (legacy, igual al del workspace).
@@ -22,8 +23,11 @@ erDiagram
   USER ||--o{ WORKSPACE : "posee (ownerId)"
   WORKSPACE ||--o| COMPANY : "enterprise (workspaceId)"
   COMPANY ||--o{ BRAND_DNA : "versiones (companyId)"
+  WORKSPACE ||--o| PERSONAL_PROFILE : "personal (workspaceId)"
+  PERSONAL_PROFILE ||--o{ PERSONAL_DNA : "versiones (workspaceId)"
   WORKSPACE ||--o{ AVATAR_PROFILE : "versiones (workspaceId)"
   BRAND_DNA ||--o{ AVATAR_PROFILE : "origina (brandDnaVersion)"
+  PERSONAL_DNA ||--o{ AVATAR_PROFILE : "origina (personalDnaVersion)"
   WORKSPACE ||--o{ CONVERSATION : "workspaceId"
   USER ||--o{ CONVERSATION : "userId"
   CONVERSATION ||--o{ MESSAGE : "conversationId"
@@ -51,6 +55,15 @@ Persona que usa Pixel. No pertenece a una empresa (puede tener varias).
 
 Contenedor contextual de un Pixel: `enterprise` (una empresa) o `personal` (uno por usuario).
 Campos, índices y reglas en [`WORKSPACES.md`](./WORKSPACES.md#modelo).
+
+## 1c. PersonalProfile y PersonalDNA (Pixel Personal) ✅
+
+`PersonalProfile` (`personal_profiles`, uno por workspace personal) guarda quién es la persona y el
+borrador del onboarding de 8 pasos. `PersonalDNA` (`personal_dnas`, versionado) es lo que Pixel
+entiende de ella: identidad, perfil profesional, objetivos, audiencia, personalidad, comunicación,
+identidad creativa, contenido, forma de trabajar, ayuda que espera, preferencias y restricciones.
+Entidad independiente de BrandDNA. Campos, índices, generación y reglas en
+[`PERSONAL.md`](./PERSONAL.md#2-modelos).
 
 ## 2. Company
 
@@ -132,14 +145,17 @@ Cuando exista la capa de IA, `generator.kind` pasará a `ai` con el mismo contra
 
 Colección `avatar_profiles` (plugin `tenantScoped`). Contrato: `AvatarConceptSchema` /
 `AvatarProfileSchema` en `packages/contracts/src/avatarProfile.ts`. Es un **concepto de personaje**,
-no un modelo 3D. Lo produce el **Avatar Concept Engine** a partir del BrandDNA vigente (nunca del
-onboarding crudo). Cada generación crea una versión nueva; la vigente está en `Company.avatarVersion`.
+no un modelo 3D. Lo produce el **Avatar Concept Engine** a partir del ADN vigente (nunca del
+onboarding crudo): el BrandDNA en Enterprise (`sourceType: brand`) o el PersonalDNA en Personal
+(`sourceType: personal`, motor `PersonalAvatarConceptEngine`, ver [`PERSONAL.md`](./PERSONAL.md#6-avatar-personal)).
+Cada generación crea una versión nueva; la vigente está en `Company.avatarVersion` o en
+`PersonalProfile.avatarVersion`.
 
 | Campo | Contenido |
 |---|---|
-| meta | `workspaceId`, `sourceType` (`brand` \| `personal`), `companyId` (legacy; obligatorio si `brand`), `version`, `brandDnaVersion` (ADN del que salió), `engine { kind, version, variation }`, `createdAt` |
+| meta | `workspaceId`, `sourceType` (`brand` \| `personal`), `companyId` (legacy; obligatorio si `brand`, ausente si `personal`), `version`, `brandDnaVersion` (si `brand`) o `personalDnaVersion` (si `personal`): ADN del que salió, `engine { kind, version, variation }`, `createdAt` |
 | `name` | Nombre conceptual ("Grano Anfitrión") |
-| `avatarType` | `anthropomorphic_object` · `creature` · `geometric_entity` · `structural_character` · `organic_character` · `abstract_character` |
+| `avatarType` | Marca: `anthropomorphic_object` · `creature` · `geometric_entity` · `structural_character` · `organic_character`. Compartido: `abstract_character`. Personal: `stylized_human` · `creative_companion` · `tech_character` · `object_inspired` |
 | `concept` | Descripción del personaje |
 | `baseObject` | `{ id, label }` del catálogo de sujetos (`coffee_bean`, `crystal_core`, `building_block`…) o forma abstracta |
 | `bodyShape` | `rounded` · `oval` · `teardrop` · `faceted` · `blocky` · `capsule` · `organic_irregular` |
@@ -152,11 +168,15 @@ onboarding crudo). Cada generación crea una versión nueva; la vigente está en
 | `speakingBehavior` | `{ pace, gestures[], description }` |
 | `expressiveness` | 0–100 |
 | `visualKeywords` · `avoid` | Listas de texto |
-| `rationale` | `{ summary, decisions[{ attribute, value, reason, sources[] }] }` — `sources` son rutas del BrandDNA |
+| `rationale` | `{ summary, decisions[{ attribute, value, reason, sources[] }] }` — `sources` son rutas del ADN de origen (BrandDNA o PersonalDNA) |
 | `renderHints` | `{ archetype (seed/crystal/block/blob/drop/capsule), roundness, finish, surfaceDetail }` para el renderer 3D |
 
-Índices: `{ workspaceId: 1, version: -1 }` único parcial, `{ workspaceId: 1, brandDnaVersion: 1 }`;
-legacy `{ companyId: 1, version: -1 }` único y `{ companyId: 1, brandDnaVersion: 1 }`.
+Índices: `{ workspaceId: 1, version: -1 }` único parcial, `{ workspaceId: 1, brandDnaVersion: 1 }`,
+`{ workspaceId: 1, personalDnaVersion: 1 }` parcial; compatibilidad Enterprise **parcial** (solo
+documentos con `companyId`): `brand_company_version` (`{ companyId, version: -1 }` único) y
+`brand_company_dna_version`. Sustituyen a los legacy no parciales `companyId_1_version_-1` y
+`companyId_1_brandDnaVersion_1`, que `upgradeAvatarProfileIndexes()` retira al arrancar la API
+([`PERSONAL.md` §11](./PERSONAL.md#11-índices-de-avatarprofile)).
 
 ### Avatar Concept Engine
 
@@ -213,7 +233,7 @@ Colección `messages` (plugin `tenantScoped`). Contrato: `MessageSchema`.
 | `userId` | ObjectId → User | Usuario de la conversación (también en los mensajes de Pixel) |
 | `role` | `user \| pixel` | |
 | `content` | string | Usuario: 1–4000 caracteres |
-| `meta` | `{ provider, model, mode: ai\|demo, latencyMs, brandDnaVersion, avatarVersion } \| null` | Solo en mensajes de Pixel: con qué ADN, avatar y modelo respondió |
+| `meta` | `{ provider, model, mode: ai\|demo, latencyMs, brandDnaVersion, personalDnaVersion, avatarVersion } \| null` | Solo en mensajes de Pixel: con qué ADN (de marca o personal; el otro es null), avatar y modelo respondió |
 | `createdAt` | Date | |
 
 Índices: `{ workspaceId: 1, conversationId: 1, createdAt: -1 }`.
@@ -237,5 +257,6 @@ forma explícita** por el usuario y la extracción automática queda para despu�
 
 Índices: `{ workspaceId: 1, active: 1, createdAt: -1 }`.
 
-Uso en chat: `EnterpriseContextBuilder` ya incluye las memorias activas más recientes del workspace
-(máx. 10) en el system prompt, siempre filtradas por `workspaceId`. Hoy no se crea ninguna.
+Uso en chat: `EnterpriseContextBuilder` y `PersonalContextBuilder` incluyen las memorias activas más
+recientes del workspace (máx. 10) en el system prompt, siempre filtradas por `workspaceId`. Hoy no se
+crea ninguna desde la app.

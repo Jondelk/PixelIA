@@ -17,7 +17,9 @@ export interface MessageAttrs {
     model: string;
     mode: 'ai' | 'demo';
     latencyMs: number;
-    brandDnaVersion: number;
+    /** ADN con el que respondió: BrandDNA (enterprise) o PersonalDNA (personal); el otro es null. */
+    brandDnaVersion: number | null;
+    personalDnaVersion?: number | null;
     avatarVersion: number | null;
   } | null;
   createdAt: Date;

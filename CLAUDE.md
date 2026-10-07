@@ -10,8 +10,9 @@ Pixel es un **Director Creativo asistido por IA**. Tiene dos modos sobre un mism
   propio Pixel**: el sistema estudia el ADN de la marca y lo convierte en conocimiento estructurado,
   personalidad, estilo de comunicación, criterio creativo, dirección visual, comportamiento y un
   **avatar 3D único**.
-- **Pixel Personal** (preparado, sin funciones aún): el director creativo de una persona
-  (PersonalProfile, PersonalDNA, tareas, proyectos, contenido). Hoy solo existe como tipo de workspace.
+- **Pixel Personal** (MVP funcional): el Director Creativo Personal de una persona. Onboarding de 8
+  pasos → `PersonalProfile` → `PersonalDNA` → avatar personal → chat con ese ADN
+  (`docs/PERSONAL.md`). Tareas, proyectos y contenido llegarán después (no construirlos sin pedirlo).
 
 Cada Pixel vive en un **Workspace** (`docs/WORKSPACES.md`).
 
@@ -27,6 +28,7 @@ Documentación de referencia (leer antes de trabajar):
 - `docs/BACKLOG.md` — backlog técnico por etapas y estado.
 - `docs/WORKSPACES.md` — Workspace como frontera contextual, Enterprise vs Personal, rutas y convergencia.
 - `docs/WORKSPACE-MIGRATION.md` — migración Company → Workspace, script, verificación y rollback.
+- `docs/PERSONAL.md` — Pixel Personal: modelos, onboarding, PersonalDNA, avatar personal, contexto, rutas.
 
 ## Objetivo del MVP 0.1
 
@@ -38,8 +40,8 @@ registro/login → crea empresa (y su workspace enterprise) → onboarding de ma
 → usuario abre chat → Pixel responde usando el ADN de ESA empresa
 ```
 
-Además: login → "Nuevo Pixel" → Personal → se crea su workspace y aparece en "Tus Pixels"
-(sin funciones personales todavía).
+Además, Pixel Personal: login → "Nuevo Pixel" → Personal → onboarding personal → PersonalDNA
+→ "Así te entiende Pixel" → avatar personal → chat con el PersonalDNA.
 
 ### Fuera de alcance (NO construir hasta que se pida explícitamente)
 
@@ -70,7 +72,7 @@ Modelo estructural:
 
 ```
 User → Workspace ─┬─ enterprise → Company → BrandDNA
-                  ├─ personal   → PersonalProfile → PersonalDNA   (próxima etapa)
+                  ├─ personal   → PersonalProfile → PersonalDNA
                   └─ recursos compartidos: AvatarProfile · Conversation (→ Message) · CreativeMemory
 ```
 
@@ -79,9 +81,10 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
 1. **Workspace is the main contextual boundary of Pixel.** El workspace es la frontera de aislamiento.
    - Un usuario tiene N workspaces (`enterprise` | `personal`). Enterprise: 1 workspace = 1 Company.
      Personal: uno por usuario.
-   - Los recursos compartidos (AvatarProfile, Conversation, Message, CreativeMemory) llevan
-     `workspaceId` obligatorio e indexado. Los datos propios de una empresa (BrandDNA) siguen
-     aislados por `companyId`, y la empresa pertenece a su workspace (`Company.workspaceId`).
+   - Los recursos compartidos (AvatarProfile, Conversation, Message, CreativeMemory) y los de Pixel
+     Personal (PersonalProfile, PersonalDNA) llevan `workspaceId` obligatorio e indexado. Los datos
+     propios de una empresa (BrandDNA) siguen aislados por `companyId`, y la empresa pertenece a su
+     workspace (`Company.workspaceId`).
    - Toda consulta a un modelo aislado filtra por su clave con un valor concreto. Nunca buscar solo
      por `_id`: usar `{ _id, workspaceId }` (o `{ _id, companyId }` en BrandDNA). El plugin Mongoose
      `tenantScoped(schema, { key })` lanza error si falta, o si llega un operador (`$exists`, `$ne`,
@@ -94,21 +97,28 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
    - Los servicios reciben el workspace (y la empresa, en Enterprise) ya autorizados; nunca infieren
      el tenant de datos del cliente en el body.
    - Acceso a recursos de otro usuario o de otro workspace → **404** (no 403), para no revelar su existencia.
+   - Endpoint de otro tipo de workspace (p. ej. `personal-dna` en enterprise) → **400**
+     `workspace_type_mismatch`; tipo correcto pero sin configurar (sin ADN, sin empresa) → **409**.
 2. **Never mix information between workspaces.** El contexto que se envía a la IA se construye
    exclusivamente con datos del workspace activo, con una estrategia por tipo:
    `EnterpriseContextBuilder` (Company → BrandDNA → AvatarProfile → CreativeMemory) y
-   `PersonalContextBuilder` (placeholder: "contexto personal no configurado", nunca datos inventados).
+   `PersonalContextBuilder` (PersonalProfile → PersonalDNA → AvatarProfile → CreativeMemory; sin
+   PersonalDNA → `personal_context_not_configured`, nunca datos inventados).
    Hay tests que verifican que dos workspaces del mismo dueño no se mezclan.
    **Enterprise and Personal share Pixel Core but use different domain contexts.**
 3. **BrandDNA ≠ AvatarProfile.** Son entidades y schemas distintos.
    - `BrandDNA` = lo que la empresa **ES** (identidad, audiencia, personalidad, voz, criterio, dirección visual, comportamiento).
    - `AvatarProfile` = cómo esa identidad **se transforma visualmente** en Pixel.
-   - El AvatarProfile se genera **a partir del BrandDNA** (no del onboarding crudo) e incluye una
-     `rationale` que enlaza cada decisión visual con un rasgo del ADN. Es un recurso del workspace
-     (`sourceType: brand`); en Personal saldrá del PersonalDNA (`sourceType: personal`).
+   - El AvatarProfile se genera **a partir del ADN** (no del onboarding crudo) e incluye una
+     `rationale` que enlaza cada decisión visual con un rasgo del ADN. Es un recurso del workspace:
+     del BrandDNA en Enterprise (`sourceType: brand`) y del PersonalDNA en Personal
+     (`sourceType: personal`, sin `companyId`), por el mismo endpoint resuelto por `workspace.type`.
+   - **PersonalDNA ≠ BrandDNA**: entidades distintas; el avatar y el contexto personales nunca leen
+     datos de una empresa.
 4. **IA encapsulada.** Solo `apps/api/src/ai/` conoce proveedores/SDKs de IA. El resto del producto
    usa la interfaz `AIProvider` y los servicios de dominio (`BrandAnalysisService`,
-   `AvatarDesignService`, `PixelChatService`). Cambiar de modelo/proveedor = nuevo adaptador + variable de entorno.
+   `AvatarDesignService`, `PixelChatService`, `PersonalDnaGenerator`). Cambiar de modelo/proveedor =
+   nuevo adaptador + variable de entorno.
    Existe un `MockAIProvider` determinista para desarrollo y tests.
 5. **Contratos primero.** Toda entrada/salida de la API y toda salida estructurada de la IA se valida
    con schemas Zod de `packages/contracts`. El frontend y el backend importan los mismos schemas.
@@ -121,13 +131,16 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
 - ESM en todo el monorepo (`"type": "module"`).
 - Validar en los bordes: env vars, requests HTTP, respuestas de la IA, datos de formularios.
 - Backend organizado por módulos de dominio en `apps/api/src/modules/` (`auth`, `workspaces`, `companies`,
-  `brand-dna`, `avatars`, `conversations`, `creative-memory`), cada uno con `*.model`, `*.service` y `*.routes`.
+  `brand-dna`, `personal`, `avatars`, `conversations`, `creative-memory`), cada uno con `*.model`,
+  `*.service` y `*.routes`.
   Los módulos se registran solo en `modules/index.ts`.
 - Frontend organizado por features (`src/features/<feature>/`); shell y router en `src/app/`.
   El renderer 3D (`src/features/avatar3d/`) solo recibe un `AvatarProfile`: nunca contiene reglas
   de negocio (esas viven en la API). Traducción visual en `profileToScene`, poses en `poseAt`.
-  Entrada de cada Pixel: `/workspace/:workspaceId/...`. Las pantallas Enterprise siguen en
-  `/company/:companyId/...` (el workspace enterprise redirige allí) hasta converger; ver `docs/WORKSPACES.md`.
+  Entrada de cada Pixel: `/workspace/:workspaceId/...` (Personal vive aquí: Inicio, `personal/onboarding`,
+  `personal/dna`, `pixel`, `chat`). Las pantallas Enterprise siguen en `/company/:companyId/...` (el
+  workspace enterprise redirige allí) hasta converger; ver `docs/WORKSPACES.md`. Pixel Core compartido
+  en la web: `ChatStudio`, `PixelStudio`, `WizardLayout`, `DnaBlocks` (no duplicar por tipo).
 - Errores HTTP: lanzar `AppError` (o helpers de `lib/errors.ts`); el `errorHandler` central responde
   con la forma `ApiError` de contracts. Logs con `lib/logger.ts`, nunca `console.log`.
 - Nombres de código en inglés; textos de producto/UI y documentación en español.

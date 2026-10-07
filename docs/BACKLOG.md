@@ -18,7 +18,8 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 | 6 | Análisis de marca: BrandDNA → AvatarProfile | 🟨 (BrandDNA y AvatarProfile determinísticos hechos; IA pendiente) |
 | 7 | Avatar 3D | ✅ (Coffee Pixel completo; afinar otros sujetos) |
 | 8 | Chat con Pixel | ✅ |
-| W | Arquitectura de Workspaces (Enterprise / Personal) | ✅ (Personal sin funciones: siguiente etapa) |
+| W | Arquitectura de Workspaces (Enterprise / Personal) | ✅ |
+| P | Pixel Personal MVP (perfil, ADN, avatar, contexto y chat) | ✅ (Tasks/Projects/Content: Prompt 9+) |
 | 9 | CreativeMemory básica | ⬜ |
 | 10 | Cierre end-to-end del MVP | ⬜ |
 
@@ -168,18 +169,51 @@ Ver `docs/WORKSPACES.md` y `docs/WORKSPACE-MIGRATION.md`.
   y entre workspaces del mismo dueño, context builders, migración.
 - [ ] Mover las pantallas Enterprise a `/workspace/:workspaceId/...` e invertir la redirección
   (convergencia de rutas, `WORKSPACES.md`).
-- [ ] Pasar los clientes web de avatar y chat a `/api/workspaces/:workspaceId/...`; después retirar
-  las rutas legacy equivalentes.
-- [ ] Antes de avatares personales: volver parciales los índices legacy por `companyId` de
-  `avatar_profiles` y generalizar `Message.meta.brandDnaVersion` (hoy solo Enterprise).
+- [ ] Pasar los clientes web Enterprise de avatar y chat a `/api/workspaces/:workspaceId/...` (ya
+  aceptan una raíz de API: `companyApiBase` / `workspaceApiBase`; Personal ya usa la de workspace);
+  después retirar las rutas legacy equivalentes.
+- [x] Antes de avatares personales: volver parciales los índices legacy por `companyId` de
+  `avatar_profiles` y generalizar `Message.meta.brandDnaVersion` (hecho en la Etapa P).
 - [ ] Retirar `companyId` legacy de recursos compartidos y `Company.ownerId` cuando nada los use.
 - [ ] Miembros y roles por workspace (hoy solo el dueño).
+
+## Etapa P — Pixel Personal MVP ✅
+
+Ver `docs/PERSONAL.md`.
+
+- [x] Índices de `avatar_profiles` compatibles con avatares personales: parciales por `companyId`,
+  `{ workspaceId, personalDnaVersion }`; `upgradeAvatarProfileIndexes()` retira los legacy al
+  arrancar y en `migrate:workspaces` (probado sobre una base con datos de la versión anterior).
+- [x] Contratos: `fields.ts` (primitivas compartidas), `personalOnboarding.ts` (8 pasos, sugerencias,
+  borrador, progreso), `personal.ts` (`PersonalProfile`, `PersonalDNA`, completitud, respuestas),
+  `WorkspaceOverview.personal`, `MessageMeta.personalDnaVersion`, tipos de avatar personales.
+- [x] `PersonalProfile` (uno por workspace) y `PersonalDNA` (versionado, `tenantScoped` por
+  `workspaceId`), independientes de BrandDNA.
+- [x] `PersonalDnaGenerator`: reglas determinísticas + enriquecimiento IA opcional (structured output
+  Zod) verificado contra las respuestas; nunca inventa datos.
+- [x] API `GET/PUT personal-profile`, `GET/PUT personal-dna`, `POST personal-dna/generate`; tipo
+  incorrecto → 400 `workspace_type_mismatch` (también `POST /workspaces/:id/company` en Personal).
+- [x] `PersonalAvatarConceptEngine` (`personal-avatar-rules-1`): 5 tipos personales, combina profesión,
+  roles, intereses, personalidad, estilo, colores, contenido, forma de trabajar y restricciones.
+  Mismo endpoint de avatar resuelto por `workspace.type`.
+- [x] `PersonalContextBuilder` real (Director Creativo Personal) + `<personal_context>` + respuesta demo
+  personal; chat personal en las mismas rutas; sin ADN → 409 `personal_context_not_configured`.
+- [x] Web: onboarding personal (8 pasos, guardado progresivo, `WizardLayout` compartido con Brand
+  Brain), "Así te entiende Pixel", Inicio, Mi Pixel (`PixelStudio` compartido), Chat (`ChatStudio`
+  compartido), navegación personal y tarjeta "Configurado / Configurar".
+- [x] Renderer: accesorios `lens`, `headphones`, `glasses` (soporte mínimo, sin renderer nuevo).
+- [x] Tests: perfil, ADN, generador (incluida la IA que inventa), avatar personal e índices, contexto,
+  chat, prueba conceptual fotógrafa vs streamer, contratos y navegación web.
+- [ ] Editar secciones del ADN desde la web (la API ya lo permite con `PUT personal-dna`).
+- [ ] Memoria creativa personal desde el chat (Etapa 9).
+- [ ] Tasks, Projects, ContentItem, Content Planner y Daily Director (Prompt 9 en adelante).
 
 ## Etapa 9 — CreativeMemory básica
 
 - [ ] `GET/POST/DELETE /memories` (bajo el workspace).
 - [ ] Acción "Recordar esto" en mensajes y `MemoryPanel`.
-- [ ] Inclusión de memorias activas en el contexto (ya la hace `EnterpriseContextBuilder`; falta crearlas).
+- [ ] Inclusión de memorias activas en el contexto (ya la hacen `EnterpriseContextBuilder` y
+  `PersonalContextBuilder`; falta crearlas).
 - [ ] Tests de aislamiento de memorias.
 
 **Aceptación:** una memoria fijada influye en las siguientes respuestas; al borrarla deja de usarse.

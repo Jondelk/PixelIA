@@ -1,12 +1,11 @@
 import { AvatarResponseSchema, type AvatarResponse } from '@pixel/contracts';
 import { apiRequest } from '../../lib/api';
 
-const path = (companyId: string) => `/api/companies/${encodeURIComponent(companyId)}/avatar`;
-
-export function getAvatar(companyId: string, signal?: AbortSignal): Promise<AvatarResponse> {
-  return apiRequest(path(companyId), AvatarResponseSchema, { signal });
+/** `apiBase`: companyApiBase(companyId) o workspaceApiBase(workspaceId) (lib/apiPaths). */
+export function getAvatar(apiBase: string, signal?: AbortSignal): Promise<AvatarResponse> {
+  return apiRequest(`${apiBase}/avatar`, AvatarResponseSchema, { signal });
 }
 
-export function generateAvatar(companyId: string): Promise<AvatarResponse> {
-  return apiRequest(`${path(companyId)}/generate`, AvatarResponseSchema, { method: 'POST' });
+export function generateAvatar(apiBase: string): Promise<AvatarResponse> {
+  return apiRequest(`${apiBase}/avatar/generate`, AvatarResponseSchema, { method: 'POST' });
 }

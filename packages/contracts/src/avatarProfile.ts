@@ -3,18 +3,25 @@ import { IsoDateSchema, ObjectIdSchema } from './common.js';
 import { HexColorSchema } from './brandOnboarding.js';
 
 /*
- * AvatarProfile: cómo la identidad de la empresa (BrandDNA) se transforma visualmente en Pixel.
- * Es un concepto de personaje, no un modelo 3D. Lo produce un AvatarConceptEngine
- * (hoy determinístico; después reemplazable o enriquecible con IA) con este mismo contrato.
+ * AvatarProfile: cómo una identidad se transforma visualmente en Pixel. Es un concepto de
+ * personaje, no un modelo 3D. Sale del BrandDNA de una empresa (sourceType = brand) o del
+ * PersonalDNA de una persona (sourceType = personal), siempre con este mismo contrato.
  */
 
 export const AvatarTypeSchema = z.enum([
+  // Enterprise (BrandDNA)
   'anthropomorphic_object',
   'creature',
   'geometric_entity',
   'structural_character',
   'organic_character',
+  // Compartido
   'abstract_character',
+  // Personal (PersonalDNA)
+  'stylized_human',
+  'creative_companion',
+  'tech_character',
+  'object_inspired',
 ]);
 export type AvatarType = z.infer<typeof AvatarTypeSchema>;
 
@@ -101,7 +108,7 @@ export const AvatarColorSchema = z.object({
 
 const Ratio = z.number().min(0.5).max(1.5);
 
-/** Ruta del BrandDNA que justifica una decisión, p. ej. "identity.industry". */
+/** Ruta del ADN (BrandDNA o PersonalDNA) que justifica una decisión, p. ej. "identity.industry". */
 const DnaReference = z.string();
 
 export const RationaleDecisionSchema = z.object({
@@ -186,7 +193,9 @@ export const AvatarProfileSchema = AvatarConceptSchema.extend({
   /** Legacy/enterprise: empresa de origen (null en avatares personales). */
   companyId: ObjectIdSchema.nullable(),
   version: z.number().int().min(1),
-  brandDnaVersion: z.number().int().min(1),
+  /** Versión del ADN del que salió: BrandDNA (brand) o PersonalDNA (personal); la otra es null. */
+  brandDnaVersion: z.number().int().min(1).nullable(),
+  personalDnaVersion: z.number().int().min(1).nullable(),
   engine: AvatarEngineInfoSchema,
   createdAt: IsoDateSchema,
 });
@@ -196,7 +205,10 @@ export const AvatarHistoryItemSchema = z.object({
   version: z.number().int().min(1),
   name: z.string(),
   baseObject: z.object({ id: z.string(), label: z.string() }),
-  brandDnaVersion: z.number().int().min(1),
+  /** Versión del ADN de origen (de marca o personal). */
+  dnaVersion: z.number().int().min(1),
+  /** Legacy: igual a dnaVersion en avatares de marca; null en personales. */
+  brandDnaVersion: z.number().int().min(1).nullable(),
   createdAt: IsoDateSchema,
 });
 export type AvatarHistoryItem = z.infer<typeof AvatarHistoryItemSchema>;
@@ -206,7 +218,11 @@ export const AvatarResponseSchema = z.object({
   avatar: AvatarProfileSchema.nullable(),
   /** Versiones anteriores y actual, de la más reciente a la más antigua (máx. 20). */
   history: z.array(AvatarHistoryItemSchema),
-  /** Versión vigente del BrandDNA; null si el onboarding no está completo. */
+  /** De qué ADN sale el avatar de este workspace. */
+  sourceType: AvatarSourceTypeSchema,
+  /** Versión vigente del ADN de origen; null si su onboarding no está completo. */
+  dnaVersion: z.number().int().min(1).nullable(),
+  /** Legacy/enterprise: versión vigente del BrandDNA (null en Personal). */
   brandDnaVersion: z.number().int().min(1).nullable(),
   /** true si el ADN cambió desde que se generó el avatar vigente. */
   isStale: z.boolean(),
@@ -222,6 +238,10 @@ export const AVATAR_TYPE_LABELS: Record<AvatarType, string> = {
   structural_character: 'Personaje estructural',
   organic_character: 'Personaje orgánico',
   abstract_character: 'Personaje abstracto',
+  stylized_human: 'Humano estilizado',
+  creative_companion: 'Compañero creativo',
+  tech_character: 'Personaje tecnológico',
+  object_inspired: 'Inspirado en un objeto',
 };
 
 export const ANIMATION_PERSONALITY_LABELS: Record<AnimationPersonality, string> = {

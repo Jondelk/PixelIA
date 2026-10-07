@@ -8,8 +8,12 @@ import { notFoundHandler } from './middleware/notFound.js';
 import { originGuard } from './middleware/originGuard.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import { createAuthService } from './modules/auth/auth.service.js';
-import { createAvatarConceptEngine } from './modules/avatars/engine/index.js';
+import {
+  createAvatarConceptEngine,
+  createPersonalAvatarConceptEngine,
+} from './modules/avatars/engine/index.js';
 import { createApiRouter } from './modules/index.js';
+import { createPersonalDnaGenerator } from './modules/personal/personalDna.generator.js';
 import type { DatabaseStatus } from '@pixel/contracts';
 import type { AIProvider } from './ai/index.js';
 
@@ -55,7 +59,9 @@ export function createApp({ env, logger, getDatabaseStatus, ai }: AppOptions): E
       getDatabaseStatus,
       authService: createAuthService({ bcryptRounds: env.BCRYPT_ROUNDS }),
       avatarEngine: createAvatarConceptEngine(),
+      personalAvatarEngine: createPersonalAvatarConceptEngine(),
       chat: { ai, historyLimit: env.CHAT_HISTORY_LIMIT, logger },
+      personalDnaGenerator: createPersonalDnaGenerator({ ai, logger }),
       session: {
         jwtSecret: env.JWT_SECRET,
         ttlSeconds: env.SESSION_TTL_DAYS * 24 * 60 * 60,

@@ -93,7 +93,7 @@ describe('Enterprise: crear empresa crea su Workspace', () => {
 
     const body = { name: 'INVENTIA', industry: 'Tecnología' };
     await bob.agent.post(`/api/workspaces/${empty}/company`).send(body).expect(404);
-    await jhon.agent.post(`/api/workspaces/${personal}/company`).send(body).expect(409);
+    await jhon.agent.post(`/api/workspaces/${personal}/company`).send(body).expect(400);
 
     const res = await jhon.agent.post(`/api/workspaces/${empty}/company`).send(body).expect(201);
     expect(res.body.company.workspaceId).toBe(empty);
@@ -225,14 +225,17 @@ describe('Enterprise por rutas de Workspace', () => {
   });
 });
 
-describe('Personal: existe como tipo de Workspace, sin funciones aún', () => {
-  it('el chat responde de forma controlada que el contexto personal no está configurado', async () => {
+describe('Personal sin ADN todavía', () => {
+  it('avatar y chat responden de forma controlada que falta configurarlo', async () => {
     const jhon = await registerUser(app, 'Jhon');
     const id = (
       await jhon.agent.post('/api/workspaces').send({ type: 'personal', name: 'Jhon' }).expect(201)
     ).body.workspace.id as string;
 
-    await jhon.agent.get(`/api/workspaces/${id}/avatar`).expect(409);
+    const avatar = await jhon.agent.get(`/api/workspaces/${id}/avatar`).expect(200);
+    expect(avatar.body).toMatchObject({ avatar: null, sourceType: 'personal', dnaVersion: null });
+    const generate = await jhon.agent.post(`/api/workspaces/${id}/avatar/generate`).expect(409);
+    expect(generate.body.error.details).toEqual({ reason: 'personal_dna_missing' });
     const created = await jhon.agent.post(`/api/workspaces/${id}/conversations`).expect(201);
     expect(created.body.conversation).toMatchObject({ contextType: 'personal', companyId: null });
 
@@ -241,7 +244,7 @@ describe('Personal: existe como tipo de Workspace, sin funciones aún', () => {
       .send({ content: 'Organiza mi semana' })
       .expect(409);
     expect(res.body.error.details).toEqual({ reason: 'personal_context_not_configured' });
-    expect(res.body.error.message).toMatch(/contexto personal/i);
+    expect(res.body.error.message).toMatch(/onboarding personal/i);
   });
 });
 

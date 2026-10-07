@@ -109,7 +109,8 @@ function toAppError(err: AIProviderError): AppError {
 
 /**
  * Flujo de un mensaje: conversación del workspace → historial → estrategia de contexto según
- * workspace.type (Enterprise: Company → BrandDNA → AvatarProfile → CreativeMemory) → IA →
+ * workspace.type (Enterprise: Company → BrandDNA → AvatarProfile → CreativeMemory; Personal:
+ * PersonalProfile → PersonalDNA → AvatarProfile → CreativeMemory) → IA →
  * persistencia. Los dos mensajes se guardan solo si la IA respondió, para que un fallo no deje
  * conversaciones a medias.
  */
@@ -197,6 +198,7 @@ export async function sendMessage(
         mode: reply.mode,
         latencyMs: reply.latencyMs,
         brandDnaVersion: meta.brandDnaVersion,
+        personalDnaVersion: meta.personalDnaVersion,
         avatarVersion: meta.avatarVersion,
       },
     },

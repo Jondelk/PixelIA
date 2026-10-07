@@ -51,14 +51,25 @@ export const UpdateWorkspaceSchema = z
   .refine((value) => Object.keys(value).length > 0, 'Envía al menos un campo para actualizar');
 export type UpdateWorkspaceInput = z.infer<typeof UpdateWorkspaceSchema>;
 
+/** Resumen del Pixel Personal para "Tus Pixels" (null en enterprise). */
+export const PersonalSummarySchema = z.object({
+  /** Nombre del perfil personal (null si aún no hay perfil). */
+  name: z.string().nullable(),
+  completedSteps: z.number().int().min(0),
+  /** null = sin PersonalDNA todavía ("Configurar"). */
+  personalDnaVersion: z.number().int().min(1).nullable(),
+});
+export type PersonalSummary = z.infer<typeof PersonalSummarySchema>;
+
 /**
  * Workspace con su contexto de dominio resumido.
- * - enterprise: `company` es su empresa (null si aún no se configuró).
- * - personal: `company` es siempre null (PersonalProfile llegará en la siguiente etapa).
+ * - enterprise: `company` es su empresa (null si aún no se configuró); `personal` es null.
+ * - personal: `personal` resume su perfil y su ADN; `company` es siempre null.
  */
 export const WorkspaceOverviewSchema = z.object({
   workspace: WorkspaceSchema,
   company: CompanySchema.nullable(),
+  personal: PersonalSummarySchema.nullable(),
 });
 export type WorkspaceOverview = z.infer<typeof WorkspaceOverviewSchema>;
 

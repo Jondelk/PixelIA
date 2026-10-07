@@ -7,17 +7,19 @@ export interface ColorDraft {
 
 const HEX = /^#[0-9a-f]{6}$/i;
 
-/** Paleta de la marca: selector de color + hexadecimal + nombre opcional. */
+/** Paleta (de la marca o personal): selector de color + hexadecimal + nombre opcional. */
 export function ColorListInput({
   colors,
   onChange,
   error,
   max = 8,
+  hint = 'El primero se tomará como color principal. Los grises y blancos se reconocen como neutros.',
 }: {
   colors: ColorDraft[];
   onChange: (colors: ColorDraft[]) => void;
   error?: string;
   max?: number;
+  hint?: string;
 }) {
   const update = (index: number, patch: Partial<ColorDraft>) =>
     onChange(colors.map((color, i) => (i === index ? { ...color, ...patch } : color)));
@@ -25,9 +27,7 @@ export function ColorListInput({
   return (
     <fieldset>
       <legend className="mb-1.5 text-[13px] font-medium text-muted">Colores</legend>
-      <p className="mb-3 text-xs text-subtle">
-        El primero se tomará como color principal. Los grises y blancos se reconocen como neutros.
-      </p>
+      <p className="mb-3 text-xs text-subtle">{hint}</p>
       <div className="space-y-2">
         {colors.map((color, index) => {
           const valid = HEX.test(color.hex);

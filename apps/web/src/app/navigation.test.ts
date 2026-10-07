@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { companyNav, enterpriseRedirectPath, isRouteHandle, workspaceBasePath } from './navigation';
+import {
+  companyNav,
+  enterpriseRedirectPath,
+  isRouteHandle,
+  workspaceBasePath,
+  workspaceNav,
+} from './navigation';
 
 describe('companyNav', () => {
   it('genera rutas bajo /company/:companyId', () => {
@@ -43,6 +49,26 @@ describe('rutas de workspace', () => {
     expect(enterpriseRedirectPath('/workspace/w1/pixel', company)).toBe(
       `/company/${company}/pixel`,
     );
+  });
+
+  it('las rutas solo personales llevan al resumen de la empresa', () => {
+    expect(enterpriseRedirectPath('/workspace/w1/personal/dna', company)).toBe(
+      `/company/${company}`,
+    );
+  });
+
+  it('un Pixel Personal tiene Inicio, Mi ADN, Mi Pixel y Chat', () => {
+    expect(workspaceNav('w1', 'personal').map((item) => [item.label, item.to])).toEqual([
+      ['Inicio', '/workspace/w1'],
+      ['Mi ADN', '/workspace/w1/personal/dna'],
+      ['Mi Pixel', '/workspace/w1/pixel'],
+      ['Chat', '/workspace/w1/chat'],
+    ]);
+  });
+
+  it('una empresa sin configurar (o un tipo aún desconocido) solo tiene el resumen', () => {
+    expect(workspaceNav('w1', 'enterprise').map((item) => item.label)).toEqual(['Resumen']);
+    expect(workspaceNav('w1').map((item) => item.label)).toEqual(['Resumen']);
   });
 
   it('no depende de cómo venga escrito el id en la URL', () => {

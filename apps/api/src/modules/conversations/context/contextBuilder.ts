@@ -7,7 +7,8 @@ import type { HistoryMessage, PixelContext } from '../pixelContext.builder.js';
  * PixelContextBuilder por estrategia (docs/WORKSPACES.md):
  *
  *   Message → workspace autorizado → resolveContextBuilder(workspace.type)
- *           → EnterpriseContextBuilder | PersonalContextBuilder → AIProvider
+ *           → EnterpriseContextBuilder (Company → BrandDNA)
+ *           | PersonalContextBuilder (PersonalProfile → PersonalDNA) → AIProvider
  *
  * Cada estrategia recibe el workspace YA autorizado (nunca un id del cliente) y carga solo datos de
  * ese workspace. El AIProvider recibe el contexto ya preparado: nunca ve companyId ni ids de
@@ -29,7 +30,12 @@ export type ContextResult =
       context: PixelContext;
       /** Enterprise: empresa del workspace (se guarda en los mensajes por compatibilidad). */
       companyId: Types.ObjectId | null;
-      meta: { brandDnaVersion: number; avatarVersion: number | null };
+      /** ADN con el que responde: BrandDNA (enterprise) o PersonalDNA (personal); el otro es null. */
+      meta: {
+        brandDnaVersion: number | null;
+        personalDnaVersion: number | null;
+        avatarVersion: number | null;
+      };
     }
   | {
       /** El workspace aún no tiene el contexto mínimo para que Pixel responda. */

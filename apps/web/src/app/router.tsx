@@ -10,6 +10,9 @@ import { CompanyOverviewPage } from '../features/companies/CompanyOverviewPage';
 import { NewCompanyPage } from '../features/companies/NewCompanyPage';
 import { OnboardingPage } from '../features/onboarding/OnboardingPage';
 import { DashboardPage } from '../features/dashboard/DashboardPage';
+import { PersonalDnaPage } from '../features/personal/PersonalDnaPage';
+import { PersonalOnboardingPage } from '../features/personal/PersonalOnboardingPage';
+import { PersonalOnly } from '../features/personal/PersonalOnly';
 import { PixelPage } from '../features/pixel/PixelPage';
 import { NewPixelPage } from '../features/workspaces/NewPixelPage';
 import { WorkspaceHomePage } from '../features/workspaces/WorkspaceHomePage';
@@ -51,11 +54,12 @@ export const router = createBrowserRouter([
       { path: '/dashboard', element: <DashboardPage />, handle: handle('Tus Pixels') },
       { path: '/pixels/new', element: <NewPixelPage />, handle: handle('Nuevo Pixel') },
       {
-        // Entrada única de cada Pixel. Enterprise con empresa redirige a /company/:companyId.
+        // Entrada única de cada Pixel. Enterprise con empresa redirige a /company/:companyId;
+        // Personal vive aquí: Inicio, Mi ADN (personal/dna), Mi Pixel (pixel) y Chat (chat).
         path: '/workspace/:workspaceId',
         element: <WorkspaceLayout />,
         children: [
-          { index: true, element: <WorkspaceHomePage />, handle: handle('Resumen', 'Pixel') },
+          { index: true, element: <WorkspaceHomePage />, handle: handle('Inicio', 'Pixel') },
           {
             path: 'chat',
             element: <WorkspaceHomePage section="chat" />,
@@ -65,6 +69,25 @@ export const router = createBrowserRouter([
             path: 'pixel',
             element: <WorkspaceHomePage section="pixel" />,
             handle: handle('Personaje', 'Pixel'),
+          },
+          // Solo Pixel Personal (en un workspace enterprise redirige a su inicio).
+          {
+            path: 'personal/onboarding',
+            element: (
+              <PersonalOnly>
+                <PersonalOnboardingPage />
+              </PersonalOnly>
+            ),
+            handle: handle('Onboarding personal', 'Pixel'),
+          },
+          {
+            path: 'personal/dna',
+            element: (
+              <PersonalOnly>
+                <PersonalDnaPage />
+              </PersonalOnly>
+            ),
+            handle: handle('Mi ADN', 'Pixel'),
           },
         ],
       },

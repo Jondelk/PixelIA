@@ -1,7 +1,7 @@
 import type { CreateCompanyInput, UpdateCompanyInput } from '@pixel/contracts';
 import { CreateCompanyInputSchema } from '@pixel/contracts';
 import type { Types } from 'mongoose';
-import { conflict } from '../../lib/errors.js';
+import { badRequest, conflict } from '../../lib/errors.js';
 import { escapeRegex, isDuplicateKeyError, isObjectIdString } from '../../lib/mongo.js';
 import { ensureOwnerWorkspaces } from '../workspaces/workspace.migration.js';
 import { WorkspaceModel, type WorkspaceDocument } from '../workspaces/workspace.model.js';
@@ -92,7 +92,10 @@ export async function createWorkspaceCompany(
 ): Promise<CompanyDocument> {
   const input = CreateCompanyInputSchema.parse(rawInput);
   if (workspace.type !== 'enterprise') {
-    throw conflict('Solo un Pixel de empresa puede tener una empresa');
+    throw badRequest('Solo un Pixel de empresa puede tener una empresa', {
+      reason: 'workspace_type_mismatch',
+      expected: 'enterprise',
+    });
   }
   const ownerId = workspace.ownerId.toString();
   if (await CompanyModel.exists({ workspaceId: workspace._id, ownerId })) {

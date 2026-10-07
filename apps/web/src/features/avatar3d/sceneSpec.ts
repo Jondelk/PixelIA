@@ -26,11 +26,20 @@ export type AvatarProfileInput = Pick<
 >;
 
 export type BodyKind = AvatarConcept['renderHints']['archetype'];
-export type AccessoryKind = 'leaf' | 'cup' | 'orbit_ring' | 'helmet' | 'badge';
+export type AccessoryKind =
+  | 'leaf'
+  | 'cup'
+  | 'orbit_ring'
+  | 'helmet'
+  | 'badge'
+  // Avatares personales: guiños a su oficio (cámara, audio, lectura, dirección visual).
+  | 'lens'
+  | 'headphones'
+  | 'glasses';
 
 export interface AccessorySpec {
   kind: AccessoryKind;
-  attach: 'head' | 'hand' | 'body' | 'chest';
+  attach: 'head' | 'hand' | 'body' | 'chest' | 'face';
   color: string;
   detailColor: string;
 }
@@ -132,9 +141,19 @@ export function accessorySpecs(profile: AvatarProfileInput): AccessorySpec[] {
   const add = (spec: AccessorySpec) => {
     if (!result.some((item) => item.kind === spec.kind) && result.length < 3) result.push(spec);
   };
+  const dark = shade(profile.secondaryColor.hex, -0.35);
   for (const text of profile.accessories) {
     const value = text.toLocaleLowerCase('es');
-    if (/hoja|brote|cafeto/.test(value))
+    // Antes que /casco/: "auriculares" no es un casco.
+    if (/auricular|headset/.test(value))
+      add({ kind: 'headphones', attach: 'head', color: accent, detailColor: dark });
+    else if (/gafas|anteojos/.test(value))
+      add({ kind: 'glasses', attach: 'face', color: dark, detailColor: dark });
+    else if (/lente de c[aá]mara/.test(value))
+      add({ kind: 'lens', attach: 'chest', color: dark, detailColor: accent });
+    else if (/visor de encuadre/.test(value))
+      add({ kind: 'lens', attach: 'hand', color: dark, detailColor: accent });
+    else if (/hoja|brote|cafeto/.test(value))
       add({ kind: 'leaf', attach: 'head', color: '#5E9A3F', detailColor: '#3E6B2A' });
     else if (/taza|tinto/.test(value))
       add({ kind: 'cup', attach: 'hand', color: '#F4EEE6', detailColor: profile.primaryColor.hex });

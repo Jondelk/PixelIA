@@ -39,14 +39,18 @@ volver atrás (§6). Se retirarán cuando todas las rutas usen workspace (ver `W
 - `workspaces`: `{ ownerId, createdAt }`, `{ ownerId, slug }` único, `{ ownerId, type }` único parcial
   (`type = personal`, nombre `one_personal_per_owner`), `{ migratedFromCompanyId }` único parcial.
 - `companies`: `{ workspaceId }` único parcial (`$exists`).
-- `avatar_profiles`: `{ workspaceId, version }` único parcial, `{ workspaceId, brandDnaVersion }`.
+- `avatar_profiles`: `{ workspaceId, version }` único parcial, `{ workspaceId, brandDnaVersion }`
+  (y, desde Pixel Personal, `{ workspaceId, personalDnaVersion }` parcial y las versiones parciales
+  por empresa `brand_company_version` / `brand_company_dna_version`).
 - `conversations`: `{ workspaceId, userId, updatedAt }`. `messages`: `{ workspaceId, conversationId, createdAt }`.
 - `creative_memories`: `{ workspaceId, active, createdAt }`.
 
 Índices **legacy** que quedan en bases existentes hasta ejecutar `--sync-indexes`:
 `conversations.companyId_1_userId_1_updatedAt_-1` y `messages.companyId_1_conversationId_1_createdAt_-1`
-(ya no se usan). Los de `avatar_profiles` por `companyId` se mantienen declarados a propósito; antes
-de crear avatares personales hay que volverlos parciales (deuda anotada en el backlog).
+(ya no se usan). Los de `avatar_profiles` por `companyId` (`companyId_1_version_-1` único y
+`companyId_1_brandDnaVersion_1`) ya **no** quedan: desde Pixel Personal se sustituyen por índices
+parciales y `upgradeAvatarProfileIndexes()` los retira al arrancar la API y al ejecutar el script
+(idempotente, sin tocar datos). Detalle en [`PERSONAL.md` §11](./PERSONAL.md#11-índices-de-avatarprofile).
 
 ## 3. Cómo funciona la migración
 

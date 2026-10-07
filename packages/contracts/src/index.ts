@@ -10,3 +10,6 @@ export * from './health.js';
 export * from './user.js';
 export * from './workspace.js';
 export * from './creativeMemory.js';
+export * from './fields.js';
+export * from './personalOnboarding.js';
+export * from './personal.js';

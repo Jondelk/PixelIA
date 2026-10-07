@@ -33,14 +33,30 @@ const company = (overrides: Partial<Company> = {}): Company => ({
 const overview = (o: Partial<WorkspaceOverview> = {}): WorkspaceOverview => ({
   workspace: workspace(),
   company: company(),
+  personal: null,
   ...o,
 });
+const personalPixel = (personal: WorkspaceOverview['personal']) =>
+  overview({
+    workspace: workspace({ type: 'personal', name: 'Jhon Trochez' }),
+    company: null,
+    personal,
+  });
 
 describe('workspaceStatus', () => {
-  it('un Pixel Personal aún no tiene funciones', () => {
+  it('un Pixel Personal sin onboarding está por configurar', () => {
     expect(
-      workspaceStatus(overview({ workspace: workspace({ type: 'personal' }), company: null })),
-    ).toEqual({ typeLabel: 'Personal', label: 'Próximamente', tone: 'idle' });
+      workspaceStatus(personalPixel({ name: null, completedSteps: 0, personalDnaVersion: null })),
+    ).toEqual({ typeLabel: 'Personal', label: 'Configurar', tone: 'idle' });
+    expect(
+      workspaceStatus(personalPixel({ name: 'Jhon', completedSteps: 3, personalDnaVersion: null })),
+    ).toEqual({ typeLabel: 'Personal', label: 'Configurar', tone: 'progress' });
+  });
+
+  it('un Pixel Personal con PersonalDNA está configurado', () => {
+    expect(
+      workspaceStatus(personalPixel({ name: 'Jhon', completedSteps: 8, personalDnaVersion: 1 })),
+    ).toEqual({ typeLabel: 'Personal', label: 'Configurado', tone: 'ready' });
   });
 
   it('una empresa lista se muestra como configurada', () => {

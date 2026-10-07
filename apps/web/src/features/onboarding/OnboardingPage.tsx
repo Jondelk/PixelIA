@@ -10,8 +10,6 @@ import {
 } from '@pixel/contracts';
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
-import { Alert } from '../../components/Alert';
-import { Button } from '../../components/Button';
 import { ErrorState } from '../../components/ErrorState';
 import { Icon } from '../../components/Icon';
 import { Spinner } from '../../components/Spinner';
@@ -23,6 +21,7 @@ import { getBrandBrain, saveOnboardingStep } from '../brand/brandApi';
 import { useCompany } from '../companies/companyContext';
 import { StepForm } from './StepForms';
 import { initialForms, STEP_META, type StepForms } from './steps';
+import { WizardLayout } from './WizardLayout';
 
 export function OnboardingPage() {
   const { company, reload } = useCompany();
@@ -77,7 +76,6 @@ function OnboardingWizard({
   const index = ONBOARDING_STEPS.indexOf(step);
   const isLast = index === ONBOARDING_STEPS.length - 1;
   const meta = STEP_META[step];
-  const percent = Math.round((completed.length / ONBOARDING_STEPS.length) * 100);
 
   const goTo = (target: OnboardingStep) => {
     setErrors({});
@@ -124,108 +122,37 @@ function OnboardingWizard({
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[230px_1fr] lg:gap-10">
-      <aside aria-label="Progreso del onboarding" className="lg:sticky lg:top-24 lg:self-start">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-subtle">Brand Brain</p>
-        <p className="mt-2 text-sm text-muted">
-          {company.name} · {completed.length} de {ONBOARDING_STEPS.length} pasos
-        </p>
-        <div
-          className="mt-4 h-1 overflow-hidden bg-elevated"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={percent}
-          aria-label="Progreso del onboarding"
-        >
-          <div
-            className="h-full bg-brand transition-[width] duration-500 ease-pxl"
-            style={{ width: `${percent}%` }}
-          />
-        </div>
-
-        <ol className="mt-6 hidden space-y-1 lg:block">
-          {ONBOARDING_STEPS.map((key, i) => {
-            const done = completed.includes(key);
-            const current = key === step;
-            return (
-              <li key={key}>
-                <button
-                  type="button"
-                  onClick={() => goTo(key)}
-                  aria-current={current ? 'step' : undefined}
-                  className={[
-                    'flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm transition-colors',
-                    current ? 'bg-elevated font-medium text-fg' : 'text-muted hover:text-fg',
-                  ].join(' ')}
-                >
-                  <span
-                    className={[
-                      'grid size-6 shrink-0 place-items-center rounded-md border text-[11px]',
-                      done
-                        ? 'border-brand bg-brand text-on-brand'
-                        : current
-                          ? 'border-fg text-fg'
-                          : 'border-line-strong text-subtle',
-                    ].join(' ')}
-                  >
-                    {done ? <Icon name="check" className="size-3.5" /> : i + 1}
-                  </span>
-                  {STEP_META[key].title}
-                </button>
-              </li>
-            );
-          })}
-        </ol>
-
-        {brain.brandDna && (
+    <WizardLayout
+      eyebrow="Brand Brain"
+      summary={`${company.name} · ${completed.length} de ${ONBOARDING_STEPS.length} pasos`}
+      steps={ONBOARDING_STEPS.map((key) => ({ key, title: STEP_META[key].title }))}
+      completed={completed}
+      current={step}
+      onGo={(key) => goTo(key as OnboardingStep)}
+      asideFooter={
+        brain.brandDna && (
           <Link
             to={`${companyBasePath(company.id)}/brand`}
             className="mt-6 hidden items-center gap-2 text-sm text-muted hover:text-fg lg:inline-flex"
           >
             <Icon name="brand" className="size-4" /> Ver el ADN actual
           </Link>
-        )}
-      </aside>
-
-      <form
-        onSubmit={onSubmit}
-        noValidate
-        className="animate-rise rounded-2xl border border-line bg-surface p-5 sm:p-10"
-        key={step}
-      >
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-subtle">
-          Paso {index + 1} de {ONBOARDING_STEPS.length} · {meta.title}
-        </p>
-        <h1 className="mt-4 font-display text-2xl font-bold tracking-tight sm:text-3xl">
-          {meta.heading}
-        </h1>
-        <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted">{meta.description}</p>
-
-        <div className="mt-8 space-y-5">
-          {formError && <Alert>{formError}</Alert>}
-          <StepForm
-            step={step}
-            value={forms[step]}
-            onChange={(value) => updateForm(step, value)}
-            errors={errors}
-          />
-        </div>
-
-        <div className="mt-10 flex flex-col-reverse gap-3 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <Button
-            variant="ghost"
-            disabled={index === 0 || saving}
-            onClick={() => goTo(ONBOARDING_STEPS[index - 1]!)}
-          >
-            <Icon name="arrowLeft" className="size-4" /> Atrás
-          </Button>
-          <Button type="submit" loading={saving}>
-            {isLast ? 'Guardar y que Pixel aprenda' : 'Guardar y continuar'}
-            {!saving && <Icon name={isLast ? 'create' : 'arrowRight'} className="size-4" />}
-          </Button>
-        </div>
-      </form>
-    </div>
+        )
+      }
+      heading={meta.heading}
+      description={meta.description}
+      formError={formError}
+      saving={saving}
+      submitLabel={isLast ? 'Guardar y que Pixel aprenda' : 'Guardar y continuar'}
+      submitIcon={isLast ? 'create' : 'arrowRight'}
+      onSubmit={onSubmit}
+    >
+      <StepForm
+        step={step}
+        value={forms[step]}
+        onChange={(value) => updateForm(step, value)}
+        errors={errors}
+      />
+    </WizardLayout>
   );
 }

@@ -54,7 +54,7 @@ export function AvatarController({ spec, state }: { spec: SceneSpec; state: Avat
         handItem={handItems[0] && <AvatarAccessory item={handItems[0]} body={spec.body} />}
       />
       {otherItems.map((item) => (
-        <AvatarAccessory key={item.kind} item={item} body={spec.body} />
+        <AvatarAccessory key={item.kind} item={item} body={spec.body} face={spec.face} />
       ))}
       <ThinkingDots spec={spec} visible={() => pose.current.thinkingDots} />
     </group>

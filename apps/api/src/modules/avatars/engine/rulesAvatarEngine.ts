@@ -229,7 +229,7 @@ const ARCHETYPE_WORD: Record<BrandArchetype, string> = {
   innocent: 'inocente',
 };
 
-const BODY_WORD: Record<AvatarConcept['bodyShape'], string> = {
+export const BODY_WORD: Record<AvatarConcept['bodyShape'], string> = {
   rounded: 'redondeada',
   oval: 'ovalada',
   teardrop: 'de gota',
@@ -239,7 +239,7 @@ const BODY_WORD: Record<AvatarConcept['bodyShape'], string> = {
   organic_irregular: 'orgánica e irregular',
 };
 
-const FINISH_WORD: Record<AvatarConcept['renderHints']['finish'], string> = {
+export const FINISH_WORD: Record<AvatarConcept['renderHints']['finish'], string> = {
   matte: 'mate',
   satin: 'satinado',
   glossy: 'brillante',
@@ -481,7 +481,7 @@ function animationPersonality(dna: Dna): AnimationPersonality {
   return d.warmth >= 50 ? 'friendly_expressive' : 'calm_grounded';
 }
 
-const IDLE: Record<AnimationPersonality, [IdleAnimation, IdleAnimation]> = {
+export const IDLE: Record<AnimationPersonality, [IdleAnimation, IdleAnimation]> = {
   friendly_expressive: ['bounce', 'sway'],
   calm_grounded: ['breathe', 'sway'],
   precise_efficient: ['hover_spin', 'float'],
@@ -491,7 +491,7 @@ const IDLE: Record<AnimationPersonality, [IdleAnimation, IdleAnimation]> = {
   wise_measured: ['float', 'breathe'],
 };
 
-const IDLE_DESCRIPTION: Record<IdleAnimation, string> = {
+export const IDLE_DESCRIPTION: Record<IdleAnimation, string> = {
   bounce: 'Pequeños rebotes suaves, como quien espera con gusto la siguiente conversación.',
   sway: 'Se balancea con calma de lado a lado.',
   breathe: 'Respira lento: se expande y contrae levemente, firme en su sitio.',
@@ -500,7 +500,7 @@ const IDLE_DESCRIPTION: Record<IdleAnimation, string> = {
   pulse: 'Late con energía contenida, listo para actuar.',
 };
 
-const GESTURES: Record<AnimationPersonality, string[]> = {
+export const GESTURES: Record<AnimationPersonality, string[]> = {
   friendly_expressive: [
     'inclina la cabeza al escuchar',
     'sonríe al empezar cada respuesta',
@@ -607,7 +607,7 @@ function subjectReason(chosen: ScoredSubject, dna: Dna): string {
   return `${capitalize(article(subject))} ${subject.label} aparece en ${joinEs(evidence)}${reinforced}.`;
 }
 
-const FACE_WORD: Record<AvatarConcept['faceStyle'], string> = {
+export const FACE_WORD: Record<AvatarConcept['faceStyle'], string> = {
   friendly_minimal: 'amable y sencillo',
   expressive_cartoon: 'muy expresivo',
   minimal_geometric: 'sobrio y geométrico',

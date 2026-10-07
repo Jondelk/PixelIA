@@ -1,105 +1,12 @@
 import { BRAND_ARCHETYPES, type BrandDna } from '@pixel/contracts';
-import type { CSSProperties, ReactNode } from 'react';
 import { Link } from 'react-router';
 import { buttonClasses } from '../../components/buttonClasses';
-import { Icon } from '../../components/Icon';
+import { BulletList, Chips, Label, Meter, Section } from '../../components/DnaBlocks';
+import { rise } from '../../components/rise';
 import { brandAssets } from '../../brand/assets';
 import { DIMENSIONS, PALETTE_ROLE_LABEL, SHAPE_LANGUAGE_LABEL, TEMPERATURE_LABEL } from './labels';
 
 const dateFormat = new Intl.DateTimeFormat('es', { dateStyle: 'long' });
-
-const rise = (step: number): CSSProperties => ({ animationDelay: `${80 + step * 55}ms` });
-
-function Section({
-  title,
-  eyebrow,
-  step,
-  className = '',
-  children,
-}: {
-  title: string;
-  eyebrow: string;
-  step: number;
-  className?: string;
-  children: ReactNode;
-}) {
-  return (
-    <section
-      className={`animate-rise rounded-2xl border border-line bg-surface p-6 sm:p-8 ${className}`}
-      style={rise(step)}
-    >
-      <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-subtle">{eyebrow}</p>
-      <h2 className="mt-2 font-display text-lg font-bold tracking-tight">{title}</h2>
-      <div className="mt-6">{children}</div>
-    </section>
-  );
-}
-
-function Chips({
-  items,
-  tone = 'default',
-}: {
-  items: string[];
-  tone?: 'default' | 'strong' | 'muted';
-}) {
-  if (items.length === 0) return <p className="text-sm text-subtle">—</p>;
-  const styles = {
-    default: 'border-line-strong text-fg',
-    strong: 'border-line-strong bg-elevated font-medium text-fg',
-    muted: 'border-line text-muted',
-  }[tone];
-  return (
-    <ul className="flex flex-wrap gap-1.5">
-      {items.map((item) => (
-        <li key={item} className={`rounded-md border px-3 py-1 text-[13px] ${styles}`}>
-          {item}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function Label({ children }: { children: ReactNode }) {
-  return (
-    <p className="mb-2.5 text-[11px] font-medium uppercase tracking-[0.16em] text-subtle">
-      {children}
-    </p>
-  );
-}
-
-function Meter({ level, label }: { level: number; label: string }) {
-  return (
-    <div className="flex items-center gap-3">
-      <div className="flex gap-1" aria-hidden="true">
-        {[1, 2, 3, 4, 5].map((n) => (
-          <span key={n} className={`h-1.5 w-5 ${n <= level ? 'bg-fg' : 'bg-elevated'}`} />
-        ))}
-      </div>
-      <span className="text-sm text-fg">{label}</span>
-    </div>
-  );
-}
-
-function BulletList({ items, icon }: { items: string[]; icon?: 'check' | 'x' }) {
-  if (items.length === 0) return <p className="text-sm text-subtle">—</p>;
-  return (
-    <ul className="space-y-2">
-      {items.map((item) => (
-        <li key={item} className="flex gap-2.5 text-sm leading-relaxed text-fg">
-          {icon ? (
-            <Icon
-              name={icon}
-              className={`mt-0.5 size-4 shrink-0 ${icon === 'check' ? 'text-fg' : 'text-subtle'}`}
-            />
-          ) : (
-            <span className="mt-2 size-1 shrink-0 bg-subtle" aria-hidden="true" />
-          )}
-          {item}
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 /** "Así entiende Pixel tu marca": el BrandDNA presentado como lo que Pixel aprendió. */
 export function BrandDnaView({
