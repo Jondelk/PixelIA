@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { IsoDateSchema, ObjectIdSchema } from './common.js';
+import { WorkspaceTypeSchema } from './workspace.js';
 
 export const MESSAGE_MAX_LENGTH = 4000;
 
@@ -8,7 +9,12 @@ export type MessageRole = z.infer<typeof MessageRoleSchema>;
 
 export const ConversationSchema = z.object({
   id: ObjectIdSchema,
-  companyId: ObjectIdSchema,
+  /** Contexto principal: las conversaciones son recursos del workspace. */
+  workspaceId: ObjectIdSchema,
+  /** Tipo de contexto con el que habla Pixel (igual al tipo del workspace). */
+  contextType: WorkspaceTypeSchema,
+  /** Legacy/enterprise: empresa del workspace (null en conversaciones personales). */
+  companyId: ObjectIdSchema.nullable(),
   userId: ObjectIdSchema,
   title: z.string(),
   messageCount: z.number().int().min(0),
@@ -31,7 +37,9 @@ export const MessageMetaSchema = z.object({
 export const MessageSchema = z.object({
   id: ObjectIdSchema,
   conversationId: ObjectIdSchema,
-  companyId: ObjectIdSchema,
+  workspaceId: ObjectIdSchema,
+  /** Legacy/enterprise. */
+  companyId: ObjectIdSchema.nullable(),
   userId: ObjectIdSchema,
   role: MessageRoleSchema,
   content: z.string(),

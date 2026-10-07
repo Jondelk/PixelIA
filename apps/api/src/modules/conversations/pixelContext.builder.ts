@@ -9,12 +9,12 @@ import type { AIChatTurn } from '../../ai/index.js';
 import { renderBrief, type CreativeBrief, type CreativeLever } from '../../ai/brief.js';
 
 /*
- * PixelContextBuilder: construye el contexto con el que habla el Pixel de UNA empresa.
+ * Composición del contexto Enterprise: el prompt con el que habla el Pixel de UNA marca.
  *
- * Función pura: recibe datos ya cargados y aislados por companyId (nunca consulta la base de
- * datos), así que no puede mezclar información de otras empresas. No recita el ADN: lo
- * convierte en criterio (palancas creativas, postura del arquetipo, límites) e instruye al
- * modelo para razonar con él en lugar de repetirlo.
+ * Función pura: recibe datos ya cargados por el EnterpriseContextBuilder (context/), todos del
+ * mismo workspace, y nunca consulta la base de datos, así que no puede mezclar información de
+ * otros workspaces. No recita el ADN: lo convierte en criterio (palancas creativas, postura del
+ * arquetipo, límites) e instruye al modelo para razonar con él en lugar de repetirlo.
  */
 
 export interface HistoryMessage {
@@ -26,6 +26,8 @@ export interface PixelContextInput {
   company: { name: string };
   brandDna: BrandDna;
   avatar: AvatarProfile | null;
+  /** Memorias creativas activas del workspace (más recientes primero). Vacío = no se menciona. */
+  memories?: string[];
   /** Mensajes previos de ESTA conversación, del más antiguo al más reciente. */
   history: HistoryMessage[];
   userMessage: string;
@@ -55,6 +57,7 @@ export interface PixelContext {
     historyChars: number;
     systemChars: number;
     includesAvatar: boolean;
+    memories: number;
   };
 }
 
@@ -271,6 +274,7 @@ export function buildPixelContext(input: PixelContextInput): PixelContext {
   const levers = brief.levers
     .map((lever, i) => `${i + 1}. «${lever.title}»: ${lever.idea} ${lever.proof}`)
     .join('\n');
+  const memories = list(input.memories ?? [], limits);
   const guidelines = [...c.guidelines.do, ...c.guidelines.dont.map((rule) => `Nunca: ${rule}`)]
     .map((rule) => `- ${rule}`)
     .join('\n');
@@ -295,7 +299,7 @@ Ejemplo de criterio (marca ficticia, solo para ilustrar la diferencia):
 
 Palancas creativas de ${input.company.name} (puntos de partida; elige, combina o descarta según la petición):
 ${levers}
-${brief.avatar ? `\nNuestro personaje, ${brief.avatar.name}: ${brief.avatar.concept} Personalidad: ${brief.avatar.personality.join(', ')}. Úsalo si ayuda a la idea.\n` : ''}
+${brief.avatar ? `\nNuestro personaje, ${brief.avatar.name}: ${brief.avatar.concept} Personalidad: ${brief.avatar.personality.join(', ')}. Úsalo si ayuda a la idea.\n` : ''}${memories.length ? `\nLo que ya decidimos juntos (memoria creativa; respétalo):\n${memories.map((memory) => `- ${memory}`).join('\n')}\n` : ''}
 Contexto de marca (referencia para razonar; no lo cites literalmente):
 ${renderBrief(brief)}`;
 
@@ -309,6 +313,7 @@ ${renderBrief(brief)}`;
       historyChars: history.reduce((sum, turn) => sum + turn.content.length, 0),
       systemChars: system.length,
       includesAvatar,
+      memories: memories.length,
     },
   };
 }

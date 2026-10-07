@@ -45,7 +45,7 @@ const brandDnaSchema = new Schema<BrandDnaAttrs>(
 );
 
 brandDnaSchema.index({ companyId: 1, version: -1 }, { unique: true });
-brandDnaSchema.plugin(tenantScoped);
+brandDnaSchema.plugin(tenantScoped, { key: 'companyId' });
 
 export const BrandDnaModel = model<BrandDnaAttrs>('BrandDna', brandDnaSchema, 'brand_dnas');
 

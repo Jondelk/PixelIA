@@ -1,7 +1,7 @@
 import { NavLink, useMatches } from 'react-router';
 import { BrandLogo } from '../components/BrandLogo';
 import { Icon } from '../components/Icon';
-import { companyNav, primaryNav, type NavItem } from './navigation';
+import { companyNav, primaryNav, workspaceNav, type NavItem } from './navigation';
 
 interface SidebarProps {
   open: boolean;
@@ -9,7 +9,9 @@ interface SidebarProps {
 }
 
 export function Sidebar({ open, onNavigate }: SidebarProps) {
-  const companyId = useMatches().at(-1)?.params.companyId;
+  const params = useMatches().at(-1)?.params;
+  const companyId = params?.companyId;
+  const workspaceId = params?.workspaceId;
 
   return (
     <aside
@@ -34,13 +36,15 @@ export function Sidebar({ open, onNavigate }: SidebarProps) {
 
         {companyId ? (
           <NavSection label="Empresa" items={companyNav(companyId)} onNavigate={onNavigate} />
+        ) : workspaceId ? (
+          <NavSection label="Pixel" items={workspaceNav(workspaceId)} onNavigate={onNavigate} />
         ) : (
           <div className="px-3">
             <p className="mb-2.5 text-[11px] font-medium uppercase tracking-[0.18em] text-subtle">
               Empresa
             </p>
             <p className="text-xs leading-relaxed text-subtle">
-              Abre una empresa para ver su ADN, su personaje y el chat.
+              Abre un Pixel de empresa para ver su ADN, su personaje y el chat.
             </p>
           </div>
         )}

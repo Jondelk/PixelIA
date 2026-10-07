@@ -1,9 +1,19 @@
-import { ConversationSchema, type Conversation } from '@pixel/contracts';
+import {
+  ConversationSchema,
+  WorkspaceTypeSchema,
+  type Conversation,
+  type WorkspaceType,
+} from '@pixel/contracts';
 import { model, Schema, type HydratedDocument, type Types } from 'mongoose';
 import { tenantScoped } from '../../db/tenantScoped.plugin.js';
 
 export interface ConversationAttrs {
-  companyId: Types.ObjectId;
+  /** Contexto principal (clave de aislamiento). */
+  workspaceId: Types.ObjectId;
+  /** Con qué contexto habla Pixel: el tipo del workspace. */
+  contextType: WorkspaceType;
+  /** Legacy/enterprise: empresa del workspace. Ausente en conversaciones personales. */
+  companyId?: Types.ObjectId;
   userId: Types.ObjectId;
   title: string;
   messageCount: number;
@@ -16,7 +26,9 @@ export type ConversationDocument = HydratedDocument<ConversationAttrs>;
 
 const conversationSchema = new Schema<ConversationAttrs>(
   {
-    companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true },
+    workspaceId: { type: Schema.Types.ObjectId, ref: 'Workspace', required: true },
+    contextType: { type: String, enum: WorkspaceTypeSchema.options, required: true },
+    companyId: { type: Schema.Types.ObjectId, ref: 'Company' },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     title: { type: String, required: true, maxlength: 120, default: 'Nueva conversación' },
     messageCount: { type: Number, required: true, default: 0, min: 0 },
@@ -25,15 +37,17 @@ const conversationSchema = new Schema<ConversationAttrs>(
   { timestamps: true },
 );
 
-conversationSchema.index({ companyId: 1, userId: 1, updatedAt: -1 });
-conversationSchema.plugin(tenantScoped);
+conversationSchema.index({ workspaceId: 1, userId: 1, updatedAt: -1 });
+conversationSchema.plugin(tenantScoped, { key: 'workspaceId' });
 
 export const ConversationModel = model<ConversationAttrs>('Conversation', conversationSchema);
 
 export function toConversationDTO(doc: ConversationDocument): Conversation {
   return ConversationSchema.parse({
     id: doc._id.toString(),
-    companyId: doc.companyId.toString(),
+    workspaceId: doc.workspaceId.toString(),
+    contextType: doc.contextType ?? 'enterprise',
+    companyId: doc.companyId?.toString() ?? null,
     userId: doc.userId.toString(),
     title: doc.title,
     messageCount: doc.messageCount,

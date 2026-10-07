@@ -1,6 +1,8 @@
 import {
   AvatarProfileSchema,
+  AvatarSourceTypeSchema,
   type AvatarConcept,
+  type AvatarSourceType,
   type AvatarHistoryItem,
   type AvatarProfile,
 } from '@pixel/contracts';
@@ -8,7 +10,12 @@ import { model, Schema, type HydratedDocument, type Types } from 'mongoose';
 import { tenantScoped } from '../../db/tenantScoped.plugin.js';
 
 export interface AvatarProfileAttrs {
-  companyId: Types.ObjectId;
+  /** Contexto principal: workspace al que pertenece (clave de aislamiento). */
+  workspaceId: Types.ObjectId;
+  /** brand = sale de un BrandDNA (enterprise); personal = sale de un PersonalDNA (próximamente). */
+  sourceType: AvatarSourceType;
+  /** Legacy/enterprise: empresa de origen. Obligatorio cuando sourceType = brand. */
+  companyId?: Types.ObjectId;
   version: number;
   /** Versión del BrandDNA del que se derivó: el avatar siempre sale del ADN, no del onboarding. */
   brandDnaVersion: number;
@@ -26,7 +33,20 @@ export type AvatarProfileDocument = HydratedDocument<AvatarProfileAttrs>;
 
 const avatarProfileSchema = new Schema<AvatarProfileAttrs>(
   {
-    companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true },
+    workspaceId: { type: Schema.Types.ObjectId, ref: 'Workspace', required: true },
+    sourceType: {
+      type: String,
+      enum: AvatarSourceTypeSchema.options,
+      required: true,
+      default: 'brand',
+    },
+    companyId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Company',
+      required(this: AvatarProfileAttrs) {
+        return this.sourceType === 'brand';
+      },
+    },
     version: { type: Number, required: true, min: 1 },
     brandDnaVersion: { type: Number, required: true, min: 1 },
     engine: {
@@ -41,9 +61,17 @@ const avatarProfileSchema = new Schema<AvatarProfileAttrs>(
   { timestamps: true, minimize: false },
 );
 
+// Versiones por workspace. Parciales: documentos legacy aún sin migrar no tienen workspaceId.
+avatarProfileSchema.index(
+  { workspaceId: 1, version: -1 },
+  { unique: true, partialFilterExpression: { workspaceId: { $exists: true } } },
+);
+avatarProfileSchema.index({ workspaceId: 1, brandDnaVersion: 1 });
+// Legacy (por empresa): se conservan mientras todos los avatares sean de marca. Antes de crear
+// avatares personales hay que hacerlos parciales (ver docs/WORKSPACE-MIGRATION.md).
 avatarProfileSchema.index({ companyId: 1, version: -1 }, { unique: true });
 avatarProfileSchema.index({ companyId: 1, brandDnaVersion: 1 });
-avatarProfileSchema.plugin(tenantScoped);
+avatarProfileSchema.plugin(tenantScoped, { key: 'workspaceId' });
 
 export const AvatarProfileModel = model<AvatarProfileAttrs>(
   'AvatarProfile',
@@ -55,7 +83,9 @@ export function toAvatarProfileDTO(doc: AvatarProfileDocument): AvatarProfile {
   return AvatarProfileSchema.parse({
     ...doc.concept,
     id: doc._id.toString(),
-    companyId: doc.companyId.toString(),
+    workspaceId: doc.workspaceId.toString(),
+    sourceType: doc.sourceType ?? 'brand',
+    companyId: doc.companyId?.toString() ?? null,
     version: doc.version,
     brandDnaVersion: doc.brandDnaVersion,
     engine: {

@@ -124,27 +124,34 @@ flowchart TB
 | Capa | Responsabilidad | Regla |
 |---|---|---|
 | Routes | HTTP: parseo, validación (`validate` + schema de contracts), código de estado | Sin lógica de negocio ni acceso directo a modelos |
-| Middleware | `requireAuth` (JWT de cookie → `req.user`), `requireCompanyAccess` (`req.company`) | Toda ruta `/api/companies/:companyId/*` usa ambos |
-| Services | Lógica de dominio. Firma con `companyId` explícito: `service.method(companyId, ...)` | No conocen Express. No conocen el SDK de IA |
+| Middleware | `requireAuth` (JWT de cookie → `req.auth`), `requireWorkspaceAccess` (`req.workspace`), `requireCompanyAccess` (`req.company` + `req.workspace`), `requireEnterpriseCompany` | Toda ruta `/api/workspaces/:workspaceId/*` usa `requireAuth` + `requireWorkspaceAccess`; las legacy `/api/companies/:companyId/*`, `requireAuth` + `requireCompanyAccess` |
+| Services | Lógica de dominio. Reciben el workspace (y en Enterprise la empresa) ya autorizados | No conocen Express. No conocen el SDK de IA |
 | Models | Schemas Mongoose + índices + plugin `tenantScoped` | Convierten a DTO de contracts antes de salir (`toDTO`) |
 | `ai/` | Proveedores, prompts, salida estructurada | Único lugar donde se importan SDKs de IA (regla ESLint `no-restricted-imports`) |
 
-## 4. Aislamiento multiempresa (tenant isolation)
+## 4. Aislamiento por Workspace (tenant isolation)
 
-Defensa en capas — basta con que una falle para que otra lo detenga:
+**Workspace is the main contextual boundary of Pixel.** Detalle completo en
+[`WORKSPACES.md`](./WORKSPACES.md). Defensa en capas — basta con que una falle para que otra lo detenga:
 
-1. **Ruta**: recursos de empresa siempre bajo `/api/companies/:companyId/...`.
-2. **Middleware** `requireCompanyAccess`: carga `Company` con `{ _id: companyId, ownerId: req.user.id }`.
-   Si no existe → `404 COMPANY_NOT_FOUND`. Expone `req.company`.
-3. **Servicios**: `companyId` es el primer parámetro; jamás se toma del body.
-4. **Consultas**: siempre `{ companyId, ... }`; para un documento concreto, `{ _id, companyId }`.
-5. **Plugin `tenantScoped`**: hooks `pre` de `find*`, `count*`, `update*`, `delete*` y `aggregate` lanzan
-   error si el filtro no contiene `companyId`. En `save`, `companyId` es requerido por schema.
-6. **Contexto de IA**: `ContextBuilder.build(companyId, conversationId)` solo lee de colecciones de esa
-   empresa. Los prompts nunca incluyen datos de otra empresa; por construcción, ni una inyección de
-   prompt puede exponer información ajena porque no está en el contexto.
-7. **Tests**: suite dedicada "isolation" con dos usuarios y dos empresas que prueba cada endpoint
-   (lectura y escritura cruzada → 404) y el contenido del contexto de IA.
+1. **Rutas**: recursos de un Pixel bajo `/api/workspaces/:workspaceId/...`; Enterprise mantiene las
+   rutas legacy `/api/companies/:companyId/...`.
+2. **Middleware**: `requireWorkspaceAccess` carga el workspace con `{ _id, ownerId: req.auth.userId }`
+   (404 si no); `requireCompanyAccess` carga la empresa con `{ _id, ownerId }`, garantiza su workspace
+   (migración perezosa) y expone `req.company` y `req.workspace`.
+3. **Servicios**: reciben el workspace autorizado; jamás toman el tenant del body. En Enterprise,
+   `assertEnterpriseScope` comprueba que la empresa pertenece al workspace y al mismo dueño.
+4. **Consultas**: siempre con la clave de aislamiento: `{ workspaceId, ... }` en recursos del
+   workspace, `{ companyId, ... }` en BrandDNA; para un documento concreto, `{ _id, workspaceId }`.
+5. **Plugin `tenantScoped(schema, { key })`**: hooks `pre` de `find*`, `count*`,
+   `estimatedDocumentCount`, `update*`, `delete*`, `aggregate` y `bulkWrite` lanzan error si el filtro
+   no trae un valor concreto de la clave (se rechazan `$exists`, `$ne`, `$in`…). En altas, la clave es
+   requerida por schema.
+6. **Contexto de IA**: `resolveContextBuilder(workspace.type).build({ workspace, … })` solo lee datos de
+   ese workspace. Los prompts nunca incluyen datos de otro workspace; por construcción, ni una
+   inyección de prompt puede exponer información ajena porque no está en el contexto.
+7. **Tests**: aislamiento entre usuarios y entre workspaces del mismo dueño en cada endpoint
+   (lectura y escritura cruzada → 404, sin rastro en la base) y en el contenido del contexto de IA.
 
 ## 5. Capa de IA ✅
 
@@ -173,10 +180,16 @@ apps/api/src/ai/
 - **Pendiente**: generar BrandDNA y AvatarProfile con IA usando `generateStructuredOutput()`
   (hoy son determinísticos).
 
-### 5.1 PixelContextBuilder
+### 5.1 PixelContextBuilder (por estrategia)
 
-`apps/api/src/modules/conversations/pixelContext.builder.ts` — función pura que construye el
-contexto del Pixel de **una** empresa a partir de datos ya cargados y aislados por `companyId`.
+`apps/api/src/modules/conversations/context/`: `resolveContextBuilder(workspace.type)` elige
+`EnterpriseContextBuilder` (carga Company → BrandDNA → AvatarProfile → CreativeMemory del workspace) o
+`PersonalContextBuilder` (placeholder tipado que responde "contexto personal no configurado").
+Devuelven `ready` con el contexto, o `not_configured` con un motivo (→ 409). El AIProvider recibe el
+contexto ya preparado y nunca ve `companyId`.
+
+La composición Enterprise es la función pura `pixelContext.builder.ts` (`buildPixelContext`), que
+construye el contexto del Pixel de **una** marca a partir de datos ya cargados del mismo workspace.
 
 - **Rol**: director creativo propio de la empresa, que habla en primera persona del plural.
 - **Criterio, no recitación**: instrucciones explícitas para usar el ADN como criterio (nunca
@@ -195,9 +208,10 @@ contexto del Pixel de **una** empresa a partir de datos ya cargados y aislados p
 
 ### 5.2 Flujo de un mensaje
 
-`POST /companies/:companyId/conversations/:conversationId/messages`:
-requireAuth → requireCompanyAccess (empresa) → conversación `{ _id, companyId, userId }` →
-BrandDNA vigente (409 si no hay) → AvatarProfile vigente (opcional) → historial → contexto →
+`POST /workspaces/:workspaceId/conversations/:conversationId/messages` (o la ruta legacy
+`/companies/:companyId/...`): requireAuth → requireWorkspaceAccess / requireCompanyAccess →
+conversación `{ _id, workspaceId, userId }` → historial → estrategia de contexto por tipo de
+workspace (Enterprise: BrandDNA vigente, 409 si no hay; AvatarProfile y memorias opcionales) →
 `ai.generateText()` → se guardan **juntos** el mensaje del usuario y el de Pixel (si la IA falla no
 se guarda nada: 503, o 422 si el modelo declina) → respuesta. El frontend pone el avatar en
 `thinking` durante la petición, en `speaking` mientras revela la respuesta y vuelve a `idle`.
@@ -251,8 +265,15 @@ Prefijo `/api`. JSON. Errores con forma `ApiError { code, message, details? }`.
 | POST | `/auth/login` | Inicia sesión (cookie httpOnly) |
 | POST | `/auth/logout` | Cierra sesión |
 | GET | `/auth/me` | Usuario actual |
-| GET | `/companies` | Empresas del usuario |
-| POST | `/companies` | Crear empresa |
+| GET | `/workspaces` | "Tus Pixels": workspaces del usuario con su empresa (si la tienen) ✅ |
+| POST | `/workspaces` | Crear workspace `{ type: enterprise \| personal, name }` (Personal: uno por usuario) ✅ |
+| GET | `/workspaces/:workspaceId` | Workspace + su empresa ✅ |
+| PATCH | `/workspaces/:workspaceId` | `name`, `status` (el tipo no se edita) ✅ |
+| POST | `/workspaces/:workspaceId/company` | Completa un workspace enterprise vacío con su empresa ✅ |
+| GET/POST | `/workspaces/:workspaceId/avatar[/generate]` | Avatar del workspace (Enterprise; Personal → 409) ✅ |
+| GET/POST | `/workspaces/:workspaceId/conversations[/:id/messages]` | Conversaciones del workspace (Personal: enviar → 409) ✅ |
+| GET | `/companies` | Empresas del usuario (legacy) |
+| POST | `/companies` | Crear empresa: crea también su workspace enterprise |
 | GET | `/companies/:companyId` | Empresa + estado del análisis |
 | PATCH | `/companies/:companyId` | Actualizar `name`, `industry`, `description`, `logoUrl` (slug y estado no editables) |
 | GET | `/companies/:companyId/brand-dna` | Progreso del onboarding (respuestas, pasos completos) + BrandDNA vigente ✅ |
@@ -288,8 +309,9 @@ Prefijo `/api`. JSON. Errores con forma `ApiError { code, message, details? }`.
   `POST /auth/logout` borra la cookie.
 - Login: mismo mensaje y tiempo de respuesta similar (hash ficticio) si el email no existe o la contraseña falla.
 - `originGuard`: las mutaciones con un `Origin` fuera de `CORS_ORIGINS` → 403 (defensa CSRF junto con `SameSite`).
-- `requireAuth` → `req.auth.userId`; `requireCompanyAccess` → `req.company` (consulta `{ _id, ownerId }`;
-  id malformado, inexistente o ajeno → el mismo 404).
+- `requireAuth` → `req.auth.userId`; `requireWorkspaceAccess` → `req.workspace` (consulta
+  `{ _id, ownerId }`); `requireCompanyAccess` → `req.company` + `req.workspace`. Id malformado,
+  inexistente o ajeno → el mismo 404.
 - `JWT_SECRET` es obligatorio en producción; en desarrollo se usa uno de desarrollo con aviso en el log.
 - Validación Zod de todo input; límites de tamaño de body y de longitud de campos del onboarding y mensajes.
 - `helmet` no es imprescindible en 0.1; rate limiting de login queda en backlog (riesgo aceptado para el MVP).
@@ -337,7 +359,7 @@ cada 5 s.
 |---|---|---|
 | Contratos | Vitest | Schemas válidos/inválidos, fixtures de los 3 escenarios de demo |
 | API unit | Vitest | Servicios con `MockAIProvider`, `structured.ts` (reintento), `ContextBuilder` |
-| API integración | Vitest + Supertest + mongodb-memory-server | Endpoints, auth, **aislamiento entre empresas** |
+| API integración | Vitest + Supertest + mongodb-memory-server | Endpoints, auth, **aislamiento entre usuarios y entre workspaces**, migración Company → Workspace |
 
 Los tests de integración de la API arrancan un MongoDB efímero una vez por ejecución
 (`apps/api/test/support/globalSetup.ts`), con una base de datos distinta por archivo. La primera vez
@@ -350,7 +372,7 @@ Los tests de integración de la API arrancan un MongoDB efímero una vez por eje
 
 | Riesgo | Impacto | Mitigación |
 |---|---|---|
-| Fuga de datos entre empresas | Crítico | Defensa en capas (§4) + suite de tests de aislamiento |
+| Fuga de datos entre workspaces | Crítico | Defensa en capas (§4) + suite de tests de aislamiento |
 | La IA devuelve JSON inválido o incompleto | Alto | Zod + 1 reintento con errores + estado `failed` y reintento manual |
 | Avatar percibido como "mascota genérica" | Alto (hipótesis central) | Catálogo diseñado por arquetipo de marca, `rationale` obligatoria que cita el ADN, revisión con los 3 escenarios |
 | Latencia/costo del LLM en el análisis | Medio | Asíncrono + polling, prompts acotados, `maxTokens` |

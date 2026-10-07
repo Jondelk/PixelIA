@@ -8,3 +8,5 @@ export * from './company.js';
 export * from './errors.js';
 export * from './health.js';
 export * from './user.js';
+export * from './workspace.js';
+export * from './creativeMemory.js';

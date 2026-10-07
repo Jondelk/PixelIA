@@ -13,13 +13,15 @@ import type { z } from 'zod';
 import { notFound } from '../../lib/errors.js';
 import { isDuplicateKeyError } from '../../lib/mongo.js';
 import { CompanyModel, type CompanyDocument } from '../companies/company.model.js';
+import { syncEnterpriseWorkspaceName } from '../workspaces/workspace.service.js';
 import { BRAND_DNA_GENERATOR_VERSION, generateBrandDna } from './brandDna.generator.js';
 import { BrandDnaModel, toBrandDnaDTO, type BrandDnaDocument } from './brandDna.model.js';
 
 /*
- * Brand Brain: onboarding de marca → BrandDNA.
+ * Brand Brain: onboarding de marca → BrandDNA (solo Enterprise: Workspace → Company → BrandDNA).
  * Todas las funciones reciben la empresa ya autorizada por requireCompanyAccess y
- * todas las consultas a BrandDNA van filtradas por su companyId (plugin tenantScoped).
+ * todas las consultas a BrandDNA van filtradas por su companyId (plugin tenantScoped). El BrandDNA
+ * sigue siendo un dato de la empresa; su workspace se deriva de company.workspaceId.
  */
 
 type SaveStepInput = z.output<typeof SaveOnboardingStepInputSchema>;
@@ -127,6 +129,7 @@ export async function saveOnboardingStep(
     { returnDocument: 'after', runValidators: true },
   );
   if (!updated) throw notFound('Empresa no encontrada');
+  if (input.step === 'company') await syncEnterpriseWorkspaceName(updated);
 
   const progress = toProgress(updated);
   if (progress.isComplete) {

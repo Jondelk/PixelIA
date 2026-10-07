@@ -174,9 +174,17 @@ export const AvatarEngineInfoSchema = z.object({
   variation: z.number().int().min(0),
 });
 
+/** De qué ADN sale el avatar: el de una marca (enterprise) o, próximamente, el PersonalDNA. */
+export const AvatarSourceTypeSchema = z.enum(['brand', 'personal']);
+export type AvatarSourceType = z.infer<typeof AvatarSourceTypeSchema>;
+
 export const AvatarProfileSchema = AvatarConceptSchema.extend({
   id: ObjectIdSchema,
-  companyId: ObjectIdSchema,
+  /** Contexto principal: el workspace al que pertenece el avatar. */
+  workspaceId: ObjectIdSchema,
+  sourceType: AvatarSourceTypeSchema,
+  /** Legacy/enterprise: empresa de origen (null en avatares personales). */
+  companyId: ObjectIdSchema.nullable(),
   version: z.number().int().min(1),
   brandDnaVersion: z.number().int().min(1),
   engine: AvatarEngineInfoSchema,

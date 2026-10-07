@@ -11,13 +11,23 @@ export interface NavItem {
 /** Metadatos de cada ruta (en `handle`) para el header. */
 export interface RouteHandle {
   title: string;
-  section: 'General' | 'Empresa';
+  section: 'General' | 'Empresa' | 'Pixel';
 }
 
 export const primaryNav: NavItem[] = [
-  { to: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
+  { to: '/dashboard', label: 'Tus Pixels', icon: 'dashboard' },
   { to: '/companies', label: 'Empresas', icon: 'companies' },
 ];
+
+/** Entrada única de cada Pixel (workspace). Enterprise redirige a sus rutas de empresa. */
+export function workspaceBasePath(workspaceId: string): string {
+  return `/workspace/${encodeURIComponent(workspaceId)}`;
+}
+
+/** Navegación de un workspace sin rutas propias aún (Personal o empresa sin configurar). */
+export function workspaceNav(workspaceId: string): NavItem[] {
+  return [{ to: workspaceBasePath(workspaceId), label: 'Resumen', icon: 'overview', end: true }];
+}
 
 export function companyBasePath(companyId: string): string {
   return `/company/${encodeURIComponent(companyId)}`;

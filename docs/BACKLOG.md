@@ -18,6 +18,7 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 | 6 | Análisis de marca: BrandDNA → AvatarProfile | 🟨 (BrandDNA y AvatarProfile determinísticos hechos; IA pendiente) |
 | 7 | Avatar 3D | ✅ (Coffee Pixel completo; afinar otros sujetos) |
 | 8 | Chat con Pixel | ✅ |
+| W | Arquitectura de Workspaces (Enterprise / Personal) | ✅ (Personal sin funciones: siguiente etapa) |
 | 9 | CreativeMemory básica | ⬜ |
 | 10 | Cierre end-to-end del MVP | ⬜ |
 
@@ -142,11 +143,43 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 - [ ] Streaming de respuestas (SSE) para mostrar texto mientras el modelo genera.
 - [ ] Voz.
 
+## Etapa W — Workspaces: User → Workspace → Enterprise / Personal ✅
+
+Ver `docs/WORKSPACES.md` y `docs/WORKSPACE-MIGRATION.md`.
+
+- [x] Entidad `Workspace` (`enterprise | personal`, `active | archived`), contratos
+  (`WorkspaceSchema`, `CreateWorkspaceSchema`, `UpdateWorkspaceSchema`, `WorkspaceOverview`) y API
+  `POST/GET /api/workspaces`, `GET/PATCH /api/workspaces/:workspaceId`.
+- [x] `requireWorkspaceAccess` (404 si no es del usuario); `requireCompanyAccess` adjunta el workspace.
+- [x] `Company.workspaceId` (1:1). Crear empresa crea su workspace enterprise (rollback lógico: sin
+  transacciones en MongoDB standalone). `POST /api/workspaces/:workspaceId/company` completa uno vacío.
+- [x] `AvatarProfile` (+ `sourceType`), `Conversation` (+ `contextType`), `Message` y `CreativeMemory`
+  (modelo nuevo, sin endpoints) aislados por `workspaceId`; `companyId` legacy conservado.
+- [x] `tenantScoped(schema, { key })`: exige un valor concreto (rechaza `$exists`, `$ne`, `$in`…),
+  cubre `estimatedDocumentCount` y `bulkWrite`.
+- [x] Contexto por estrategia: `EnterpriseContextBuilder` (mismo prompt; + memorias del workspace) y
+  `PersonalContextBuilder` (placeholder → 409 `personal_context_not_configured`).
+- [x] Rutas de workspace para avatar y conversaciones; rutas legacy `/api/companies/:companyId/...` intactas.
+- [x] Migración idempotente (perezosa en la API + `npm run migrate:workspaces` con `--dry-run` y
+  `--sync-indexes`), probada con datos creados por la versión anterior.
+- [x] Web: "Tus Pixels" con workspaces, "¿Cómo quieres usar Pixel?" (`/pixels/new`), Pixel Personal
+  temporal, entrada `/workspace/:workspaceId` (Enterprise redirige a `/company/:companyId`).
+- [x] Tests: workspaces, empresa ↔ workspace, rutas de workspace, Personal, aislamiento entre usuarios
+  y entre workspaces del mismo dueño, context builders, migración.
+- [ ] Mover las pantallas Enterprise a `/workspace/:workspaceId/...` e invertir la redirección
+  (convergencia de rutas, `WORKSPACES.md`).
+- [ ] Pasar los clientes web de avatar y chat a `/api/workspaces/:workspaceId/...`; después retirar
+  las rutas legacy equivalentes.
+- [ ] Antes de avatares personales: volver parciales los índices legacy por `companyId` de
+  `avatar_profiles` y generalizar `Message.meta.brandDnaVersion` (hoy solo Enterprise).
+- [ ] Retirar `companyId` legacy de recursos compartidos y `Company.ownerId` cuando nada los use.
+- [ ] Miembros y roles por workspace (hoy solo el dueño).
+
 ## Etapa 9 — CreativeMemory básica
 
-- [ ] `GET/POST/DELETE /memories`.
+- [ ] `GET/POST/DELETE /memories` (bajo el workspace).
 - [ ] Acción "Recordar esto" en mensajes y `MemoryPanel`.
-- [ ] Inclusión de memorias activas en el contexto (ya preparado en Etapa 8).
+- [ ] Inclusión de memorias activas en el contexto (ya la hace `EnterpriseContextBuilder`; falta crearlas).
 - [ ] Tests de aislamiento de memorias.
 
 **Aceptación:** una memoria fijada influye en las siguientes respuestas; al borrarla deja de usarse.

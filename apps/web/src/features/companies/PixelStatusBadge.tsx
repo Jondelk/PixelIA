@@ -14,7 +14,11 @@ export function PixelStatusBadge({
 }: {
   company: Pick<Company, 'status' | 'brandDnaVersion'>;
 }) {
-  const { label, tone } = pixelStatus(company);
+  return <StatusBadge {...pixelStatus(company)} />;
+}
+
+/** Punto de estado + texto, compartido por empresas y workspaces. */
+export function StatusBadge({ label, tone }: { label: string; tone: PixelTone }) {
   return (
     <span className="inline-flex items-center gap-2 text-xs text-muted">
       <span className={`size-1.5 shrink-0 ${DOT[tone]}`} aria-hidden="true" />

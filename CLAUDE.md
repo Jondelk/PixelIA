@@ -4,9 +4,16 @@ Guía obligatoria para cualquier sesión de trabajo (humana o IA) en este reposi
 
 ## Qué es Pixel
 
-Pixel es un **Director Creativo asistido por IA para empresas**. Cada empresa tiene **su propio Pixel**:
-el sistema estudia el ADN de la marca y lo convierte en conocimiento estructurado, personalidad,
-estilo de comunicación, criterio creativo, dirección visual, comportamiento y un **avatar 3D único**.
+Pixel es un **Director Creativo asistido por IA**. Tiene dos modos sobre un mismo núcleo (Pixel Core):
+
+- **Pixel Enterprise** (MVP funcional): el director creativo de una marca. Cada empresa tiene **su
+  propio Pixel**: el sistema estudia el ADN de la marca y lo convierte en conocimiento estructurado,
+  personalidad, estilo de comunicación, criterio creativo, dirección visual, comportamiento y un
+  **avatar 3D único**.
+- **Pixel Personal** (preparado, sin funciones aún): el director creativo de una persona
+  (PersonalProfile, PersonalDNA, tareas, proyectos, contenido). Hoy solo existe como tipo de workspace.
+
+Cada Pixel vive en un **Workspace** (`docs/WORKSPACES.md`).
 
 El avatar **nunca** es una mascota aleatoria: es una **consecuencia trazable del ADN de la marca**
 (ej. café artesanal colombiano → grano de café antropomórfico cálido; startup tecnológica →
@@ -18,16 +25,21 @@ Documentación de referencia (leer antes de trabajar):
 - `docs/ARCHITECTURE.md` — arquitectura, capa de IA, API, seguridad, decisiones.
 - `docs/ENTITIES.md` — entidades, campos, índices y reglas de aislamiento.
 - `docs/BACKLOG.md` — backlog técnico por etapas y estado.
+- `docs/WORKSPACES.md` — Workspace como frontera contextual, Enterprise vs Personal, rutas y convergencia.
+- `docs/WORKSPACE-MIGRATION.md` — migración Company → Workspace, script, verificación y rollback.
 
 ## Objetivo del MVP 0.1
 
 Recorrido de punta a punta:
 
 ```
-registro/login → crea empresa → onboarding de marca → Pixel analiza
+registro/login → crea empresa (y su workspace enterprise) → onboarding de marca → Pixel analiza
 → genera BrandDNA → genera AvatarProfile → renderiza avatar 3D
 → usuario abre chat → Pixel responde usando el ADN de ESA empresa
 ```
+
+Además: login → "Nuevo Pixel" → Personal → se crea su workspace y aparece en "Tus Pixels"
+(sin funciones personales todavía).
 
 ### Fuera de alcance (NO construir hasta que se pida explícitamente)
 
@@ -54,26 +66,46 @@ registro/login → crea empresa → onboarding de marca → Pixel analiza
 /docs           Documentación del producto y la arquitectura
 ```
 
+Modelo estructural:
+
+```
+User → Workspace ─┬─ enterprise → Company → BrandDNA
+                  ├─ personal   → PersonalProfile → PersonalDNA   (próxima etapa)
+                  └─ recursos compartidos: AvatarProfile · Conversation (→ Message) · CreativeMemory
+```
+
 ## Principios arquitectónicos (no negociables)
 
-1. **Aislamiento por `companyId`.** Todo dato de una empresa (BrandDNA, AvatarProfile,
-   Conversation, Message, CreativeMemory) lleva `companyId` obligatorio e indexado.
-   - Toda consulta a una colección de empresa filtra por `companyId`. Nunca buscar solo por `_id`:
-     usar `{ _id, companyId }`.
-   - Las rutas de empresa cuelgan de `/api/companies/:companyId/...` y pasan por el middleware
-     `requireCompanyAccess`, que verifica que el usuario autenticado es dueño de la empresa.
-   - Los servicios reciben `companyId` como parámetro explícito; nunca lo infieren de datos del cliente
-     dentro del body.
-   - Acceso a recursos de otra empresa → **404** (no 403), para no revelar su existencia.
-   - El plugin Mongoose `tenantScoped` debe lanzar error si una consulta sobre un modelo de empresa
-     no incluye `companyId`.
-2. **Pixel nunca mezcla información entre empresas.** El contexto que se envía a la IA se construye
-   exclusivamente con datos de la empresa activa (ContextBuilder con `companyId`). Hay tests que lo verifican.
+1. **Workspace is the main contextual boundary of Pixel.** El workspace es la frontera de aislamiento.
+   - Un usuario tiene N workspaces (`enterprise` | `personal`). Enterprise: 1 workspace = 1 Company.
+     Personal: uno por usuario.
+   - Los recursos compartidos (AvatarProfile, Conversation, Message, CreativeMemory) llevan
+     `workspaceId` obligatorio e indexado. Los datos propios de una empresa (BrandDNA) siguen
+     aislados por `companyId`, y la empresa pertenece a su workspace (`Company.workspaceId`).
+   - Toda consulta a un modelo aislado filtra por su clave con un valor concreto. Nunca buscar solo
+     por `_id`: usar `{ _id, workspaceId }` (o `{ _id, companyId }` en BrandDNA). El plugin Mongoose
+     `tenantScoped(schema, { key })` lanza error si falta, o si llega un operador (`$exists`, `$ne`,
+     `$in`…) en lugar de un valor.
+   - Rutas: `/api/workspaces/:workspaceId/...` pasan por `requireWorkspaceAccess` (el workspace debe
+     ser del usuario autenticado: `workspace.ownerId === req.auth.userId`). Las rutas legacy
+     Enterprise `/api/companies/:companyId/...` pasan por `requireCompanyAccess`, que además adjunta
+     el workspace de la empresa. En Enterprise se comprueba también que la Company pertenece al
+     workspace solicitado.
+   - Los servicios reciben el workspace (y la empresa, en Enterprise) ya autorizados; nunca infieren
+     el tenant de datos del cliente en el body.
+   - Acceso a recursos de otro usuario o de otro workspace → **404** (no 403), para no revelar su existencia.
+2. **Never mix information between workspaces.** El contexto que se envía a la IA se construye
+   exclusivamente con datos del workspace activo, con una estrategia por tipo:
+   `EnterpriseContextBuilder` (Company → BrandDNA → AvatarProfile → CreativeMemory) y
+   `PersonalContextBuilder` (placeholder: "contexto personal no configurado", nunca datos inventados).
+   Hay tests que verifican que dos workspaces del mismo dueño no se mezclan.
+   **Enterprise and Personal share Pixel Core but use different domain contexts.**
 3. **BrandDNA ≠ AvatarProfile.** Son entidades y schemas distintos.
    - `BrandDNA` = lo que la empresa **ES** (identidad, audiencia, personalidad, voz, criterio, dirección visual, comportamiento).
    - `AvatarProfile` = cómo esa identidad **se transforma visualmente** en Pixel.
    - El AvatarProfile se genera **a partir del BrandDNA** (no del onboarding crudo) e incluye una
-     `rationale` que enlaza cada decisión visual con un rasgo del ADN.
+     `rationale` que enlaza cada decisión visual con un rasgo del ADN. Es un recurso del workspace
+     (`sourceType: brand`); en Personal saldrá del PersonalDNA (`sourceType: personal`).
 4. **IA encapsulada.** Solo `apps/api/src/ai/` conoce proveedores/SDKs de IA. El resto del producto
    usa la interfaz `AIProvider` y los servicios de dominio (`BrandAnalysisService`,
    `AvatarDesignService`, `PixelChatService`). Cambiar de modelo/proveedor = nuevo adaptador + variable de entorno.
@@ -88,13 +120,14 @@ registro/login → crea empresa → onboarding de marca → Pixel analiza
 - TypeScript `strict`. Prohibido `any` explícito (usar `unknown` + validación Zod).
 - ESM en todo el monorepo (`"type": "module"`).
 - Validar en los bordes: env vars, requests HTTP, respuestas de la IA, datos de formularios.
-- Backend organizado por módulos de dominio en `apps/api/src/modules/` (`auth`, `companies`, `brand-dna`,
-  `avatars`, `conversations`, `creative-memory`), cada uno con `*.model`, `*.service` y `*.routes`.
+- Backend organizado por módulos de dominio en `apps/api/src/modules/` (`auth`, `workspaces`, `companies`,
+  `brand-dna`, `avatars`, `conversations`, `creative-memory`), cada uno con `*.model`, `*.service` y `*.routes`.
   Los módulos se registran solo en `modules/index.ts`.
 - Frontend organizado por features (`src/features/<feature>/`); shell y router en `src/app/`.
   El renderer 3D (`src/features/avatar3d/`) solo recibe un `AvatarProfile`: nunca contiene reglas
   de negocio (esas viven en la API). Traducción visual en `profileToScene`, poses en `poseAt`.
-  Rutas de empresa: `/company/:companyId/...`.
+  Entrada de cada Pixel: `/workspace/:workspaceId/...`. Las pantallas Enterprise siguen en
+  `/company/:companyId/...` (el workspace enterprise redirige allí) hasta converger; ver `docs/WORKSPACES.md`.
 - Errores HTTP: lanzar `AppError` (o helpers de `lib/errors.ts`); el `errorHandler` central responde
   con la forma `ApiError` de contracts. Logs con `lib/logger.ts`, nunca `console.log`.
 - Nombres de código en inglés; textos de producto/UI y documentación en español.
@@ -171,4 +204,5 @@ npm run lint           # eslint
 npm run test           # vitest en todos los workspaces
 npm run build          # contracts → api → web
 npm run format         # prettier --write
+npm run migrate:workspaces [-- --dry-run | --sync-indexes]   # migración Company → Workspace
 ```
