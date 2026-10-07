@@ -20,6 +20,8 @@ export const CompanySchema = z.object({
   status: CompanyStatusSchema,
   /** Versión del BrandDNA vigente; null mientras el onboarding no esté completo. */
   brandDnaVersion: z.number().int().min(1).nullable(),
+  /** Versión del AvatarProfile vigente; null si aún no se creó el Pixel. */
+  avatarVersion: z.number().int().min(1).nullable(),
   createdAt: IsoDateSchema,
   updatedAt: IsoDateSchema,
 });

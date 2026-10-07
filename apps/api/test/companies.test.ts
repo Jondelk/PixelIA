@@ -142,7 +142,7 @@ describe('Empresas: intento de acceder a una empresa ajena', () => {
   });
 
   it('los submódulos de una empresa ajena también responden 404', async () => {
-    for (const path of ['brand-dna', 'avatar-profile', 'conversations', 'memories']) {
+    for (const path of ['brand-dna', 'avatar', 'conversations', 'memories']) {
       const res = await bob.agent.get(`/api/companies/${aliceCompanyId}/${path}`);
       expect(res.status, path).toBe(404);
     }

@@ -5,7 +5,8 @@ import { requireCompanyAccess } from '../middleware/requireCompanyAccess.js';
 import { createAuthRouter } from './auth/auth.routes.js';
 import type { AuthService } from './auth/auth.service.js';
 import type { SessionConfig } from './auth/session.js';
-import { avatarsRouter } from './avatars/avatars.routes.js';
+import { createAvatarsRouter } from './avatars/avatars.routes.js';
+import type { AvatarConceptEngine } from './avatars/engine/index.js';
 import { brandDnaRouter } from './brand-dna/brand-dna.routes.js';
 import { companiesRouter, companyRouter } from './companies/companies.routes.js';
 import { conversationsRouter } from './conversations/conversations.routes.js';
@@ -16,6 +17,7 @@ export interface ApiDependencies {
   getDatabaseStatus: () => DatabaseStatus;
   authService: AuthService;
   session: SessionConfig;
+  avatarEngine: AvatarConceptEngine;
 }
 
 /**
@@ -38,7 +40,7 @@ export function createApiRouter(deps: ApiDependencies): Router {
   company.use(requireCompanyAccess);
   company.use('/', companyRouter);
   company.use('/brand-dna', brandDnaRouter);
-  company.use('/avatar-profile', avatarsRouter);
+  company.use('/avatar', createAvatarsRouter(deps));
   company.use('/conversations', conversationsRouter);
   company.use('/memories', creativeMemoryRouter);
   api.use('/companies/:companyId', company);

@@ -15,8 +15,8 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 | 3 | Autenticación | ✅ |
 | 4 | Empresas y onboarding | ✅ (edición de empresa en la UI pendiente) |
 | 5 | Capa de IA | ⬜ |
-| 6 | Análisis de marca: BrandDNA → AvatarProfile | 🟨 (BrandDNA determinístico hecho; IA y AvatarProfile pendientes) |
-| 7 | Avatar 3D | ⬜ |
+| 6 | Análisis de marca: BrandDNA → AvatarProfile | 🟨 (BrandDNA y AvatarProfile determinísticos hechos; IA pendiente) |
+| 7 | Avatar 3D | 🟨 (vista provisional SVG; R3F pendiente) |
 | 8 | Chat con Pixel | ⬜ |
 | 9 | CreativeMemory básica | ⬜ |
 | 10 | Cierre end-to-end del MVP | ⬜ |
@@ -112,7 +112,9 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 - [ ] `POST /analysis/retry`, recuperación de jobs al arrancar (`ANALYSIS_TIMEOUT_MS`).
 - [x] `GET /brand-dna`.
 - [x] Generador determinístico de BrandDNA (`rules-1`), versionado por `sourceHash`, pantalla "Así entiende Pixel tu marca".
-- [ ] `GET /avatar-profile`.
+- [x] Avatar Concept Engine: interfaz reemplazable por IA + motor de reglas `avatar-rules-1` (catálogo de sujetos, señales combinadas, vetos por restricciones, rationale con fuentes).
+- [x] `GET /avatar`, `POST /avatar/generate` con versionado, historial, variación al regenerar e `isStale`.
+- [x] Web `/company/:id/pixel`: "Crear mi Pixel", "Regenerar concepto", concepto completo y vista provisional SVG animada.
 - [ ] Web: `AnalysisPage` con polling y estado de error con reintento; `BrandDnaSummary`.
 - [ ] Tests: job completo con mock; fallo de IA → `failed`; aislamiento de los nuevos endpoints.
 

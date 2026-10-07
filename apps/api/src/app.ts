@@ -8,6 +8,7 @@ import { notFoundHandler } from './middleware/notFound.js';
 import { originGuard } from './middleware/originGuard.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import { createAuthService } from './modules/auth/auth.service.js';
+import { createAvatarConceptEngine } from './modules/avatars/engine/index.js';
 import { createApiRouter } from './modules/index.js';
 import type { DatabaseStatus } from '@pixel/contracts';
 
@@ -42,6 +43,7 @@ export function createApp({ env, logger, getDatabaseStatus }: AppOptions): Expre
     createApiRouter({
       getDatabaseStatus,
       authService: createAuthService({ bcryptRounds: env.BCRYPT_ROUNDS }),
+      avatarEngine: createAvatarConceptEngine(),
       session: {
         jwtSecret: env.JWT_SECRET,
         ttlSeconds: env.SESSION_TTL_DAYS * 24 * 60 * 60,

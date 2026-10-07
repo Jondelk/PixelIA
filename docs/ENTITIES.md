@@ -63,6 +63,7 @@ entidad aparte en 0.1).
 | `analysis.error` | `{ code, message } \| null` | Mensaje apto para el usuario |
 | `onboarding` | `{ answers, updatedAt }` | Ver "Onboarding de marca" ✅ |
 | `brandDnaVersion` | number \| null | Versión vigente del BrandDNA ✅ |
+| `avatarVersion` | number \| null | Versión vigente del AvatarProfile ✅ |
 | `activeAvatarProfileId` | ObjectId \| null | Versión vigente |
 
 Índices: `{ ownerId: 1, createdAt: -1 }`, `{ ownerId: 1, slug: 1 }` único ✅; `{ status: 1, 'analysis.startedAt': 1 }` (recuperación de jobs, Etapa 6).
@@ -114,50 +115,60 @@ Cuando exista la capa de IA, `generator.kind` pasará a `ai` con el mismo contra
 
 Índices: `{ companyId: 1, version: -1 }` único. Plugin `tenantScoped`: toda consulta exige `companyId`.
 
-## 4. AvatarProfile — cómo esa identidad **se ve** como Pixel
+## 4. AvatarProfile — cómo esa identidad **se ve** como Pixel ✅
 
-Generado por `AvatarDesignService` **exclusivamente a partir del BrandDNA**. Todos los valores
-visuales pertenecen a catálogos cerrados que el renderer conoce.
+Colección `avatar_profiles` (plugin `tenantScoped`). Contrato: `AvatarConceptSchema` /
+`AvatarProfileSchema` en `packages/contracts/src/avatarProfile.ts`. Es un **concepto de personaje**,
+no un modelo 3D. Lo produce el **Avatar Concept Engine** a partir del BrandDNA vigente (nunca del
+onboarding crudo). Cada generación crea una versión nueva; la vigente está en `Company.avatarVersion`.
 
-| Bloque | Campos | Valores |
-|---|---|---|
-| **meta** | `companyId`, `brandDnaId`, `brandDnaVersion`, `version`, `generatedBy` | |
-| **concept** | `name` (nombre del Pixel de la empresa), `metaphor` (ej. "grano de café antropomórfico"), `summary` | texto |
-| **form** | `archetype` | `seed` · `crystal` · `block` · `blob` · `drop` · `capsule` |
-| | `proportions { width, height, depth }` | 0.6–1.4 (factores de escala) |
-| | `roundness` | 0–1 |
-| | `surfaceDetail` | `none` · `center-groove` · `facets` · `panel-lines` · `grain` · `stripes` |
-| **palette** | `body`, `secondary`, `accent`, `eyes`, `background` | hex |
-| **material** | `style`, `roughness`, `metalness` | `matte` · `satin` · `glossy` · `metallic` · `clay` · `glass`; 0–1 |
-| **face** | `eyeStyle`, `eyeSize`, `mouthStyle`, `eyebrows`, `blush` | `round` · `oval` · `visor` · `line` · `dot`; 0–1; `smile` · `line` · `open` · `none`; bool; bool |
-| **expression** | `default` | `warm` · `neutral` · `confident` · `curious` · `playful` · `calm` |
-| **motion** | `idle`, `energy` | `bounce` · `float` · `sway` · `breathe` · `hover-spin`; 0–1 |
-| **lighting** | `mood` | `warm` · `cool` · `studio` · `dramatic` |
-| **rationale** | `[{ attribute, value, reason, dnaReference }]` | Mínimo 5 entradas; `dnaReference` es una ruta del BrandDNA (ej. `visualDirection.shapeLanguage`) |
+| Campo | Contenido |
+|---|---|
+| meta | `companyId`, `version`, `brandDnaVersion` (ADN del que salió), `engine { kind, version, variation }`, `createdAt` |
+| `name` | Nombre conceptual ("Grano Anfitrión") |
+| `avatarType` | `anthropomorphic_object` · `creature` · `geometric_entity` · `structural_character` · `organic_character` · `abstract_character` |
+| `concept` | Descripción del personaje |
+| `baseObject` | `{ id, label }` del catálogo de sujetos (`coffee_bean`, `crystal_core`, `building_block`…) o forma abstracta |
+| `bodyShape` | `rounded` · `oval` · `teardrop` · `faceted` · `blocky` · `capsule` · `organic_irregular` |
+| `proportions` | `width`, `height`, `depth`, `faceScale` (0.5–1.5), `stance` (`grounded`/`balanced`/`floating`) |
+| `faceStyle` · `eyesStyle` · `mouthStyle` | Enums cerrados (ver contrato) |
+| `primaryColor` · `secondaryColor` · `accentColor` | `{ hex, name }` con nombre descriptivo ("Tostado (marrón café)") |
+| `materials` · `accessories` · `personalityTraits` | Listas de texto |
+| `animationPersonality` | `friendly_expressive` · `calm_grounded` · `precise_efficient` · `playful_bouncy` · `elegant_smooth` · `bold_energetic` · `wise_measured` |
+| `idleBehavior` | `{ animation, energy 0–1, description }` |
+| `speakingBehavior` | `{ pace, gestures[], description }` |
+| `expressiveness` | 0–100 |
+| `visualKeywords` · `avoid` | Listas de texto |
+| `rationale` | `{ summary, decisions[{ attribute, value, reason, sources[] }] }` — `sources` son rutas del BrandDNA |
+| `renderHints` | `{ archetype (seed/crystal/block/blob/drop/capsule), roundness, finish, surfaceDetail }` para el renderer 3D |
 
-Índices: `{ companyId: 1, version: -1 }` único, `{ companyId: 1, brandDnaId: 1 }`.
+Índices: `{ companyId: 1, version: -1 }` único, `{ companyId: 1, brandDnaVersion: 1 }`.
 
-### Ejemplo (café artesanal colombiano, abreviado)
+### Avatar Concept Engine
 
-```json
-{
-  "concept": { "name": "Pixel Origen", "metaphor": "Grano de café antropomórfico", "summary": "Cálido, cercano y orgulloso de su origen." },
-  "form": { "archetype": "seed", "proportions": { "width": 0.9, "height": 1.15, "depth": 0.8 }, "roundness": 0.85, "surfaceDetail": "center-groove" },
-  "palette": { "body": "#6B3E26", "secondary": "#A9714B", "accent": "#E8C07D", "eyes": "#1E120C", "background": "#F5EBDD" },
-  "material": { "style": "satin", "roughness": 0.55, "metalness": 0.0 },
-  "face": { "eyeStyle": "round", "eyeSize": 0.6, "mouthStyle": "smile", "eyebrows": true, "blush": true },
-  "expression": { "default": "warm" },
-  "motion": { "idle": "bounce", "energy": 0.35 },
-  "lighting": { "mood": "warm" },
-  "rationale": [
-    { "attribute": "form.archetype", "value": "seed", "reason": "El producto central es el grano de café de origen.", "dnaReference": "identity.offering" },
-    { "attribute": "palette.body", "value": "#6B3E26", "reason": "Tostado medio, color principal de la marca.", "dnaReference": "visualDirection.palette" },
-    { "attribute": "expression.default", "value": "warm", "reason": "Rasgo 'calidez' con intensidad 5.", "dnaReference": "personality.traits" },
-    { "attribute": "motion.energy", "value": "0.35", "reason": "Ritmo pausado, artesanal; no frenético.", "dnaReference": "voice.toneScales" },
-    { "attribute": "material.style", "value": "satin", "reason": "Textura natural del grano tostado, sin brillo artificial.", "dnaReference": "visualDirection.materials" }
-  ]
-}
-```
+Interfaz `AvatarConceptEngine` (`apps/api/src/modules/avatars/engine/`):
+`generate({ brandDna, variation }) → AvatarConcept`. El servicio valida siempre la salida con Zod,
+así que un motor de IA puede reemplazar o envolver al de reglas sin cambiar nada más.
+
+Motor actual: `avatar-rules-1` (determinístico). Etapas:
+
+1. **Sujeto**: cada sujeto del catálogo (`catalog.ts`) se puntúa con evidencia textual del ADN
+   (sector ×4, elementos recurrentes ×2,5, descripción ×2, historia ×1,5, diferenciadores y
+   materiales ×1, valores/público/preferencias ×0,5) más afinidades (lenguaje de formas,
+   arquetipo, temperatura de paleta). Restricciones y "no le gusta" pueden **vetar** un sujeto.
+   Sin evidencia suficiente → forma abstracta derivada del lenguaje de formas.
+2. **Cuerpo** (proporciones, postura, redondez) según sujeto, formas y ejes de personalidad.
+3. **Rostro** según calidez, juego, sofisticación, innovación y arquetipo.
+4. **Color**: roles de la paleta del ADN, con nombres descriptivos.
+5. **Materiales y accesorios**: acabado desde materiales principales y estilo; accesorios desde el
+   sujeto, elementos recurrentes y origen, filtrados por lo que se debe evitar.
+6. **Personalidad y comportamiento**: rasgos por arquetipo, personalidad de animación, reposo,
+   habla y expresividad.
+7. **Palabras clave y límites**.
+8. **Rationale**: resumen y cada decisión con sus fuentes en el ADN.
+
+**Regenerar**: la variación es el número de avatares ya generados para ese ADN. La 0 es el mejor
+ajuste; las siguientes recorren alternativas viables (≥ 60 % del mejor) y la forma abstracta.
 
 ## 5. Conversation
 

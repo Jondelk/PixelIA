@@ -1,4 +1,5 @@
 export * from './auth.js';
+export * from './avatarProfile.js';
 export * from './brandDna.js';
 export * from './brandOnboarding.js';
 export * from './common.js';

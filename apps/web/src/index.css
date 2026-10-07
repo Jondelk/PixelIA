@@ -70,3 +70,83 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Animaciones de reposo de la vista provisional de Pixel (idleBehavior). */
+@keyframes pixel-bounce {
+  0%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  45% {
+    transform: translateY(-9px) scale(0.98, 1.02);
+  }
+  60% {
+    transform: translateY(0) scale(1.03, 0.97);
+  }
+}
+@keyframes pixel-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+@keyframes pixel-sway {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+@keyframes pixel-breathe {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+  50% {
+    transform: scale(1.02, 1.035);
+  }
+}
+@keyframes pixel-hover-spin {
+  0%,
+  100% {
+    transform: translateY(0) skewY(0deg);
+  }
+  25% {
+    transform: translateY(-5px) skewY(1.5deg);
+  }
+  75% {
+    transform: translateY(-5px) skewY(-1.5deg);
+  }
+}
+@keyframes pixel-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.045);
+  }
+}
+.pixel-idle-bounce {
+  animation: pixel-bounce ease-in-out infinite;
+}
+.pixel-idle-float {
+  animation: pixel-float ease-in-out infinite;
+}
+.pixel-idle-sway {
+  animation: pixel-sway ease-in-out infinite;
+}
+.pixel-idle-breathe {
+  animation: pixel-breathe ease-in-out infinite;
+}
+.pixel-idle-hover-spin {
+  animation: pixel-hover-spin ease-in-out infinite;
+}
+.pixel-idle-pulse {
+  animation: pixel-pulse ease-in-out infinite;
+}

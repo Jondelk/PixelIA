@@ -69,7 +69,7 @@ flowchart TB
 │  │  │  │  ├─ auth/              user.model · auth.service · auth.routes
 │  │  │  │  ├─ companies/         company.model · company.service · companies.routes (+ onboarding)
 │  │  │  │  ├─ brand-dna/         brandDna.model · brandDna.service · brandDna.generator · brandDna.lexicon · brand-dna.routes
-│  │  │  │  ├─ avatars/           avatarProfile.model · avatarDesign.service · avatars.routes
+│  │  │  │  ├─ avatars/           avatarProfile.model · avatar.service · avatars.routes · engine/ (interfaz, catálogo, reglas)
 │  │  │  │  ├─ conversations/     conversation.model · message.model · contextBuilder · pixelChat.service · conversations.routes
 │  │  │  │  └─ creative-memory/   creativeMemory.model · creativeMemory.service · creative-memory.routes
 │  │  │  └─ ai/
@@ -195,7 +195,7 @@ generateObject<T>(provider, { system, prompt, schema: ZodType<T>, schemaName }):
 | Servicio | Entrada | Salida | Notas |
 |---|---|---|---|
 | `BrandAnalysisService` | `companyId`, `BrandOnboardingInput` | `BrandDNA` (validado) | Prompt versionado (`promptVersion`) guardado en el documento |
-| `AvatarDesignService` | `companyId`, `BrandDNA` | `AvatarProfile` (validado) | **Solo recibe el BrandDNA**. Restringido a un catálogo cerrado de arquetipos/estilos que el frontend sabe renderizar. Debe devolver `rationale` |
+| `AvatarConceptEngine` (✅ reglas `avatar-rules-1`; IA pendiente) | `BrandDNA`, `variation` | `AvatarConcept` (validado) | **Solo recibe el BrandDNA**. Valores visuales de catálogos cerrados que el renderer conoce. Devuelve `rationale` con fuentes. Ver `ENTITIES.md §4` |
 | `PixelChatService` | `companyId`, `conversationId`, mensaje del usuario | Mensaje de Pixel | System prompt = rol de director creativo + BrandDNA + memorias activas; historial de últimos N mensajes |
 
 ### 5.3 Selección de proveedor
@@ -246,7 +246,8 @@ Prefijo `/api`. JSON. Errores con forma `ApiError { code, message, details? }`.
 | PUT | `/companies/:companyId/brand-dna` | Guarda un paso `{ step, data }`; con los 8 pasos completos (re)genera el BrandDNA ✅ |
 | POST | `/companies/:companyId/onboarding/submit` | (Etapa 6, con IA) Lanzar análisis asíncrono (`202`) |
 | POST | `/companies/:companyId/analysis/retry` | Reintentar/regenerar análisis (`202`) |
-| GET | `/companies/:companyId/avatar-profile` | AvatarProfile activo |
+| GET | `/companies/:companyId/avatar` | Avatar vigente, historial (máx. 20) e `isStale` ✅ |
+| POST | `/companies/:companyId/avatar/generate` | Crea/regenera el concepto (nueva versión, `201`); `409` sin BrandDNA ✅ |
 | GET | `/companies/:companyId/conversations` | Conversaciones |
 | POST | `/companies/:companyId/conversations` | Nueva conversación |
 | GET | `/companies/:companyId/conversations/:conversationId/messages` | Mensajes |

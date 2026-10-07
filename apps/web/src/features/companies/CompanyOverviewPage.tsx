@@ -12,23 +12,29 @@ export function CompanyOverviewPage() {
   const { company } = useCompany();
   const sections = companyNav(company.id).slice(1);
   const base = companyBasePath(company.id);
-  const cta = company.brandDnaVersion
+  const cta = company.avatarVersion
     ? {
-        to: `${base}/brand`,
-        label: 'Ver cómo entiende Pixel tu marca',
-        text: 'Pixel ya conoce el ADN de esta marca. El siguiente paso será darle forma a su avatar 3D.',
+        to: `${base}/pixel`,
+        label: 'Ver mi Pixel',
+        text: 'Pixel ya tiene ADN y un concepto de personaje derivado de él. El avatar 3D será el siguiente paso.',
       }
-    : company.status === 'onboarding'
+    : company.brandDnaVersion
       ? {
-          to: `${base}/onboarding`,
-          label: 'Continuar onboarding',
-          text: 'Pixel está aprendiendo esta marca. Completa los 8 pasos del onboarding para que genere su ADN.',
+          to: `${base}/pixel`,
+          label: 'Crear mi Pixel',
+          text: 'Pixel ya conoce el ADN de esta marca. Ahora puede convertirlo en su personaje.',
         }
-      : {
-          to: `${base}/onboarding`,
-          label: 'Enseñarle a Pixel tu marca',
-          text: 'Para que Pixel tome forma, primero estudiará el ADN de la marca en el onboarding. De ahí saldrán su personalidad, su voz y su avatar 3D.',
-        };
+      : company.status === 'onboarding'
+        ? {
+            to: `${base}/onboarding`,
+            label: 'Continuar onboarding',
+            text: 'Pixel está aprendiendo esta marca. Completa los 8 pasos del onboarding para que genere su ADN.',
+          }
+        : {
+            to: `${base}/onboarding`,
+            label: 'Enseñarle a Pixel tu marca',
+            text: 'Para que Pixel tome forma, primero estudiará el ADN de la marca en el onboarding. De ahí saldrán su personalidad, su voz y su avatar 3D.',
+          };
 
   return (
     <>

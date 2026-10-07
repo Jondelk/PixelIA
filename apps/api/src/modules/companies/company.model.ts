@@ -17,6 +17,7 @@ export interface CompanyAttrs {
   /** Respuestas del onboarding de marca, por paso. Cada paso se valida con Zod al guardarse y al leerse. */
   onboarding: { answers: BrandOnboardingDraft; updatedAt: Date | null };
   brandDnaVersion: number | null;
+  avatarVersion: number | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -37,6 +38,7 @@ const companySchema = new Schema<CompanyAttrs>(
       updatedAt: { type: Date, default: null },
     },
     brandDnaVersion: { type: Number, default: null, min: 1 },
+    avatarVersion: { type: Number, default: null, min: 1 },
   },
   { timestamps: true, minimize: false },
 );
@@ -58,6 +60,7 @@ export function toCompanyDTO(company: CompanyDocument): Company {
     logoUrl: company.logoUrl,
     status: company.status,
     brandDnaVersion: company.brandDnaVersion ?? null,
+    avatarVersion: company.avatarVersion ?? null,
     createdAt: company.createdAt.toISOString(),
     updatedAt: company.updatedAt.toISOString(),
   };

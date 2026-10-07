@@ -13,6 +13,7 @@ const company: Company = {
   logoUrl: null,
   status: 'draft',
   brandDnaVersion: null,
+  avatarVersion: null,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 };
