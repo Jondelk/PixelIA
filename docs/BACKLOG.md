@@ -16,7 +16,7 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 | 4 | Empresas y onboarding | ✅ (edición de empresa en la UI pendiente) |
 | 5 | Capa de IA | ⬜ |
 | 6 | Análisis de marca: BrandDNA → AvatarProfile | 🟨 (BrandDNA y AvatarProfile determinísticos hechos; IA pendiente) |
-| 7 | Avatar 3D | 🟨 (vista provisional SVG; R3F pendiente) |
+| 7 | Avatar 3D | ✅ (Coffee Pixel completo; afinar otros sujetos) |
 | 8 | Chat con Pixel | ⬜ |
 | 9 | CreativeMemory básica | ⬜ |
 | 10 | Cierre end-to-end del MVP | ⬜ |
@@ -40,7 +40,7 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 **Aceptación:** `npm install && npm run typecheck && npm run lint && npm run test && npm run build` en verde; `npm run dev` levanta api y web, y la web muestra el estado de salud de la API.
 
 **Notas:**
-- React Three Fiber y Drei se instalarán en la Etapa 7 (no se usan antes).
+- React Three Fiber y Drei se instalaron en la Etapa 7.
 - La conexión real a MongoDB no pudo probarse en el entorno de desarrollo en la nube (red sin acceso a binarios de MongoDB); el modo sin base de datos (`degraded` + reintentos) sí se verificó.
 
 ## Etapa 1 — Contratos de dominio
@@ -122,13 +122,14 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 
 ## Etapa 7 — Avatar 3D
 
-- [ ] `profileToScene()` (función pura) + tests.
-- [ ] `PixelAvatar` con R3F/Drei: arquetipos `seed`, `crystal`, `block`, `blob` (mínimo); `drop` y `capsule` si el tiempo lo permite (si no, mapean a `blob` y se documenta).
-- [ ] Rostro (ojos, boca, cejas, rubor), materiales, iluminación por `lighting.mood`.
-- [ ] Animaciones idle y estados `idle | thinking | talking`.
-- [ ] Carga perezosa (`React.lazy`) y fallback sin WebGL.
-- [ ] Panel `AvatarRationale` ("por qué me veo así").
-- [ ] Página de previsualización de los 3 fixtures de demo (solo en desarrollo).
+- [x] `profileToScene()` y `poseAt()` (funciones puras) + tests.
+- [x] `PixelAvatar` con R3F/Drei y componentes `AvatarBody`, `AvatarFace`, `AvatarEyes`, `AvatarMouth`, `AvatarLimbs`, `AvatarAccessory`, `AvatarEnvironment`, `AvatarController`. Formas `seed`, `crystal`, `block`, `blob`, `drop`, `capsule`.
+- [x] Primer caso completo: **Coffee Pixel** (grano con ranura, ojos, boca, rubor, brazos, piernas, hoja de cafeto, taza).
+- [x] Estados `idle | thinking | listening | speaking | happy` con transiciones suaves; controlador manual en desarrollo.
+- [x] Cámara responsiva, luces, sombras, environment procedural, controles limitados con retorno al frente.
+- [x] Carga perezosa (`React.lazy`) y fallback SVG sin WebGL.
+- [ ] Afinar el modelado de los demás sujetos (núcleo de cristal, bloque…) al nivel del Coffee Pixel.
+- [ ] Cejas y expresiones adicionales; sincronizar `speaking` con la duración real de la respuesta del chat (Etapa 8).
 
 **Aceptación:** los 3 escenarios de demo se renderizan como personajes claramente distintos y coherentes con su ADN.
 

@@ -4,7 +4,7 @@ import {
   type AvatarProfile,
   type AvatarResponse,
 } from '@pixel/contracts';
-import { useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { Alert } from '../../components/Alert';
 import { Button } from '../../components/Button';
@@ -27,7 +27,14 @@ import {
   MOUTH_LABEL,
   PACE_LABEL,
 } from './labels';
+import { AvatarStateControls } from '../avatar3d/AvatarStateControls';
+import type { AvatarState } from '../avatar3d/pose';
+import { supportsWebGL } from '../avatar3d/webgl';
+import { ErrorBoundary } from '../../components/ErrorBoundary';
 import { PixelPreview } from './PixelPreview';
+
+/** El renderer 3D (three.js) se carga solo al entrar a esta página. */
+const PixelAvatar = lazy(() => import('../avatar3d/PixelAvatar'));
 
 const dateFormat = new Intl.DateTimeFormat('es', { dateStyle: 'medium' });
 
@@ -89,15 +96,26 @@ function PixelStudio({
   const [data, setData] = useState(initial);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [avatarState, setAvatarState] = useState<AvatarState>('idle');
+
+  // Tras un concepto nuevo, Pixel celebra unos segundos y vuelve al reposo.
+  useEffect(() => {
+    if (avatarState !== 'happy') return;
+    const timer = window.setTimeout(() => setAvatarState('idle'), 2600);
+    return () => window.clearTimeout(timer);
+  }, [avatarState]);
 
   async function generate() {
     setGenerating(true);
     setError(null);
+    setAvatarState('thinking');
     try {
       setData(await generateAvatar(companyId));
       onGenerated();
+      setAvatarState('happy');
     } catch (err) {
       setError(errorMessage(err));
+      setAvatarState('idle');
     } finally {
       setGenerating(false);
     }
@@ -144,6 +162,8 @@ function PixelStudio({
       generating={generating}
       error={error}
       onRegenerate={generate}
+      avatarState={avatarState}
+      onAvatarStateChange={setAvatarState}
     />
   );
 }
@@ -204,12 +224,16 @@ function AvatarConceptView({
   generating,
   error,
   onRegenerate,
+  avatarState,
+  onAvatarStateChange,
 }: {
   avatar: AvatarProfile;
   response: AvatarResponse;
   generating: boolean;
   error: string | null;
   onRegenerate: () => void;
+  avatarState: AvatarState;
+  onAvatarStateChange: (state: AvatarState) => void;
 }) {
   const colors = [
     { label: 'Principal', ...avatar.primaryColor },
@@ -223,15 +247,22 @@ function AvatarConceptView({
       <div className="space-y-4 xl:sticky xl:top-24 xl:self-start">
         <section className="animate-rise relative overflow-hidden rounded-3xl border border-line bg-surface">
           <div className="bg-grid pointer-events-none absolute inset-0" aria-hidden="true" />
-          <PixelPreview
-            key={avatar.id}
-            profile={avatar}
-            className="relative mx-auto h-80 w-full max-w-sm"
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 opacity-30 blur-3xl"
+            style={{
+              background: `radial-gradient(ellipse at 50% 100%, ${avatar.accentColor.hex}, transparent 70%)`,
+            }}
+            aria-hidden="true"
           />
+          <AvatarStage avatar={avatar} state={avatarState} />
           <p className="relative border-t border-line px-5 py-3 text-center font-mono text-[11px] text-subtle">
-            Vista provisional · el modelo 3D llegará después
+            Avatar paramétrico · arrastra para girarlo
           </p>
         </section>
+
+        {import.meta.env.DEV && (
+          <AvatarStateControls value={avatarState} onChange={onAvatarStateChange} />
+        )}
 
         {response.isStale && (
           <div className="rounded-xl border border-amber-400/30 bg-amber-400/[0.06] px-4 py-3 text-sm text-amber-100">
@@ -397,5 +428,35 @@ function AvatarConceptView({
         </div>
       </div>
     </div>
+  );
+}
+
+/** Escena 3D del Pixel; si no hay WebGL o la escena falla, muestra la vista SVG. */
+function AvatarStage({ avatar, state }: { avatar: AvatarProfile; state: AvatarState }) {
+  const [webgl] = useState(supportsWebGL);
+  const fallback = (
+    <PixelPreview
+      key={avatar.id}
+      profile={avatar}
+      className="relative mx-auto h-80 w-full max-w-sm"
+    />
+  );
+  if (!webgl) return fallback;
+  return (
+    <ErrorBoundary key={avatar.id} fallback={fallback}>
+      <Suspense
+        fallback={
+          <div className="relative grid h-80 place-items-center sm:h-96" role="status">
+            <Spinner className="size-6 text-accent" />
+          </div>
+        }
+      >
+        <PixelAvatar
+          profile={avatar}
+          state={state}
+          className="relative !h-80 w-full touch-pan-y sm:!h-96"
+        />
+      </Suspense>
+    </ErrorBoundary>
   );
 }

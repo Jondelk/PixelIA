@@ -206,26 +206,43 @@ generateObject<T>(provider, { system, prompt, schema: ZodType<T>, schemaName }):
   poder recorrer el flujo completo en dev y en tests.
 - Las claves de API viven solo en el backend.
 
-## 6. Avatar 3D (renderer paramétrico)
+## 6. Avatar 3D (renderer paramétrico) ✅
 
-No se generan mallas con IA. El avatar se **compone** en el cliente con primitivas/geometrías
-procedurales de Three.js a partir del `AvatarProfile`:
+No se generan mallas con IA. El avatar se **compone** en el cliente con primitivas y geometrías
+procedurales de Three.js (React Three Fiber + Drei) a partir del `AvatarProfile`. Tres capas
+separadas (`apps/web/src/features/avatar3d/`):
 
 ```
-AvatarProfile ──profileToScene()──▶ SceneSpec ──▶ <PixelAvatar>
-   (datos validados)   (función pura, testeable)    ├─ <Archetype body>   seed | crystal | block | blob | drop | capsule
-                                                    ├─ <Face>             ojos, boca, cejas, rubor
-                                                    ├─ material            meshStandard/Physical según MaterialStyle
-                                                    ├─ motion              idle + estados idle/thinking/talking (useFrame)
-                                                    └─ entorno Drei        Environment, ContactShadows, OrbitControls limitados
+BrandDNA ──(API: Avatar Concept Engine, reglas de negocio)──▶ AvatarProfile
+AvatarProfile ──profileToScene() (traducción visual pura)──▶ SceneSpec
+estado + tiempo ──poseAt() (función pura)──▶ Pose objetivo
+
+<PixelAvatar profile state>                Canvas, cámara responsiva, controles limitados
+ ├─ <AvatarEnvironment>                    luces, sombras, environment procedural (Lightformers)
+ └─ <PresentationControls snap>            giro acotado que vuelve solo al frente; sin zoom ni pan
+     └─ <AvatarController>                 interpola la pose (damp) y la aplica cada frame
+         ├─ <AvatarBody>                   seed | crystal | block | blob | drop | capsule (+ ranura, líneas)
+         ├─ <AvatarFace>                   <AvatarEyes> <AvatarMouth> + rubor
+         ├─ <AvatarLimbs>                  brazos y piernas (mano con accesorio)
+         ├─ <AvatarAccessory>              hoja, taza, anillo orbital, casco, insignia
+         └─ <ThinkingDots>
 ```
 
-- `profileToScene` es una función pura: se testea sin WebGL.
-- Catálogo cerrado (`enum` en contracts): la IA solo puede elegir valores que existen en el renderer.
-- El componente 3D se carga con `React.lazy` para no penalizar el bundle inicial.
-- Sin WebGL → fallback 2D con la paleta y el nombre del arquetipo.
-- Estados del avatar: `idle`, `thinking` (mientras espera respuesta de la IA), `talking`
-  (animación simple de boca/escala durante ~N ms según largo del texto; **no** es lip-sync).
+- **Sin reglas de negocio en Three.js**: los componentes solo leen `SceneSpec` y la pose.
+  `profileToScene` y `poseAt` se testean sin WebGL.
+- **Estados**: `idle` (movimiento sutil según `idleBehavior` + parpadeo y mirada),
+  `thinking` (mira arriba, mano a la barbilla, puntos), `listening` (se inclina, asiente),
+  `speaking` (boca con aperturas tipo sílaba y pausas, gestos de cabeza y brazos; **no** es
+  lip-sync), `happy` (salta, brazos arriba, ojos en arco). Las transiciones se interpolan.
+  La expresividad y la energía del perfil escalan amplitud y velocidad.
+- En `/pixel`: "Pensando" mientras se genera el concepto y "Feliz" al recibirlo. En desarrollo
+  aparece un controlador manual de estados (`import.meta.env.DEV`).
+- **Cámara**: encuadra al personaje completo calculando la distancia por alto y por ancho del
+  lienzo (escritorio y móvil). `PresentationControls` en vez de OrbitControls: rotación acotada
+  (±43° horizontal, poca vertical) con retorno automático al frente.
+- **Rendimiento**: `dpr` máx. 1,75, sombras PCF de 1024 px + ContactShadows, sin HDRI externos.
+  El renderer se carga con `React.lazy` (paquete aparte, ~280 kB gzip, solo en `/pixel`).
+- **Fallback**: sin WebGL o si la escena falla (ErrorBoundary) se muestra la vista SVG provisional.
 
 ## 7. API REST
 
