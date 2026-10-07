@@ -14,10 +14,10 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 | 2 | Persistencia y aislamiento | 🟨 (User, Company, BrandDNA, plugin tenantScoped hechos) |
 | 3 | Autenticación | ✅ |
 | 4 | Empresas y onboarding | ✅ (edición de empresa en la UI pendiente) |
-| 5 | Capa de IA | ⬜ |
+| 5 | Capa de IA | ✅ (Anthropic + demo; BrandDNA/Avatar con IA pendientes) |
 | 6 | Análisis de marca: BrandDNA → AvatarProfile | 🟨 (BrandDNA y AvatarProfile determinísticos hechos; IA pendiente) |
 | 7 | Avatar 3D | ✅ (Coffee Pixel completo; afinar otros sujetos) |
-| 8 | Chat con Pixel | ⬜ |
+| 8 | Chat con Pixel | ✅ |
 | 9 | CreativeMemory básica | ⬜ |
 | 10 | Cierre end-to-end del MVP | ⬜ |
 
@@ -93,16 +93,14 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 
 **Aceptación:** un usuario crea una empresa, completa el onboarding en varias sesiones y lo envía.
 
-## Etapa 5 — Capa de IA
+## Etapa 5 — Capa de IA ✅
 
-- [ ] `AIProvider` (interfaz), `createAIProvider(env)`.
-- [ ] `structured.ts`: `generateObject` con validación Zod + 1 reintento con errores + `AIOutputError`.
-- [ ] `MockAIProvider` determinista (genera BrandDNA/AvatarProfile/respuestas plausibles según el input).
-- [ ] Adaptador del proveedor real (**requiere decisión de proveedor**; ver `MVP.md §6`).
-- [ ] Regla ESLint `no-restricted-imports`: SDKs de IA solo dentro de `apps/api/src/ai/`.
-- [ ] Tests: reintento ante JSON inválido, error tras segundo fallo, mock cumple los schemas.
-
-**Aceptación:** con `AI_PROVIDER=mock` y con el proveedor real se obtiene un objeto válido contra un schema de prueba.
+- [x] `AIProvider` con `generateText()` y `generateStructuredOutput()`, `createAIProvider(env)`.
+- [x] `AnthropicProvider` (SDK oficial, `claude-opus-5-5`, fallback de servidor, rechazos, errores tipados, caché del system prompt).
+- [x] `DemoProvider` local sin IA para desarrollo y tests.
+- [x] Regla ESLint: SDKs de IA solo dentro de `apps/api/src/ai/`.
+- [x] Tests del proveedor Anthropic con cliente falso (forma de la petición, rechazos, errores).
+- [ ] Usar `generateStructuredOutput()` para BrandDNA y AvatarProfile con IA.
 
 ## Etapa 6 — Análisis de marca: BrandDNA → AvatarProfile
 
@@ -133,16 +131,16 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 
 **Aceptación:** los 3 escenarios de demo se renderizan como personajes claramente distintos y coherentes con su ADN.
 
-## Etapa 8 — Chat con Pixel
+## Etapa 8 — Chat con Pixel ✅
 
-- [ ] `POST/GET /conversations`, `GET/POST /conversations/:id/messages`.
-- [ ] `ContextBuilder.build(companyId, conversationId)`: BrandDNA activo + memorias activas + últimos `CHAT_HISTORY_LIMIT` mensajes.
-- [ ] `pixelChat.prompt.ts` (rol de director creativo + voz, criterio y comportamiento del ADN).
-- [ ] `PixelChatService`, persistencia de `brandDnaVersion` y metadatos `ai`.
-- [ ] Web: `ChatPage` con avatar (`thinking` al enviar, `talking` al recibir), lista de conversaciones.
-- [ ] Tests: el contexto **solo** contiene datos de la empresa; conversación de otra empresa → 404; dos empresas producen system prompts distintos.
-
-**Aceptación:** el usuario conversa con su Pixel y las respuestas reflejan la voz del BrandDNA.
+- [x] Modelos `Conversation` y `Message` aislados por empresa (`tenantScoped`).
+- [x] `GET/POST /conversations`, `GET/POST /conversations/:id/messages`.
+- [x] `PixelContextBuilder`: rol de director creativo, palancas creativas, brief de marca, avatar cuando es relevante, límites de contexto.
+- [x] Persistencia atómica de pregunta + respuesta; errores de IA → 503/422 sin guardar nada.
+- [x] Web: avatar 3D + chat (escritorio lado a lado, móvil avatar compacto arriba); estados `listening`, `thinking`, `speaking`, `idle`; revelado progresivo; sugerencias; historial de conversaciones.
+- [x] Tests: flujo completo, historial, avatar relevante, validación, errores, aislamiento, y **misma pregunta → respuestas distintas** para café y startup (demo siempre; Claude real si hay `ANTHROPIC_API_KEY`).
+- [ ] Streaming de respuestas (SSE) para mostrar texto mientras el modelo genera.
+- [ ] Voz.
 
 ## Etapa 9 — CreativeMemory básica
 

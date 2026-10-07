@@ -2,17 +2,20 @@ import { randomUUID } from 'node:crypto';
 import mongoose from 'mongoose';
 import request from 'supertest';
 import { afterAll, afterEach, beforeAll, inject } from 'vitest';
+import type { AIProvider } from '../../src/ai/index.js';
+import { DemoProvider } from '../../src/ai/providers/demo.provider.js';
 import { createApp } from '../../src/app.js';
 import { loadEnv } from '../../src/config/env.js';
 import { createLogger } from '../../src/lib/logger.js';
 
 export const testEnv = loadEnv({ NODE_ENV: 'test', BCRYPT_ROUNDS: '4', LOG_LEVEL: 'silent' });
 
-export function buildTestApp() {
+export function buildTestApp(ai: AIProvider = new DemoProvider()) {
   return createApp({
     env: testEnv,
     logger: createLogger({ level: 'silent', format: 'json' }),
     getDatabaseStatus: () => 'connected',
+    ai,
   });
 }
 

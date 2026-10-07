@@ -317,7 +317,7 @@ export const SUBJECTS: SubjectDefinition[] = [
       'saas',
       'nube',
     ],
-    vetoTerms: ['cristal', 'robot'],
+    vetoTerms: ['cristal'],
     shapeAffinity: ['geometric', 'structural'],
     archetypeAffinity: ['magician', 'sage', 'creator', 'explorer'],
     temperature: 'cool',

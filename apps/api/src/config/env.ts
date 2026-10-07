@@ -27,6 +27,13 @@ const EnvSchema = z
     JWT_SECRET: z.string().min(32, 'Debe tener al menos 32 caracteres').optional(),
     SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(7),
     BCRYPT_ROUNDS: z.coerce.number().int().min(4).max(15).default(12),
+    /** anthropic | demo. Por defecto: anthropic si hay ANTHROPIC_API_KEY, si no demo. */
+    AI_PROVIDER: z.enum(['anthropic', 'demo']).optional(),
+    AI_MODEL: z.string().min(1).default('claude-opus-5-5'),
+    AI_TIMEOUT_MS: z.coerce.number().int().min(5_000).max(600_000).default(90_000),
+    ANTHROPIC_API_KEY: z.string().optional(),
+    /** Mensajes previos que entran al contexto del chat. */
+    CHAT_HISTORY_LIMIT: z.coerce.number().int().min(0).max(100).default(20),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV === 'production' && !env.JWT_SECRET) {
@@ -37,8 +44,9 @@ const EnvSchema = z
       });
     }
   })
-  .transform((env) => ({
+  .transform(({ ANTHROPIC_API_KEY, ...env }) => ({
     ...env,
+    AI_PROVIDER: env.AI_PROVIDER ?? (ANTHROPIC_API_KEY ? 'anthropic' : 'demo'),
     JWT_SECRET: env.JWT_SECRET ?? DEV_JWT_SECRET,
     usingDevJwtSecret: !env.JWT_SECRET,
   }));

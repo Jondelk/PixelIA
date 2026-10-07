@@ -37,6 +37,11 @@ Define `JWT_SECRET` en `apps/api/.env` (≥ 32 caracteres; obligatorio en produc
 `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`. Sin él, en desarrollo se
 usa un secreto de desarrollo y la API lo avisa en el log.
 
+**IA**: sin configuración, Pixel responde en **modo demo** (reglas locales a partir del ADN, sin
+modelo de lenguaje). Para respuestas reales con Claude, añade `ANTHROPIC_API_KEY` en `apps/api/.env`
+(opcional `AI_MODEL`, por defecto `claude-opus-5-5`). La prueba con el modelo real
+(`apps/api/test/chat.live.test.ts`) solo corre cuando esa clave existe.
+
 La API arranca aunque MongoDB no esté disponible: `/api/health` responde `503` con
 `"status": "degraded"` y reintenta la conexión cada 5 s. El header de la web muestra ese estado.
 

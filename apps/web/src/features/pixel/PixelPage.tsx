@@ -4,7 +4,7 @@ import {
   type AvatarProfile,
   type AvatarResponse,
 } from '@pixel/contracts';
-import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { Alert } from '../../components/Alert';
 import { Button } from '../../components/Button';
@@ -27,14 +27,9 @@ import {
   MOUTH_LABEL,
   PACE_LABEL,
 } from './labels';
+import { AvatarStage } from '../avatar3d/AvatarStage';
 import { AvatarStateControls } from '../avatar3d/AvatarStateControls';
 import type { AvatarState } from '../avatar3d/pose';
-import { supportsWebGL } from '../avatar3d/webgl';
-import { ErrorBoundary } from '../../components/ErrorBoundary';
-import { PixelPreview } from './PixelPreview';
-
-/** El renderer 3D (three.js) se carga solo al entrar a esta página. */
-const PixelAvatar = lazy(() => import('../avatar3d/PixelAvatar'));
 
 const dateFormat = new Intl.DateTimeFormat('es', { dateStyle: 'medium' });
 
@@ -254,7 +249,7 @@ function AvatarConceptView({
             }}
             aria-hidden="true"
           />
-          <AvatarStage avatar={avatar} state={avatarState} />
+          <AvatarStage avatar={avatar} state={avatarState} className="!h-80 sm:!h-96" />
           <p className="relative border-t border-line px-5 py-3 text-center font-mono text-[11px] text-subtle">
             Avatar paramétrico · arrastra para girarlo
           </p>
@@ -428,35 +423,5 @@ function AvatarConceptView({
         </div>
       </div>
     </div>
-  );
-}
-
-/** Escena 3D del Pixel; si no hay WebGL o la escena falla, muestra la vista SVG. */
-function AvatarStage({ avatar, state }: { avatar: AvatarProfile; state: AvatarState }) {
-  const [webgl] = useState(supportsWebGL);
-  const fallback = (
-    <PixelPreview
-      key={avatar.id}
-      profile={avatar}
-      className="relative mx-auto h-80 w-full max-w-sm"
-    />
-  );
-  if (!webgl) return fallback;
-  return (
-    <ErrorBoundary key={avatar.id} fallback={fallback}>
-      <Suspense
-        fallback={
-          <div className="relative grid h-80 place-items-center sm:h-96" role="status">
-            <Spinner className="size-6 text-accent" />
-          </div>
-        }
-      >
-        <PixelAvatar
-          profile={avatar}
-          state={state}
-          className="relative !h-80 w-full touch-pan-y sm:!h-96"
-        />
-      </Suspense>
-    </ErrorBoundary>
   );
 }

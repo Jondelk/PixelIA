@@ -170,29 +170,36 @@ Motor actual: `avatar-rules-1` (determinístico). Etapas:
 **Regenerar**: la variación es el número de avatares ya generados para ese ADN. La 0 es el mejor
 ajuste; las siguientes recorren alternativas viables (≥ 60 % del mejor) y la forma abstracta.
 
-## 5. Conversation
+## 5. Conversation ✅
+
+Colección `conversations` (plugin `tenantScoped`). Contrato: `ConversationSchema`.
 
 | Campo | Tipo | Reglas |
 |---|---|---|
 | `companyId` | ObjectId → Company | Requerido, indexado |
-| `userId` | ObjectId → User | Quien la creó |
-| `title` | string | Derivado del primer mensaje o "Nueva conversación" |
-| `lastMessageAt` | Date | |
+| `userId` | ObjectId → User | Quien conversa; las consultas filtran por `{ companyId, userId }` |
+| `title` | string | Primer mensaje del usuario (60 caracteres) o "Nueva conversación" |
+| `messageCount` | number | |
+| `lastMessageAt` | Date \| null | |
+| `createdAt` / `updatedAt` | Date | |
 
-Índices: `{ companyId: 1, lastMessageAt: -1 }`.
+Índices: `{ companyId: 1, userId: 1, updatedAt: -1 }`.
 
-## 6. Message
+## 6. Message ✅
+
+Colección `messages` (plugin `tenantScoped`). Contrato: `MessageSchema`.
 
 | Campo | Tipo | Reglas |
 |---|---|---|
-| `companyId` | ObjectId | Requerido, indexado (redundante a propósito: aislamiento sin joins) |
-| `conversationId` | ObjectId → Conversation | Debe pertenecer al mismo `companyId` |
+| `companyId` | ObjectId | Requerido (redundante a propósito: aislamiento sin joins) |
+| `conversationId` | ObjectId → Conversation | De la misma empresa |
+| `userId` | ObjectId → User | Usuario de la conversación (también en los mensajes de Pixel) |
 | `role` | `user \| pixel` | |
-| `content` | string | 1–8000 caracteres |
-| `brandDnaVersion` | number \| null | Versión del ADN con la que respondió Pixel |
-| `ai` | `{ provider, model, latencyMs, usage? } \| null` | Solo en mensajes de Pixel |
+| `content` | string | Usuario: 1–4000 caracteres |
+| `meta` | `{ provider, model, mode: ai\|demo, latencyMs, brandDnaVersion, avatarVersion } \| null` | Solo en mensajes de Pixel: con qué ADN, avatar y modelo respondió |
+| `createdAt` | Date | |
 
-Índices: `{ companyId: 1, conversationId: 1, createdAt: 1 }`.
+Índices: `{ companyId: 1, conversationId: 1, createdAt: -1 }`.
 
 ## 7. CreativeMemory
 

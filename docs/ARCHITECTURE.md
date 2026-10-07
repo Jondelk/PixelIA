@@ -146,65 +146,61 @@ Defensa en capas — basta con que una falle para que otra lo detenga:
 7. **Tests**: suite dedicada "isolation" con dos usuarios y dos empresas que prueba cada endpoint
    (lectura y escritura cruzada → 404) y el contenido del contexto de IA.
 
-## 5. Capa de IA
+## 5. Capa de IA ✅
 
-> **Estado actual:** aún no hay IA. El BrandDNA se genera con reglas determinísticas
-> (`brandDna.generator.ts`) para validar la arquitectura de punta a punta. El servicio de IA
-> (`BrandAnalysisService`) producirá el mismo contrato `BrandDnaContentSchema`, así que el resto del
-> producto no cambia al activarla.
-
-### 5.1 Interfaz
-
-```ts
-// apps/api/src/ai/AIProvider.ts
-export interface AIChatTurn { role: 'user' | 'assistant'; content: string }
-
-export interface AIUsage { inputTokens?: number; outputTokens?: number }
-
-export interface AIProvider {
-  readonly name: string;   // 'mock' | 'anthropic' | ...
-  readonly model: string;
-
-  /** Respuesta de texto libre (chat). */
-  generateText(input: {
-    system: string;
-    messages: AIChatTurn[];
-    maxTokens?: number;
-    temperature?: number;
-  }): Promise<{ text: string; usage?: AIUsage }>;
-
-  /** Respuesta JSON cruda; la validación la hace generateObject() en structured.ts. */
-  generateJson(input: {
-    system: string;
-    prompt: string;
-    jsonSchema: Record<string, unknown>; // derivado del schema Zod
-    maxTokens?: number;
-  }): Promise<{ json: unknown; usage?: AIUsage }>;
-}
+```
+apps/api/src/ai/
+├─ AIProvider.ts            interfaz: generateText() y generateStructuredOutput()
+├─ errors.ts                AIProviderError { kind: unavailable | rate_limited | refused | invalid_output | misconfigured }
+├─ brief.ts                 CreativeBrief (contexto de marca estructurado, <brand_context> en el prompt)
+├─ providers/
+│  ├─ anthropic.provider.ts SDK oficial @anthropic-ai/sdk
+│  └─ demo.provider.ts      respuestas locales sin IA (desarrollo sin clave y tests)
+└─ index.ts                 createAIProvider(env)
 ```
 
-```ts
-// apps/api/src/ai/structured.ts
-generateObject<T>(provider, { system, prompt, schema: ZodType<T>, schemaName }): Promise<T>
-// 1. pide JSON al proveedor  2. valida con Zod
-// 3. si falla, 1 reintento incluyendo los errores de validación  4. si vuelve a fallar → AIOutputError
-```
+- **Nada fuera de `src/ai/` importa SDKs de IA** (regla ESLint `no-restricted-imports`). Las rutas y
+  servicios reciben un `AIProvider` inyectado (`createApp({ ai })`), así que los tests usan
+  proveedores falsos o el demo.
+- **Anthropic**: modelo `AI_MODEL` (por defecto `claude-opus-5-5`), esfuerzo `medium` explícito, sin
+  `temperature` (el modelo no la acepta), system prompt con `cache_control` (estable por empresa y
+  versión de ADN), `fallbacks: "default"` (beta `server-side-fallback-2026-07-01`: si el modelo
+  declina, el servidor reintenta con el modelo recomendado), revisión de `stop_reason: "refusal"`,
+  errores tipados del SDK → `AIProviderError`. Salida estructurada con `beta.messages.parse` +
+  `betaZodOutputFormat`, revalidada con Zod.
+- **Selección**: `AI_PROVIDER=anthropic|demo`; si se omite, `anthropic` cuando hay `ANTHROPIC_API_KEY`
+  y `demo` si no. El modo demo se avisa en el log y en la interfaz.
+- **Pendiente**: generar BrandDNA y AvatarProfile con IA usando `generateStructuredOutput()`
+  (hoy son determinísticos).
 
-### 5.2 Servicios de dominio sobre la IA
+### 5.1 PixelContextBuilder
 
-| Servicio | Entrada | Salida | Notas |
-|---|---|---|---|
-| `BrandAnalysisService` | `companyId`, `BrandOnboardingInput` | `BrandDNA` (validado) | Prompt versionado (`promptVersion`) guardado en el documento |
-| `AvatarConceptEngine` (✅ reglas `avatar-rules-1`; IA pendiente) | `BrandDNA`, `variation` | `AvatarConcept` (validado) | **Solo recibe el BrandDNA**. Valores visuales de catálogos cerrados que el renderer conoce. Devuelve `rationale` con fuentes. Ver `ENTITIES.md §4` |
-| `PixelChatService` | `companyId`, `conversationId`, mensaje del usuario | Mensaje de Pixel | System prompt = rol de director creativo + BrandDNA + memorias activas; historial de últimos N mensajes |
+`apps/api/src/modules/conversations/pixelContext.builder.ts` — función pura que construye el
+contexto del Pixel de **una** empresa a partir de datos ya cargados y aislados por `companyId`.
 
-### 5.3 Selección de proveedor
+- **Rol**: director creativo propio de la empresa, que habla en primera persona del plural.
+- **Criterio, no recitación**: instrucciones explícitas para usar el ADN como criterio (nunca
+  describir la marca ni enumerar rasgos), aterrizar en piezas y copy, no inventar datos, una sola
+  pregunta al final si hace falta, ~220 palabras.
+- **Palancas creativas** derivadas del ADN: origen, diferenciadores como prueba, tensión del
+  público (problema → necesidad), postura del arquetipo y recursos visuales. Se ordenan según el
+  tema detectado en la petición (`detectFocus`: social, campaign, launch, naming, visual, avatar,
+  audience).
+- **Conocimiento de marca** compacto en `<brand_context>` (identidad, propósito, público,
+  personalidad, tono, estilo visual, diferenciadores, preferencias y restricciones).
+- **AvatarProfile** solo cuando la petición es visual o sobre el personaje.
+- **Límites**: historial de la conversación ≤ `CHAT_HISTORY_LIMIT` mensajes y ≤ 12 000 caracteres
+  (se descartan los más antiguos; siempre empieza por un turno de usuario); listas del brief ≤ 5
+  elementos de ≤ 180 caracteres; mensaje del usuario ≤ 4 000 caracteres (validado con Zod).
 
-- `AI_PROVIDER=mock|<real>` y `AI_MODEL=<id>` en `.env`. `createAIProvider(env)` devuelve la implementación.
-- `MockAIProvider`: determinista, sin red. Deriva BrandDNA/AvatarProfile plausibles del input
-  (p. ej. palabras clave "café" → `seed`, "tecnología" → `crystal`, "construcción" → `block`) para
-  poder recorrer el flujo completo en dev y en tests.
-- Las claves de API viven solo en el backend.
+### 5.2 Flujo de un mensaje
+
+`POST /companies/:companyId/conversations/:conversationId/messages`:
+requireAuth → requireCompanyAccess (empresa) → conversación `{ _id, companyId, userId }` →
+BrandDNA vigente (409 si no hay) → AvatarProfile vigente (opcional) → historial → contexto →
+`ai.generateText()` → se guardan **juntos** el mensaje del usuario y el de Pixel (si la IA falla no
+se guarda nada: 503, o 422 si el modelo declina) → respuesta. El frontend pone el avatar en
+`thinking` durante la petición, en `speaking` mientras revela la respuesta y vuelve a `idle`.
 
 ## 6. Avatar 3D (renderer paramétrico) ✅
 
@@ -265,10 +261,10 @@ Prefijo `/api`. JSON. Errores con forma `ApiError { code, message, details? }`.
 | POST | `/companies/:companyId/analysis/retry` | Reintentar/regenerar análisis (`202`) |
 | GET | `/companies/:companyId/avatar` | Avatar vigente, historial (máx. 20) e `isStale` ✅ |
 | POST | `/companies/:companyId/avatar/generate` | Crea/regenera el concepto (nueva versión, `201`); `409` sin BrandDNA ✅ |
-| GET | `/companies/:companyId/conversations` | Conversaciones |
-| POST | `/companies/:companyId/conversations` | Nueva conversación |
-| GET | `/companies/:companyId/conversations/:conversationId/messages` | Mensajes |
-| POST | `/companies/:companyId/conversations/:conversationId/messages` | Enviar mensaje → `{ userMessage, pixelMessage }` |
+| GET | `/companies/:companyId/conversations` | Conversaciones del usuario en la empresa ✅ |
+| POST | `/companies/:companyId/conversations` | Nueva conversación ✅ |
+| GET | `/companies/:companyId/conversations/:conversationId/messages` | Mensajes (últimos 200) ✅ |
+| POST | `/companies/:companyId/conversations/:conversationId/messages` | Enviar mensaje → `{ conversation, userMessage, pixelMessage }` ✅ |
 | GET | `/companies/:companyId/memories` | Memorias activas |
 | POST | `/companies/:companyId/memories` | Crear memoria |
 | DELETE | `/companies/:companyId/memories/:memoryId` | Desactivar memoria |
@@ -314,7 +310,7 @@ LOG_LEVEL=info
 JWT_SECRET=            # ≥ 32 caracteres; obligatorio en producción
 SESSION_TTL_DAYS=7
 BCRYPT_ROUNDS=12
-# Se añaden en etapas posteriores: AI_PROVIDER / AI_MODEL / AI_API_KEY (5),
+# Se añaden en etapas posteriores: (chat ✅: AI_PROVIDER, AI_MODEL, ANTHROPIC_API_KEY, AI_TIMEOUT_MS, CHAT_HISTORY_LIMIT),
 # ANALYSIS_TIMEOUT_MS (6), CHAT_HISTORY_LIMIT (8)
 ```
 

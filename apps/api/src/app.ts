@@ -11,15 +11,26 @@ import { createAuthService } from './modules/auth/auth.service.js';
 import { createAvatarConceptEngine } from './modules/avatars/engine/index.js';
 import { createApiRouter } from './modules/index.js';
 import type { DatabaseStatus } from '@pixel/contracts';
+import type { AIProvider } from './ai/index.js';
 
 export interface AppOptions {
-  env: Pick<Env, 'NODE_ENV' | 'CORS_ORIGINS' | 'JWT_SECRET' | 'SESSION_TTL_DAYS' | 'BCRYPT_ROUNDS'>;
+  env: Pick<
+    Env,
+    | 'NODE_ENV'
+    | 'CORS_ORIGINS'
+    | 'JWT_SECRET'
+    | 'SESSION_TTL_DAYS'
+    | 'BCRYPT_ROUNDS'
+    | 'CHAT_HISTORY_LIMIT'
+  >;
   logger: Logger;
   getDatabaseStatus: () => DatabaseStatus;
+  /** Proveedor de IA (inyectable: en tests se usa uno falso o el demo). */
+  ai: AIProvider;
 }
 
 /** Construye la app Express sin efectos secundarios (sin listen ni conexión a DB): usable en tests. */
-export function createApp({ env, logger, getDatabaseStatus }: AppOptions): Express {
+export function createApp({ env, logger, getDatabaseStatus, ai }: AppOptions): Express {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
@@ -44,6 +55,7 @@ export function createApp({ env, logger, getDatabaseStatus }: AppOptions): Expre
       getDatabaseStatus,
       authService: createAuthService({ bcryptRounds: env.BCRYPT_ROUNDS }),
       avatarEngine: createAvatarConceptEngine(),
+      chat: { ai, historyLimit: env.CHAT_HISTORY_LIMIT, logger },
       session: {
         jwtSecret: env.JWT_SECRET,
         ttlSeconds: env.SESSION_TTL_DAYS * 24 * 60 * 60,
