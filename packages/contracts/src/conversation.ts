@@ -30,7 +30,9 @@ export const MessageMetaSchema = z.object({
   /** 'demo' = respuesta local sin IA. */
   mode: z.enum(['ai', 'demo']),
   latencyMs: z.number().int().min(0),
-  brandDnaVersion: z.number().int().min(1),
+  /** ADN con el que respondió: BrandDNA (enterprise) o PersonalDNA (personal); el otro es null. */
+  brandDnaVersion: z.number().int().min(1).nullable(),
+  personalDnaVersion: z.number().int().min(1).nullable().default(null),
   avatarVersion: z.number().int().min(1).nullable(),
 });
 

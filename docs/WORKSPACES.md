@@ -8,11 +8,10 @@ Pixel tiene dos modos que comparten el mismo núcleo:
 
 - **Pixel Enterprise**: el director creativo de una marca. Trabaja con `Company`, `BrandDNA`,
   `AvatarProfile`, `Conversation` y `CreativeMemory`. Es el MVP que ya funciona.
-- **Pixel Personal**: el director creativo de una persona. En próximas etapas trabajará con
-  `PersonalProfile`, `PersonalDNA`, tareas, proyectos, planificador de contenido, memoria personal y
-  "Daily Director". **Hoy solo existe como tipo de workspace**: se puede crear y aparece en
-  "Tus Pixels", pero su chat responde de forma controlada que el contexto personal aún no está
-  configurado.
+- **Pixel Personal**: el Director Creativo Personal de una persona. Trabaja con
+  `PersonalProfile`, `PersonalDNA`, su avatar personal (`AvatarProfile`, `sourceType: personal`) y
+  el mismo chat. Detalle completo en [`PERSONAL.md`](./PERSONAL.md). Tareas, proyectos, planificador
+  de contenido y "Daily Director" llegarán en etapas siguientes.
 
 ## Modelo
 
@@ -28,9 +27,9 @@ Workspace
  │
  └── Personal
        ↓
-   PersonalProfile   (próxima etapa)
+   PersonalProfile   (uno por workspace)
        ↓
-    PersonalDNA      (próxima etapa)
+    PersonalDNA      (versionado)
 ```
 
 Recursos compartidos, que cuelgan del workspace:
@@ -102,7 +101,7 @@ workspace autorizado (WorkspaceResolver: requireWorkspaceAccess / requireCompany
    ↓
 resolveContextBuilder(workspace.type)
    ├── EnterpriseContextBuilder → Company → BrandDNA → AvatarProfile → CreativeMemory
-   └── PersonalContextBuilder   → "contexto personal aún no configurado" (placeholder tipado)
+   └── PersonalContextBuilder   → PersonalProfile → PersonalDNA → AvatarProfile → CreativeMemory
    ↓
 AIProvider (recibe el contexto ya preparado: nunca ve companyId ni ids personales)
    ↓
@@ -118,7 +117,10 @@ Código: `apps/api/src/modules/conversations/context/`.
 - `EnterpriseContextBuilder` mantiene el comportamiento anterior: usa la composición pura
   `buildPixelContext` (mismo prompt) y añade las memorias activas del workspace si existen (hoy no
   se crean: llegan con la etapa de memoria).
-- `PersonalContextBuilder` no inventa datos.
+- `PersonalContextBuilder` carga solo datos del workspace personal (nunca `Company` ni `BrandDNA`) y
+  compone el prompt del Director Creativo Personal (`buildPersonalPixelContext`). Sin PersonalDNA
+  responde `personal_context_not_configured` (409) y la web lleva al onboarding. Ver
+  [`PERSONAL.md` §7](./PERSONAL.md#7-personalcontextbuilder).
 
 ## API
 
@@ -127,14 +129,20 @@ Nuevos:
 | Método | Ruta | Descripción |
 |---|---|---|
 | POST | `/api/workspaces` | `{ type, name }`. Enterprise vacío o Personal (uno por usuario → 409 si ya existe) |
-| GET | `/api/workspaces` | "Tus Pixels": `{ workspaces: [{ workspace, company }] }` |
-| GET | `/api/workspaces/:workspaceId` | `{ workspace, company }` |
+| GET | `/api/workspaces` | "Tus Pixels": `{ workspaces: [{ workspace, company, personal }] }` |
+| GET | `/api/workspaces/:workspaceId` | `{ workspace, company, personal }` (`personal` = resumen del Pixel Personal; null en enterprise) |
 | PATCH | `/api/workspaces/:workspaceId` | `{ name?, status? }` (el tipo no se edita) |
-| POST | `/api/workspaces/:workspaceId/company` | Completa un workspace enterprise vacío con su empresa. Personal u ocupado → 409 |
-| GET | `/api/workspaces/:workspaceId/avatar` | Enterprise: avatar del workspace. Personal → 409 |
-| POST | `/api/workspaces/:workspaceId/avatar/generate` | Enterprise. Personal → 409 |
+| POST | `/api/workspaces/:workspaceId/company` | Completa un workspace enterprise vacío con su empresa. Personal → 400 (`workspace_type_mismatch`); ya ocupado → 409 |
+| GET | `/api/workspaces/:workspaceId/avatar` | Avatar del workspace; el ADN de origen se resuelve por `workspace.type` |
+| POST | `/api/workspaces/:workspaceId/avatar/generate` | Enterprise → BrandDNA; Personal → PersonalDNA. Sin ADN → 409 |
 | GET/POST | `/api/workspaces/:workspaceId/conversations` | Conversaciones del workspace |
-| GET/POST | `/api/workspaces/:workspaceId/conversations/:id/messages` | Mensajes; en Personal, enviar → 409 |
+| GET/POST | `/api/workspaces/:workspaceId/conversations/:id/messages` | Mensajes; sin contexto (sin ADN) → 409 con `details.reason` |
+| GET/PUT | `/api/workspaces/:workspaceId/personal-profile` | Solo Personal (enterprise → 400). Perfil y onboarding por pasos |
+| GET/PUT | `/api/workspaces/:workspaceId/personal-dna` | Solo Personal. ADN personal y correcciones manuales |
+| POST | `/api/workspaces/:workspaceId/personal-dna/generate` | Solo Personal. (Re)genera el ADN desde el onboarding |
+
+Convención de errores por tipo: **400** `workspace_type_mismatch` cuando el endpoint no existe para
+ese tipo de workspace; **409** cuando sí existe pero aún falta configurarlo (sin empresa, sin ADN).
 
 Legacy conservados (el frontend Enterprise los usa): todo `/api/companies` y
 `/api/companies/:companyId/{brand-dna,avatar,conversations,memories}`. `POST /api/companies` crea
@@ -143,20 +151,24 @@ transacciones).
 
 ## Frontend
 
-- `/dashboard` = **Tus Pixels**: una tarjeta por workspace (Personal → "Próximamente"; Empresa →
-  estado de su empresa, "Configurado" cuando está lista).
+- `/dashboard` = **Tus Pixels**: una tarjeta por workspace (Personal → "Configurado" si ya tiene
+  PersonalDNA, si no "Configurar"; Empresa → estado de su empresa, "Configurado" cuando está lista).
 - `/pixels/new` = **¿Cómo quieres usar Pixel?** Personal crea el workspace y lleva a
-  "Tu Pixel Personal está listo para configurarse."; Empresa continúa al flujo existente
-  (`/companies/new`).
-- `/workspace/:workspaceId[/chat|/pixel]` es la **entrada única** de cada Pixel. Un workspace
-  enterprise sin empresa ofrece "Configurar la empresa" (`/companies/new?workspace=<id>`, que llama a
-  `POST /api/workspaces/:workspaceId/company`).
+  "Configura tu Pixel Personal"; Empresa continúa al flujo existente (`/companies/new`).
+- `/workspace/:workspaceId[/chat|/pixel|/personal/onboarding|/personal/dna]` es la **entrada única**
+  de cada Pixel. Personal vive aquí, con su navegación propia (**Inicio · Mi ADN · Mi Pixel ·
+  Chat**, resuelta por `workspace.type`). Un workspace enterprise sin empresa ofrece "Configurar la
+  empresa" (`/companies/new?workspace=<id>`, que llama a `POST /api/workspaces/:workspaceId/company`).
+- Pixel Core compartido en la web: `ChatStudio` (chat), `PixelStudio` (personaje), `WizardLayout`
+  (onboardings) y `DnaBlocks` (presentación de un ADN). Los clientes de avatar y chat reciben la raíz
+  de la API (`companyApiBase` o `workspaceApiBase`).
 
 ### Convergencia de rutas
 
 Las pantallas Enterprise siguen en `/company/:companyId/...` para no arriesgar el MVP:
 `/workspace/:id` de un workspace enterprise con empresa **redirige** a `/company/:companyId`
-conservando la subruta. Pasos siguientes, sin duplicar páginas:
+conservando la subruta (las rutas `personal/*` llevan a su resumen). Pasos siguientes, sin duplicar
+páginas:
 
 1. Mover `CompanyLayout` y sus páginas bajo `/workspace/:workspaceId/...` (la empresa se obtiene del
    workspace; las páginas no cambian).

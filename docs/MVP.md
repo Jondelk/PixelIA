@@ -59,7 +59,8 @@ flowchart LR
 ### 3.1 Paso a paso
 
 Rutas del frontend: `/login`, `/dashboard` ("Tus Pixels"), `/pixels/new` (Personal o Empresa),
-`/workspace/:workspaceId` (entrada de cada Pixel), `/companies` y, por empresa, `/company/:companyId`
+`/workspace/:workspaceId` (entrada de cada Pixel; en Personal también `personal/onboarding`,
+`personal/dna`, `pixel` y `chat`, ver `docs/PERSONAL.md`), `/companies` y, por empresa, `/company/:companyId`
 (resumen), `/company/:companyId/brand`, `/company/:companyId/pixel`, `/company/:companyId/chat`.
 La API expone `/api/workspaces/:workspaceId/...` y mantiene `/api/companies/:companyId/...` para
 Enterprise (`docs/WORKSPACES.md`).

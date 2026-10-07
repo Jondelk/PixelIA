@@ -1,6 +1,8 @@
 import { NavLink, useMatches } from 'react-router';
 import { BrandLogo } from '../components/BrandLogo';
 import { Icon } from '../components/Icon';
+import { useResource } from '../lib/useResource';
+import { getWorkspace } from '../features/workspaces/workspacesApi';
 import { companyNav, primaryNav, workspaceNav, type NavItem } from './navigation';
 
 interface SidebarProps {
@@ -37,14 +39,14 @@ export function Sidebar({ open, onNavigate }: SidebarProps) {
         {companyId ? (
           <NavSection label="Empresa" items={companyNav(companyId)} onNavigate={onNavigate} />
         ) : workspaceId ? (
-          <NavSection label="Pixel" items={workspaceNav(workspaceId)} onNavigate={onNavigate} />
+          <WorkspaceNavSection workspaceId={workspaceId} onNavigate={onNavigate} />
         ) : (
           <div className="px-3">
             <p className="mb-2.5 text-[11px] font-medium uppercase tracking-[0.18em] text-subtle">
-              Empresa
+              Pixel
             </p>
             <p className="text-xs leading-relaxed text-subtle">
-              Abre un Pixel de empresa para ver su ADN, su personaje y el chat.
+              Abre uno de tus Pixels para ver su ADN, su personaje y el chat.
             </p>
           </div>
         )}
@@ -54,6 +56,27 @@ export function Sidebar({ open, onNavigate }: SidebarProps) {
         <p className="text-[11px] uppercase tracking-[0.18em] text-subtle">MVP 0.1</p>
       </div>
     </aside>
+  );
+}
+
+/** La navegación de un workspace depende de su tipo (Personal tiene sus propias secciones). */
+function WorkspaceNavSection({
+  workspaceId,
+  onNavigate,
+}: {
+  workspaceId: string;
+  onNavigate: () => void;
+}) {
+  const { state } = useResource(`sidebar-workspace:${workspaceId}`, (signal) =>
+    getWorkspace(workspaceId, signal),
+  );
+  const type = state.status === 'success' ? state.data.workspace.type : null;
+  return (
+    <NavSection
+      label={type === 'personal' ? 'Pixel Personal' : 'Pixel'}
+      items={workspaceNav(workspaceId, type)}
+      onNavigate={onNavigate}
+    />
   );
 }
 

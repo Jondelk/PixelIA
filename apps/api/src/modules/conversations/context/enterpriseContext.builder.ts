@@ -66,7 +66,11 @@ export const enterpriseContextBuilder: ContextBuilder = {
       status: 'ready',
       context,
       companyId: company._id,
-      meta: { brandDnaVersion: brandDna.version, avatarVersion: avatar?.version ?? null },
+      meta: {
+        brandDnaVersion: brandDna.version,
+        personalDnaVersion: null,
+        avatarVersion: avatar?.version ?? null,
+      },
     };
   },
 };

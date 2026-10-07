@@ -4,12 +4,16 @@ import { Link } from 'react-router';
 import { buttonClasses } from '../../components/buttonClasses';
 import { Icon } from '../../components/Icon';
 import { Pixi } from '../../components/Pixi';
+import { PersonalChatPage } from '../personal/PersonalChatPage';
+import { PersonalHomePage } from '../personal/PersonalHomePage';
+import { PersonalPixelPage } from '../personal/PersonalPixelPage';
 import { useWorkspace } from './workspaceContext';
 
 /**
- * Pantalla de un Pixel que aún no tiene funciones propias:
- * - Personal: preparado para configurarse en la siguiente etapa (sin datos inventados).
- * - Enterprise sin empresa: invita a completar la empresa (flujo Enterprise existente).
+ * Pantallas de /workspace/:workspaceId[/pixel|/chat] según el tipo:
+ * - Personal: Inicio, Mi Pixel y Chat del Pixel Personal.
+ * - Enterprise sin empresa: invita a completar la empresa (flujo Enterprise existente). Con
+ *   empresa, WorkspaceLayout ya redirigió a /company/:companyId.
  */
 export function WorkspaceHomePage({ section }: { section?: 'chat' | 'pixel' }) {
   const { overview } = useWorkspace();
@@ -35,21 +39,10 @@ export function WorkspaceHomePage({ section }: { section?: 'chat' | 'pixel' }) {
     );
   }
 
-  return (
-    <Hero
-      eyebrow={`Pixel ${WORKSPACE_TYPE_LABELS.personal} · ${workspace.name}`}
-      title="Tu Pixel Personal está listo para configurarse."
-    >
-      <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-muted">
-        {section
-          ? 'Esta parte de tu Pixel Personal llegará con su configuración.'
-          : 'Pronto podrás contarle cómo trabajas para que organice tu contenido, tus proyectos y tu forma de crear.'}
-      </p>
-      <p className="mt-8 text-xs font-medium uppercase tracking-[0.2em] text-subtle">
-        Próximamente
-      </p>
-    </Hero>
-  );
+  // Pixel Personal: Inicio, Mi Pixel y Chat (Mi ADN y el onboarding tienen sus propias rutas).
+  if (section === 'pixel') return <PersonalPixelPage />;
+  if (section === 'chat') return <PersonalChatPage />;
+  return <PersonalHomePage />;
 }
 
 function Hero({

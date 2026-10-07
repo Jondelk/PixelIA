@@ -13,6 +13,7 @@
 import 'dotenv/config';
 import mongoose from 'mongoose';
 import { loadEnv } from '../src/config/env.js';
+import { upgradeAvatarProfileIndexes } from '../src/modules/avatars/avatarProfile.indexes.js';
 import { AvatarProfileModel } from '../src/modules/avatars/avatarProfile.model.js';
 import { CompanyModel } from '../src/modules/companies/company.model.js';
 import { ConversationModel } from '../src/modules/conversations/conversation.model.js';
@@ -56,6 +57,11 @@ async function main(): Promise<number> {
     out(
       syncIndexes ? 'Índices sincronizados.' : 'Índices nuevos creados (sin eliminar los legacy).',
     );
+    // Índices legacy no parciales de avatar_profiles: incompatibles con avatares personales.
+    const droppedAvatar = await upgradeAvatarProfileIndexes();
+    if (droppedAvatar.length) {
+      out(`  AvatarProfile: índices legacy retirados ${droppedAvatar.join(', ')}`);
+    }
   }
 
   const report = await migrateCompaniesToWorkspaces({ dryRun });

@@ -4,6 +4,7 @@ import { createApp } from './app.js';
 import { loadEnv, SERVICE_NAME, SERVICE_VERSION } from './config/env.js';
 import { getDatabaseStatus, startDatabase, stopDatabase } from './db/connection.js';
 import { createLogger } from './lib/logger.js';
+import { upgradeAvatarProfileIndexes } from './modules/avatars/avatarProfile.indexes.js';
 
 const env = loadEnv();
 const logger = createLogger({
@@ -15,7 +16,13 @@ if (env.usingDevJwtSecret) {
   logger.warn('JWT_SECRET no definido: usando un secreto de desarrollo. Defínelo en apps/api/.env');
 }
 
-startDatabase(env.MONGODB_URI, logger);
+startDatabase(env.MONGODB_URI, logger, {
+  onConnected: async () => {
+    // Índices de AvatarProfile compatibles con avatares personales (idempotente, sin tocar datos).
+    const dropped = await upgradeAvatarProfileIndexes();
+    if (dropped.length) logger.info('Índices legacy de avatar_profiles retirados', { dropped });
+  },
+});
 
 const app = createApp({ env, logger, getDatabaseStatus, ai: createAIProvider(env, logger) });
 const server = app.listen(env.PORT, () => {

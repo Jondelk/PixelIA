@@ -7,6 +7,7 @@ import {
 import { conflict } from '../../lib/errors.js';
 import { isDuplicateKeyError, isObjectIdString } from '../../lib/mongo.js';
 import { CompanyModel, toCompanyDTO, type CompanyDocument } from '../companies/company.model.js';
+import { getPersonalSummary } from '../personal/personal.service.js';
 import { ensureOwnerWorkspaces } from './workspace.migration.js';
 import { toWorkspaceDTO, WorkspaceModel, type WorkspaceDocument } from './workspace.model.js';
 import { availableWorkspaceSlug } from './workspace.slug.js';
@@ -67,10 +68,14 @@ export async function getWorkspaceOverview(
   workspace: WorkspaceDocument,
 ): Promise<WorkspaceOverview> {
   const company = await findWorkspaceCompany(workspace);
-  return { workspace: toWorkspaceDTO(workspace), company: company ? toCompanyDTO(company) : null };
+  return {
+    workspace: toWorkspaceDTO(workspace),
+    company: company ? toCompanyDTO(company) : null,
+    personal: await getPersonalSummary(workspace),
+  };
 }
 
-/** "Tus Pixels": todos los workspaces del usuario con su empresa (si la tienen). */
+/** "Tus Pixels": todos los workspaces del usuario con su empresa o su resumen personal. */
 export async function listWorkspaceOverviews(ownerId: string): Promise<WorkspaceOverview[]> {
   // Empresas creadas antes de los workspaces: se migran aquí para que no desaparezcan del listado.
   await ensureOwnerWorkspaces(ownerId);
@@ -82,14 +87,18 @@ export async function listWorkspaceOverviews(ownerId: string): Promise<Workspace
   const byWorkspace = new Map(
     companies.map((company) => [company.workspaceId?.toString(), company] as const),
   );
-  return workspaces.map((workspace) => {
-    const company =
-      workspace.type === 'enterprise' ? byWorkspace.get(workspace._id.toString()) : undefined;
-    return {
-      workspace: toWorkspaceDTO(workspace),
-      company: company ? toCompanyDTO(company) : null,
-    };
-  });
+  // Como mucho un workspace personal por usuario: una consulta (filtrada por su workspaceId).
+  return Promise.all(
+    workspaces.map(async (workspace) => {
+      const company =
+        workspace.type === 'enterprise' ? byWorkspace.get(workspace._id.toString()) : undefined;
+      return {
+        workspace: toWorkspaceDTO(workspace),
+        company: company ? toCompanyDTO(company) : null,
+        personal: await getPersonalSummary(workspace),
+      };
+    }),
+  );
 }
 
 /** El tipo es inmutable. El nombre de un workspace enterprise no renombra su empresa. */

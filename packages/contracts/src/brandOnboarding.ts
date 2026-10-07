@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { HexColorSchema, level, list, optionalText, text } from './fields.js';
 
 /*
  * Onboarding de marca ("Brand Brain"): lo que la empresa le enseña a Pixel, en 8 pasos.
@@ -122,61 +123,9 @@ export const LANGUAGES = {
 export const LanguageCodeSchema = z.enum(Object.keys(LANGUAGES) as [keyof typeof LANGUAGES]);
 export type LanguageCode = z.infer<typeof LanguageCodeSchema>;
 
-// ---------- Primitivas ----------
+// ---------- Primitivas (compartidas con el onboarding personal: fields.ts) ----------
 
-const text = (label: string, min = 2, max = 2000) =>
-  z
-    .string()
-    .trim()
-    .min(min, min <= 1 ? `Completa: ${label}` : `${label}: mínimo ${min} caracteres`)
-    .max(max, `${label}: máximo ${max} caracteres`);
-
-const optionalText = (max = 200) =>
-  z
-    .string()
-    .trim()
-    .max(max, `Máximo ${max} caracteres`)
-    .transform((value) => value || null)
-    .nullable()
-    .default(null);
-
-/** Lista de frases cortas: recorta, quita vacíos y duplicados (sin distinguir mayúsculas). */
-const list = (label: string, { min = 0, max = 12 }: { min?: number; max?: number } = {}) =>
-  z
-    .array(z.string().trim().max(120, `${label}: cada elemento admite máximo 120 caracteres`))
-    .transform((items) => {
-      const seen = new Set<string>();
-      return items.filter((item) => {
-        const key = item.toLocaleLowerCase('es');
-        if (!item || seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-    })
-    .pipe(
-      z
-        .array(z.string())
-        .min(
-          min,
-          min === 1
-            ? `Añade al menos un elemento en: ${label}`
-            : `Añade al menos ${min} en: ${label}`,
-        )
-        .max(max, `${label}: máximo ${max} elementos`),
-    );
-
-export const HexColorSchema = z
-  .string()
-  .trim()
-  .regex(/^#([0-9a-f]{6})$/i, 'Usa un color hexadecimal, p. ej. #6B3E26')
-  .transform((value) => value.toUpperCase());
-
-const level = (label: string) =>
-  z
-    .number({ error: `Elige un nivel de ${label}` })
-    .int()
-    .min(1)
-    .max(5);
+export { HexColorSchema } from './fields.js';
 
 // ---------- Pasos ----------
 

@@ -1,3 +1,4 @@
+import type { WorkspaceType } from '@pixel/contracts';
 import type { IconName } from '../components/Icon';
 
 export interface NavItem {
@@ -24,9 +25,23 @@ export function workspaceBasePath(workspaceId: string): string {
   return `/workspace/${encodeURIComponent(workspaceId)}`;
 }
 
-/** Navegación de un workspace sin rutas propias aún (Personal o empresa sin configurar). */
-export function workspaceNav(workspaceId: string): NavItem[] {
-  return [{ to: workspaceBasePath(workspaceId), label: 'Resumen', icon: 'overview', end: true }];
+/**
+ * Navegación de un workspace según su tipo:
+ * - personal: Inicio, Mi ADN, Mi Pixel y Chat (nada que aún no exista).
+ * - enterprise sin empresa (o tipo aún desconocido): solo el resumen.
+ * Enterprise con empresa navega bajo /company/:companyId (companyNav).
+ */
+export function workspaceNav(workspaceId: string, type: WorkspaceType | null = null): NavItem[] {
+  const base = workspaceBasePath(workspaceId);
+  if (type === 'personal') {
+    return [
+      { to: base, label: 'Inicio', icon: 'overview', end: true },
+      { to: `${base}/personal/dna`, label: 'Mi ADN', icon: 'brand' },
+      { to: `${base}/pixel`, label: 'Mi Pixel', icon: 'character' },
+      { to: `${base}/chat`, label: 'Chat', icon: 'chat' },
+    ];
+  }
+  return [{ to: base, label: 'Resumen', icon: 'overview', end: true }];
 }
 
 /**
@@ -35,9 +50,11 @@ export function workspaceNav(workspaceId: string): NavItem[] {
  * escrito de otra forma (p. ej. codificado) y seguir siendo el mismo workspace.
  */
 export function enterpriseRedirectPath(pathname: string, companyId: string): string {
-  const rest = pathname.split('/').filter(Boolean).slice(2).join('/');
+  const segments = pathname.split('/').filter(Boolean).slice(2);
   const target = companyBasePath(companyId);
-  return rest ? `${target}/${rest}` : target;
+  // Las rutas solo personales (/personal/...) no existen en una empresa: va a su resumen.
+  if (segments.length === 0 || segments[0] === 'personal') return target;
+  return `${target}/${segments.join('/')}`;
 }
 
 export function companyBasePath(companyId: string): string {

@@ -40,13 +40,20 @@ export function AvatarController({ spec, state }: { spec: SceneSpec; state: Avat
   });
 
   const handItems = spec.accessories.filter((item) => item.attach === 'hand');
-  const otherItems = spec.accessories.filter((item) => item.attach !== 'hand');
+  // Lo que va en el rostro (gafas) se mueve con la cabeza al asentir o inclinarla.
+  const faceItems = spec.accessories.filter((item) => item.attach === 'face');
+  const otherItems = spec.accessories.filter(
+    (item) => item.attach !== 'hand' && item.attach !== 'face',
+  );
 
   return (
     <group ref={root}>
       <AvatarBody body={spec.body} />
       <group ref={face} position={[0, 0, 0]}>
         <AvatarFace spec={spec} pose={pose} />
+        {faceItems.map((item) => (
+          <AvatarAccessory key={item.kind} item={item} body={spec.body} face={spec.face} />
+        ))}
       </group>
       <AvatarLimbs
         spec={spec}
@@ -54,7 +61,7 @@ export function AvatarController({ spec, state }: { spec: SceneSpec; state: Avat
         handItem={handItems[0] && <AvatarAccessory item={handItems[0]} body={spec.body} />}
       />
       {otherItems.map((item) => (
-        <AvatarAccessory key={item.kind} item={item} body={spec.body} />
+        <AvatarAccessory key={item.kind} item={item} body={spec.body} face={spec.face} />
       ))}
       <ThinkingDots spec={spec} visible={() => pose.current.thinkingDots} />
     </group>

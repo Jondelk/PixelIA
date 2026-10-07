@@ -32,6 +32,7 @@ export async function avatarFor(
     companyId: dna.companyId,
     version: 1,
     brandDnaVersion: dna.version,
+    personalDnaVersion: null,
     engine: { kind: 'deterministic', version: 'avatar-rules-1', variation: 0 },
     createdAt: now,
   };

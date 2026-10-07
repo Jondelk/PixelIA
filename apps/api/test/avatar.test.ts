@@ -27,6 +27,8 @@ describe('Avatar: generación y versiones', () => {
     expect(AvatarResponseSchema.parse(res.body)).toEqual({
       avatar: null,
       history: [],
+      sourceType: 'brand',
+      dnaVersion: null,
       brandDnaVersion: null,
       isStale: false,
     });

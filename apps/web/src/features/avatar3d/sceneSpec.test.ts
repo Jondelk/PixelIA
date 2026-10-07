@@ -80,3 +80,22 @@ describe('profileToScene', () => {
     expect(frontZ(spec.body, 0.3, 0.3)).toBeLessThan(spec.body.halfDepth);
   });
 });
+
+describe('accesorios de avatares personales', () => {
+  it('auriculares, gafas y lentes se traducen a piezas propias (no a un casco ni a una insignia)', () => {
+    const spec = profileToScene({
+      ...coffeeProfile,
+      accessories: ['Auriculares de estudio', 'Gafas de lectura', 'Lente de cámara al frente'],
+    });
+    expect(spec.accessories.map((a) => [a.kind, a.attach])).toEqual([
+      ['headphones', 'head'],
+      ['glasses', 'face'],
+      ['lens', 'chest'],
+    ]);
+    const hand = profileToScene({
+      ...coffeeProfile,
+      accessories: ['Visor de encuadre de director'],
+    });
+    expect(hand.accessories).toMatchObject([{ kind: 'lens', attach: 'hand' }]);
+  });
+});

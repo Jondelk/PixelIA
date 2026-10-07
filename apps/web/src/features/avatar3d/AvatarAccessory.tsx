@@ -1,10 +1,38 @@
 import { useFrame } from '@react-three/fiber';
 import { useRef } from 'react';
 import type { Group } from 'three';
-import type { AccessorySpec, SceneSpec } from './sceneSpec';
+import { frontZ, type AccessorySpec, type SceneSpec } from './sceneSpec';
 
-/** Pieza accesoria por tipo. La posición depende del punto de anclaje y del cuerpo. */
-export function AvatarAccessory({ item, body }: { item: AccessorySpec; body: SceneSpec['body'] }) {
+/** Lente: barril, anillo de acento y cristal. En el pecho (cámara) o en la mano (visor). */
+function Lens({ item, radius }: { item: AccessorySpec; radius: number }) {
+  return (
+    <group rotation={[Math.PI / 2, 0, 0]}>
+      <mesh castShadow position={[0, radius * 0.3, 0]}>
+        <cylinderGeometry args={[radius, radius * 1.05, radius * 0.6, 40]} />
+        <meshStandardMaterial color={item.color} roughness={0.45} metalness={0.2} />
+      </mesh>
+      <mesh position={[0, radius * 0.62, 0]}>
+        <torusGeometry args={[radius * 0.86, radius * 0.07, 10, 40]} />
+        <meshStandardMaterial color={item.detailColor} roughness={0.4} />
+      </mesh>
+      <mesh position={[0, radius * 0.61, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[radius * 0.78, 40]} />
+        <meshPhysicalMaterial color="#0B0D12" roughness={0.08} clearcoat={1} />
+      </mesh>
+    </group>
+  );
+}
+
+/** Pieza accesoria por tipo. La posición depende del punto de anclaje, del cuerpo y del rostro. */
+export function AvatarAccessory({
+  item,
+  body,
+  face,
+}: {
+  item: AccessorySpec;
+  body: SceneSpec['body'];
+  face?: SceneSpec['face'];
+}) {
   const ref = useRef<Group>(null);
   const { halfWidth: w, halfHeight: h, halfDepth: d } = body;
 
@@ -87,6 +115,61 @@ export function AvatarAccessory({ item, body }: { item: AccessorySpec; body: Sce
           <mesh scale={[w * 0.98, 1, d * 1.1]}>
             <cylinderGeometry args={[1, 1, 0.03, 32]} />
             <meshStandardMaterial color={item.detailColor} roughness={0.5} />
+          </mesh>
+        </group>
+      );
+    }
+    case 'lens': {
+      if (item.attach === 'hand') return <Lens item={item} radius={0.1} />;
+      const radius = Math.min(w, h) * 0.26;
+      const y = -h * 0.5;
+      return (
+        <group position={[0, y, frontZ(body, 0, y)]}>
+          <Lens item={item} radius={radius} />
+        </group>
+      );
+    }
+    case 'headphones': {
+      // Diadema sobre la cabeza y dos auriculares a los lados, a la altura de los ojos.
+      const y = h * 0.22;
+      const side =
+        w * Math.sqrt(Math.max(0.05, 1 - (y / h) ** 2)) * (body.kind === 'block' ? 1.03 : 1);
+      const lift = (h - y + 0.06) / (side + 0.04);
+      return (
+        <group position={[0, y, 0]}>
+          <mesh scale={[1, lift, 1]}>
+            <torusGeometry args={[side + 0.04, 0.035, 10, 48, Math.PI]} />
+            <meshStandardMaterial color={item.detailColor} roughness={0.5} />
+          </mesh>
+          {[-1, 1].map((s) => (
+            <mesh
+              key={s}
+              position={[s * (side + 0.04), 0, 0]}
+              rotation={[0, 0, Math.PI / 2]}
+              castShadow
+            >
+              <cylinderGeometry args={[0.15, 0.15, 0.12, 32]} />
+              <meshStandardMaterial color={item.color} roughness={0.45} />
+            </mesh>
+          ))}
+        </group>
+      );
+    }
+    case 'glasses': {
+      if (!face) return null;
+      const radius = 0.11 * face.scale;
+      const z = frontZ(body, face.eyeSpacing, face.eyeY) + 0.035;
+      return (
+        <group position={[0, face.eyeY, 0]}>
+          {[-1, 1].map((s) => (
+            <mesh key={s} position={[s * face.eyeSpacing, 0, z]}>
+              <torusGeometry args={[radius, 0.014, 8, 32]} />
+              <meshStandardMaterial color={item.color} roughness={0.4} />
+            </mesh>
+          ))}
+          <mesh position={[0, radius * 0.25, z]}>
+            <boxGeometry args={[Math.max(0.02, face.eyeSpacing * 2 - radius * 2), 0.018, 0.018]} />
+            <meshStandardMaterial color={item.color} roughness={0.4} />
           </mesh>
         </group>
       );

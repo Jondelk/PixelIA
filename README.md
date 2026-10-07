@@ -2,8 +2,9 @@
 
 Director creativo asistido por IA de **PIXELES**. Cada usuario tiene sus **Pixels** (workspaces):
 uno por cada marca (**Pixel Enterprise**: estudia el ADN de la marca y lo materializa en un personaje
-3D) y uno personal (**Pixel Personal**, en preparación). Ver `docs/WORKSPACES.md` y, para la identidad
-visual, `CLAUDE.md` › Identidad visual.
+3D) y uno personal (**Pixel Personal**: tu director creativo personal, con su propio ADN, avatar y
+chat). Ver `docs/WORKSPACES.md`, `docs/PERSONAL.md` y, para la identidad visual, `CLAUDE.md` ›
+Identidad visual.
 
 > Estado: **MVP 0.1 — base técnica, autenticación y empresas listas.** Ver [`docs/BACKLOG.md`](./docs/BACKLOG.md).
 
@@ -77,4 +78,5 @@ docs/               MVP, arquitectura, entidades, backlog
 - [`docs/ENTITIES.md`](./docs/ENTITIES.md) — entidades y reglas de aislamiento.
 - [`docs/BACKLOG.md`](./docs/BACKLOG.md) — backlog técnico por etapas.
 - [`docs/WORKSPACES.md`](./docs/WORKSPACES.md) — Workspaces: Enterprise y Personal.
+- [`docs/PERSONAL.md`](./docs/PERSONAL.md) — Pixel Personal: perfil, ADN personal, avatar y chat.
 - [`docs/WORKSPACE-MIGRATION.md`](./docs/WORKSPACE-MIGRATION.md) — migración Company → Workspace.

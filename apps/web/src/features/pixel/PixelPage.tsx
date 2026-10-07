@@ -16,6 +16,7 @@ import { Pixi } from '../../components/Pixi';
 import { Spinner } from '../../components/Spinner';
 import { companyBasePath } from '../../app/navigation';
 import { errorMessage } from '../../lib/api';
+import { companyApiBase } from '../../lib/apiPaths';
 import { useResource } from '../../lib/useResource';
 import { useCompany } from '../companies/companyContext';
 import { generateAvatar, getAvatar } from './avatarApi';
@@ -33,10 +34,12 @@ import type { AvatarState } from '../avatar3d/pose';
 
 const dateFormat = new Intl.DateTimeFormat('es', { dateStyle: 'medium' });
 
+/** Personaje de una empresa (Enterprise). La UI es el PixelStudio compartido con Personal. */
 export function PixelPage() {
   const { company, reload: reloadCompany } = useCompany();
+  const apiBase = companyApiBase(company.id);
   const { state, reload } = useResource(`avatar:${company.id}`, (signal) =>
-    getAvatar(company.id, signal),
+    getAvatar(apiBase, signal),
   );
 
   if (state.status === 'loading') {
@@ -68,22 +71,32 @@ export function PixelPage() {
   return (
     <PixelStudio
       key={company.id}
-      companyId={company.id}
-      companyName={company.name}
+      apiBase={apiBase}
+      ownerName={company.name}
+      kind="brand"
       initial={state.data}
       onGenerated={reloadCompany}
     />
   );
 }
 
-function PixelStudio({
-  companyId,
-  companyName,
+export type PixelKind = 'brand' | 'personal';
+
+/**
+ * Estudio del personaje, compartido por Enterprise y Personal (Pixel Core): misma API bajo
+ * `apiBase` (la API decide si sale del BrandDNA o del PersonalDNA), mismo renderer 3D y misma
+ * vista del concepto. Solo cambian los textos según `kind`.
+ */
+export function PixelStudio({
+  apiBase,
+  ownerName,
+  kind,
   initial,
   onGenerated,
 }: {
-  companyId: string;
-  companyName: string;
+  apiBase: string;
+  ownerName: string;
+  kind: PixelKind;
   initial: AvatarResponse;
   onGenerated: () => void;
 }) {
@@ -104,7 +117,7 @@ function PixelStudio({
     setError(null);
     setAvatarState('thinking');
     try {
-      setData(await generateAvatar(companyId));
+      setData(await generateAvatar(apiBase));
       onGenerated();
       setAvatarState('happy');
     } catch (err) {
@@ -125,12 +138,14 @@ function PixelStudio({
               Avatar Concept Engine
             </p>
             <h1 className="mt-5 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-              {companyName} ya tiene ADN. Ahora puede tener cuerpo.
+              {kind === 'personal'
+                ? 'Ya te conozco. Ahora puedes tener tu personaje.'
+                : `${ownerName} ya tiene ADN. Ahora puede tener cuerpo.`}
             </h1>
             <p className="mt-4 text-sm leading-relaxed text-muted">
-              Pixel combinará el sector, la historia, la personalidad, el arquetipo, la estética,
-              los colores y las restricciones de la marca para diseñar un personaje único. No es una
-              mascota al azar: cada decisión tendrá una razón.
+              {kind === 'personal'
+                ? 'Pixel combinará tu profesión, tus roles, tu personalidad, tu estilo, tus colores, tus intereses, tu forma de trabajar y lo que quieres evitar para diseñar un personaje único. No es una caricatura de tu oficio: cada decisión tendrá una razón.'
+                : 'Pixel combinará el sector, la historia, la personalidad, el arquetipo, la estética, los colores y las restricciones de la marca para diseñar un personaje único. No es una mascota al azar: cada decisión tendrá una razón.'}
             </p>
             {error && (
               <div className="mt-6">
@@ -138,8 +153,8 @@ function PixelStudio({
               </div>
             )}
             <Button className="mt-8" onClick={generate} loading={generating}>
-              {!generating && <Icon name="create" className="size-4" />} Crear el personaje de tu
-              marca
+              {!generating && <Icon name="create" className="size-4" />}{' '}
+              {kind === 'personal' ? 'Crear mi personaje' : 'Crear el personaje de tu marca'}
             </Button>
           </div>
         </div>
@@ -149,6 +164,7 @@ function PixelStudio({
 
   return (
     <AvatarConceptView
+      kind={kind}
       avatar={data.avatar}
       response={data}
       generating={generating}
@@ -211,6 +227,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 }
 
 function AvatarConceptView({
+  kind,
   avatar,
   response,
   generating,
@@ -219,6 +236,7 @@ function AvatarConceptView({
   avatarState,
   onAvatarStateChange,
 }: {
+  kind: PixelKind;
   avatar: AvatarProfile;
   response: AvatarResponse;
   generating: boolean;
@@ -250,7 +268,9 @@ function AvatarConceptView({
 
         {response.isStale && (
           <Alert>
-            El ADN de la marca cambió desde que se creó este concepto. Regenera para actualizarlo.
+            {kind === 'personal'
+              ? 'Tu ADN personal cambió desde que se creó este concepto. Regenera para actualizarlo.'
+              : 'El ADN de la marca cambió desde que se creó este concepto. Regenera para actualizarlo.'}
           </Alert>
         )}
         {error && <Alert>{error}</Alert>}
@@ -271,7 +291,7 @@ function AvatarConceptView({
                     v{item.version} · {item.name}
                   </span>
                   <span className="shrink-0 text-[11px] tabular-nums text-subtle">
-                    ADN v{item.brandDnaVersion} · {dateFormat.format(new Date(item.createdAt))}
+                    ADN v{item.dnaVersion} · {dateFormat.format(new Date(item.createdAt))}
                   </span>
                 </li>
               ))}
@@ -294,7 +314,9 @@ function AvatarConceptView({
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted">{avatar.concept}</p>
           <dl className="mt-8 grid gap-5 sm:grid-cols-3">
-            <Field label="Objeto base">{avatar.baseObject.label}</Field>
+            <Field label={kind === 'personal' ? 'Inspiración' : 'Objeto base'}>
+              {avatar.baseObject.label}
+            </Field>
             <Field label="Cuerpo">{BODY_SHAPE_LABEL[avatar.bodyShape]}</Field>
             <Field label="Rostro">
               {FACE_STYLE_LABEL[avatar.faceStyle]} · ojos {EYES_LABEL[avatar.eyesStyle]},{' '}
@@ -395,7 +417,11 @@ function AvatarConceptView({
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-subtle">Sin accesorios: la marca pide una forma limpia.</p>
+              <p className="text-sm text-subtle">
+                {kind === 'personal'
+                  ? 'Sin accesorios: tu estilo pide una forma limpia.'
+                  : 'Sin accesorios: la marca pide una forma limpia.'}
+              </p>
             )}
           </Panel>
 

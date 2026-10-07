@@ -9,7 +9,9 @@ import {
 } from '../src/modules/conversations/context/index.js';
 import { WorkspaceModel } from '../src/modules/workspaces/workspace.model.js';
 import { cafeTinto, novaLabs } from './fixtures/onboarding.js';
+import { photographer, streamer, type PersonalAnswers } from './fixtures/personal.js';
 import { completeOnboarding, createCompany } from './support/brandBrain.js';
+import { completePersonalOnboarding, createPersonalWorkspace } from './support/personal.js';
 import { buildTestApp, registerUser, useTestDatabase } from './support/testApp.js';
 import { workspaceIdOf } from './support/workspaces.js';
 
@@ -51,8 +53,12 @@ describe('EnterpriseContextBuilder', () => {
     expect(result.status).toBe('ready');
     if (result.status !== 'ready') return;
     expect(result.companyId?.toString()).toBe(companyId);
-    expect(result.meta).toEqual({ brandDnaVersion: 1, avatarVersion: null });
-    expect(result.context.brief.brand).toBe('Café Tinto');
+    expect(result.meta).toEqual({
+      brandDnaVersion: 1,
+      personalDnaVersion: null,
+      avatarVersion: null,
+    });
+    expect(result.context.brief).toMatchObject({ brand: 'Café Tinto' });
     expect(result.context.system).toContain('director creativo de Café Tinto');
   });
 
@@ -99,21 +105,97 @@ describe('EnterpriseContextBuilder', () => {
 });
 
 describe('PersonalContextBuilder', () => {
-  it('es un placeholder explícito: el contexto personal aún no está configurado', async () => {
+  async function personalWorkspace(session: Session, answers?: PersonalAnswers) {
+    const id = await createPersonalWorkspace(session, session.user.name);
+    if (answers) await completePersonalOnboarding(session, id, answers);
+    const workspace = await WorkspaceModel.findOne({ _id: id, ownerId: session.user.id });
+    if (!workspace) throw new Error('workspace no encontrado');
+    return workspace;
+  }
+
+  it('sin PersonalDNA responde que el contexto personal no está configurado', async () => {
     const jhon = await registerUser(app, 'Jhon');
-    const res = await jhon.agent
-      .post('/api/workspaces')
-      .send({ type: 'personal', name: 'Jhon Trochez' })
-      .expect(201);
-    const workspace = await WorkspaceModel.findOne({
-      _id: res.body.workspace.id,
-      ownerId: jhon.user.id,
-    });
-    const result = await ask(workspace!);
+    const result = await ask(await personalWorkspace(jhon));
     expect(result).toEqual({
       status: 'not_configured',
       reason: 'personal_context_not_configured',
       message: PERSONAL_CONTEXT_NOT_CONFIGURED,
     });
+  });
+
+  it('carga el PersonalDNA del workspace: Director Creativo Personal, en segunda persona', async () => {
+    const jhon = await registerUser(app, 'Jhon');
+    const result = await ask(await personalWorkspace(jhon, photographer));
+    expect(result.status).toBe('ready');
+    if (result.status !== 'ready') return;
+    expect(result.companyId).toBeNull();
+    expect(result.meta).toEqual({
+      brandDnaVersion: null,
+      personalDnaVersion: 1,
+      avatarVersion: null,
+    });
+    const { system } = result.context;
+    expect(system).toContain('Director Creativo Personal de Valeria Mora');
+    expect(system).toMatch(/No eres terapeuta, ni un life coach genérico/);
+    expect(system).toContain('<personal_context>');
+    expect(system).not.toContain('<brand_context>');
+    expect(result.context.brief).toMatchObject({
+      person: 'Valeria Mora',
+      goals: { professional: ['vender sesiones premium'] },
+      content: { platforms: ['Instagram', 'LinkedIn'] },
+    });
+    expect(system).toContain('Nunca uses: «barato», «promo»');
+  });
+
+  it('el Pixel Personal de A nunca usa el ADN de B', async () => {
+    const alice = await registerUser(app, 'Alice');
+    const bob = await registerUser(app, 'Bob');
+    const a = await ask(await personalWorkspace(alice, photographer));
+    const b = await ask(await personalWorkspace(bob, streamer));
+    if (a.status !== 'ready' || b.status !== 'ready') throw new Error('contexto no listo');
+    expect(a.context.system).toContain('Valeria Mora');
+    expect(a.context.system).not.toMatch(/Mateo|Twitch|streamer/i);
+    expect(b.context.system).toContain('Mateo Ríos');
+    expect(b.context.system).not.toMatch(/Valeria|sesiones premium|fotógraf/i);
+  });
+
+  it('el mismo dueño con empresa y Pixel Personal: los contextos no se mezclan', async () => {
+    const jhon = await registerUser(app, 'Jhon');
+    const { workspace: enterprise } = await enterpriseWorkspace(jhon, cafeTinto);
+    const personal = await personalWorkspace(jhon, streamer);
+
+    const brand = await ask(enterprise);
+    const own = await ask(personal);
+    if (brand.status !== 'ready' || own.status !== 'ready') throw new Error('contexto no listo');
+    expect(own.context.system).not.toMatch(/Café Tinto|Huila|<brand_context>/);
+    expect(brand.context.system).not.toMatch(/Mateo|Twitch|<personal_context>/);
+    expect(brand.meta.personalDnaVersion).toBeNull();
+    expect(own.meta.brandDnaVersion).toBeNull();
+  });
+
+  it('incluye las memorias creativas de SU workspace, nunca las de otro', async () => {
+    const jhon = await registerUser(app, 'Jhon');
+    const { workspace: enterprise } = await enterpriseWorkspace(jhon, cafeTinto);
+    const personal = await personalWorkspace(jhon, photographer);
+    const memory = (
+      workspaceId: Types.ObjectId,
+      memoryScope: 'enterprise' | 'personal',
+      content: string,
+    ) => ({
+      workspaceId,
+      memoryScope,
+      kind: 'decision' as const,
+      content,
+      source: { type: 'manual' as const, conversationId: null, messageId: null },
+      createdByUserId: new Types.ObjectId(jhon.user.id),
+    });
+    await CreativeMemoryModel.create([
+      memory(personal._id, 'personal', 'Nada de fondos blancos de estudio'),
+      memory(enterprise._id, 'enterprise', 'Campaña de cosecha aprobada'),
+    ]);
+    const result = await ask(personal);
+    if (result.status !== 'ready') throw new Error('contexto no listo');
+    expect(result.context.system).toContain('Nada de fondos blancos de estudio');
+    expect(result.context.system).not.toContain('Campaña de cosecha aprobada');
   });
 });

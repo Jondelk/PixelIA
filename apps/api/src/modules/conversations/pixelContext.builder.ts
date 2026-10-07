@@ -6,7 +6,12 @@ import {
   type MessageRole,
 } from '@pixel/contracts';
 import type { AIChatTurn } from '../../ai/index.js';
-import { renderBrief, type CreativeBrief, type CreativeLever } from '../../ai/brief.js';
+import {
+  renderBrief,
+  type CreativeBrief,
+  type CreativeLever,
+  type PersonalBrief,
+} from '../../ai/brief.js';
 
 /*
  * Composición del contexto Enterprise: el prompt con el que habla el Pixel de UNA marca.
@@ -48,10 +53,11 @@ export const DEFAULT_LIMITS: ContextLimits = {
   itemChars: 180,
 };
 
-export interface PixelContext {
+export interface PixelContext<Brief = CreativeBrief | PersonalBrief> {
   system: string;
   messages: AIChatTurn[];
-  brief: CreativeBrief;
+  /** Brief de marca (Enterprise) o personal (Personal), según la estrategia que lo construyó. */
+  brief: Brief;
   stats: {
     historyMessages: number;
     historyChars: number;
@@ -188,7 +194,8 @@ function buildLevers(dna: BrandDna, focus: string[]): CreativeLever[] {
   return levers;
 }
 
-function trimHistory(history: HistoryMessage[], limits: ContextLimits): AIChatTurn[] {
+/** Últimos mensajes que caben en los límites, empezando siempre por un turno del usuario. */
+export function trimHistory(history: HistoryMessage[], limits: ContextLimits): AIChatTurn[] {
   const recent = history.slice(-limits.historyMessages);
   const kept: AIChatTurn[] = [];
   let chars = 0;
@@ -209,7 +216,7 @@ function trimHistory(history: HistoryMessage[], limits: ContextLimits): AIChatTu
 const list = (items: string[], limits: ContextLimits) =>
   items.slice(0, limits.listItems).map((item) => truncate(item, limits.itemChars));
 
-export function buildPixelContext(input: PixelContextInput): PixelContext {
+export function buildPixelContext(input: PixelContextInput): PixelContext<CreativeBrief> {
   const limits = { ...DEFAULT_LIMITS, ...input.limits };
   const { brandDna: dna, avatar } = input;
   const focus = detectFocus(input.userMessage);
