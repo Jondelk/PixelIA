@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { companyInitials, pixelStatus } from './pixelStatus';
 
 describe('pixelStatus', () => {
-  it('una empresa nueva aún no tiene Pixel configurado', () => {
+  it('una empresa nueva aún no está configurada', () => {
     expect(pixelStatus({ status: 'draft', brandDnaVersion: null })).toEqual({
-      label: 'Pixel aún no configurado',
+      label: 'Marca sin configurar',
       tone: 'idle',
     });
   });
@@ -14,7 +14,7 @@ describe('pixelStatus', () => {
       'Onboarding de marca en curso',
     );
     expect(pixelStatus({ status: 'onboarding', brandDnaVersion: 2 })).toEqual({
-      label: 'ADN de marca listo · avatar pendiente',
+      label: 'ADN de marca listo · personaje pendiente',
       tone: 'learned',
     });
   });

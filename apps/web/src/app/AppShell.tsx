@@ -21,7 +21,7 @@ export function AppShell() {
 
       {navOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-30 bg-overlay lg:hidden"
           onClick={() => setNavOpen(false)}
           aria-hidden="true"
         />
@@ -29,12 +29,8 @@ export function AppShell() {
 
       <div className="flex min-h-dvh flex-col lg:pl-64">
         <Header onOpenNav={() => setNavOpen(true)} />
-        <main className="relative flex-1">
-          <div
-            className="bg-grid pointer-events-none absolute inset-x-0 top-0 h-96"
-            aria-hidden="true"
-          />
-          <div className="relative mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-10 lg:py-12">
+        <main className="flex-1">
+          <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-12 lg:py-16">
             <Outlet />
           </div>
         </main>

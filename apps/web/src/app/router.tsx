@@ -45,7 +45,7 @@ export const router = createBrowserRouter([
       </RequireAuth>
     ),
     children: [
-      { path: '/dashboard', element: <DashboardPage />, handle: handle('Tus Pixels') },
+      { path: '/dashboard', element: <DashboardPage />, handle: handle('Tus marcas') },
       { path: '/companies', element: <CompaniesPage />, handle: handle('Empresas') },
       { path: '/companies/new', element: <NewCompanyPage />, handle: handle('Nueva empresa') },
       {
@@ -59,7 +59,11 @@ export const router = createBrowserRouter([
             handle: handle('Onboarding de marca', 'Empresa'),
           },
           { path: 'brand', element: <BrandPage />, handle: handle('ADN de marca', 'Empresa') },
-          { path: 'pixel', element: <PixelPage />, handle: handle('Pixel', 'Empresa') },
+          {
+            path: 'pixel',
+            element: <PixelPage />,
+            handle: handle('Personaje de la marca', 'Empresa'),
+          },
           { path: 'chat', element: <ChatPage />, handle: handle('Chat', 'Empresa') },
         ],
       },

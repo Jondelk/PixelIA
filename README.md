@@ -1,7 +1,7 @@
 # PixelIA
 
-Director creativo asistido por IA. Cada empresa tiene su propio **Pixel**: un director creativo que
-entiende el ADN de su marca y se materializa como un avatar 3D derivado de ese ADN.
+Director creativo asistido por IA de **PIXELES**. **Pixel** estudia el ADN de cada marca y lo
+materializa en un personaje 3D derivado de ese ADN. Identidad visual: ver `CLAUDE.md` › Identidad visual.
 
 > Estado: **MVP 0.1 — base técnica, autenticación y empresas listas.** Ver [`docs/BACKLOG.md`](./docs/BACKLOG.md).
 

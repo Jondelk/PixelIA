@@ -112,7 +112,7 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 - [x] Generador determinístico de BrandDNA (`rules-1`), versionado por `sourceHash`, pantalla "Así entiende Pixel tu marca".
 - [x] Avatar Concept Engine: interfaz reemplazable por IA + motor de reglas `avatar-rules-1` (catálogo de sujetos, señales combinadas, vetos por restricciones, rationale con fuentes).
 - [x] `GET /avatar`, `POST /avatar/generate` con versionado, historial, variación al regenerar e `isStale`.
-- [x] Web `/company/:id/pixel`: "Crear mi Pixel", "Regenerar concepto", concepto completo y vista provisional SVG animada.
+- [x] Web `/company/:id/pixel`: "Crear el personaje de tu marca", "Regenerar concepto", concepto completo y vista provisional SVG animada.
 - [ ] Web: `AnalysisPage` con polling y estado de error con reintento; `BrandDnaSummary`.
 - [ ] Tests: job completo con mock; fallo de IA → `failed`; aislamiento de los nuevos endpoints.
 
@@ -160,6 +160,25 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 - [ ] README final: instalación, variables de entorno, ejecución, demo.
 
 **Aceptación:** se cumplen los criterios de éxito de `MVP.md §5`.
+
+---
+
+## Identidad visual PIXELES ✅
+
+- [x] Assets oficiales organizados en `apps/web/public/brand` (logo principal, isotipo y logotipo de
+  letras en versión oscura, sobre azul y sobre blanco; favicons 16/32/64/128) y `public/pixi`
+  (Pixi base sobre negro y sobre blanco; evolución 1–6). Son recortes de `/brand-assets` y del
+  manual; nada redibujado.
+- [x] Tokens únicos en `apps/web/src/styles/theme.css` integrados con Tailwind 4; paleta por defecto
+  desactivada. Unbounded + Instrument Sans.
+- [x] Shell, componentes compartidos y todas las pantallas migrados a tokens; sin brillos, blur,
+  degradados ni iconos de IA. Pixi en login, estados vacíos y cargas. Textos: "Pixel" = producto,
+  "el personaje de tu marca" = avatar de cada empresa.
+- [x] Siempre arranca en oscuro; modo claro de sesión con paridad. `<Reveal>` al hacer scroll.
+- [ ] Sustituir los PNG por **SVG oficiales** (logo principal, isotipo, logotipo de letras, versión
+  sobre blanco, favicon de 16 px) y **Pixi con fondo transparente** cuando PIXELES los entregue.
+- [ ] Decidir con producto el modelo "60 % Pixi / 40 % ADN" del manual frente al avatar 100 %
+  derivado del ADN que genera hoy el Avatar Concept Engine (cambio de lógica, no visual).
 
 ---
 

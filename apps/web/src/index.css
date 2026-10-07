@@ -1,64 +1,34 @@
 @import 'tailwindcss';
-
-/* Identidad provisional de Pixel: oscuro, preciso, con acentos cyan / azul eléctrico. */
-@theme {
-  --color-canvas: #04060c;
-  --color-surface: #070b15;
-  --color-elevated: #0c1221;
-  --color-line: #141c2e;
-  --color-line-strong: #22304b;
-  --color-fg: #e7edf7;
-  --color-muted: #8b97ae;
-  --color-subtle: #586379;
-  --color-accent: #22d3ee;
-  --color-accent-soft: #67e8f9;
-  --color-electric: #2f6bff;
-
-  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-display: 'Space Grotesk', 'Inter', ui-sans-serif, system-ui, sans-serif;
-}
+@import './styles/theme.css';
 
 @layer base {
-  html {
-    color-scheme: dark;
-  }
-
   body {
     @apply bg-canvas font-sans text-fg antialiased;
   }
 
   ::selection {
-    background: rgb(34 211 238 / 0.28);
+    background: var(--color-brand);
+    color: var(--color-on-brand);
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--color-focus);
     outline-offset: 2px;
   }
 }
 
-@utility bg-grid {
-  background-image:
-    linear-gradient(to right, rgb(139 151 174 / 0.06) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(139 151 174 / 0.06) 1px, transparent 1px);
-  background-size: 44px 44px;
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 20%, transparent 75%);
+/*
+ * Aparición al hacer scroll (ver src/components/Reveal.tsx): entra al bajar y se revierte al
+ * subir. Sin JS o con movimiento reducido, el contenido es visible desde el inicio.
+ */
+[data-reveal] {
+  transition:
+    opacity 700ms var(--ease-pxl),
+    transform 700ms var(--ease-pxl);
 }
-
-/* Aparición escalonada ("Pixel aprendió tu marca"). */
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@utility animate-rise {
-  animation: rise 650ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+[data-reveal='hidden'] {
+  opacity: 0;
+  transform: translateY(16px);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -69,9 +39,13 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+  [data-reveal='hidden'] {
+    opacity: 1;
+    transform: none;
+  }
 }
 
-/* Animaciones de reposo de la vista provisional de Pixel (idleBehavior). */
+/* Animaciones de reposo de la vista previa 2D del personaje de cada marca (idleBehavior del AvatarProfile). */
 @keyframes pixel-bounce {
   0%,
   100% {

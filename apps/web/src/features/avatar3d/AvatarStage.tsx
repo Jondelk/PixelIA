@@ -10,7 +10,7 @@ import { supportsWebGL } from './webgl';
 const PixelAvatar = lazy(() => import('./PixelAvatar'));
 
 /**
- * Escena del Pixel lista para usar en cualquier página. Si no hay WebGL o la escena falla,
+ * Escena del personaje de la marca lista para usar en cualquier página. Si no hay WebGL o la escena falla,
  * muestra la vista SVG provisional.
  */
 export function AvatarStage({
@@ -38,7 +38,7 @@ export function AvatarStage({
       <Suspense
         fallback={
           <div className={`relative grid place-items-center ${className}`} role="status">
-            <Spinner className="size-6 text-accent" />
+            <Spinner className="size-6 text-fg" />
           </div>
         }
       >

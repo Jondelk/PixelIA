@@ -21,19 +21,19 @@ export function CompaniesPage() {
         <PageHeader
           eyebrow="Empresas"
           title="Empresas"
-          description="Cada empresa tiene su propio Pixel, construido a partir del ADN de su marca."
+          description="Cada empresa tiene su ADN y un personaje propio, construido a partir de él."
         />
         <NewCompanyLink className="mb-8 sm:mb-10" />
       </div>
 
       {state.status === 'loading' && (
         <div
-          className="divide-y divide-line rounded-2xl border border-line bg-surface/60"
+          className="divide-y divide-line rounded-2xl border border-line bg-surface"
           aria-busy="true"
         >
           {[0, 1, 2].map((index) => (
             <div key={index} className="flex items-center gap-4 px-5 py-4" aria-hidden="true">
-              <div className="size-12 animate-pulse rounded-xl bg-elevated" />
+              <div className="size-12 animate-pulse rounded-lg bg-elevated" />
               <div className="flex-1 space-y-2">
                 <div className="h-4 w-1/3 animate-pulse rounded bg-elevated" />
                 <div className="h-3 w-1/4 animate-pulse rounded bg-elevated" />
@@ -47,20 +47,19 @@ export function CompaniesPage() {
 
       {state.status === 'success' && state.data.length === 0 && (
         <EmptyState
-          icon="companies"
           title="Todavía no tienes empresas"
-          description="Crea tu primera empresa. Cada una tendrá su propio Pixel."
+          description="Crea tu primera empresa. Pixel estudiará su marca y le dará un personaje propio."
           action={<NewCompanyLink />}
         />
       )}
 
       {state.status === 'success' && state.data.length > 0 && (
-        <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface/80">
+        <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
           {state.data.map((company) => (
             <li key={company.id}>
               <Link
                 to={companyBasePath(company.id)}
-                className="group flex items-center gap-4 px-5 py-4 transition-colors hover:bg-elevated/60"
+                className="group flex items-center gap-4 px-5 py-4 transition-colors hover:bg-elevated"
               >
                 <CompanyAvatar name={company.name} />
                 <div className="min-w-0 flex-1">
@@ -75,7 +74,7 @@ export function CompaniesPage() {
                 </div>
                 <Icon
                   name="arrowRight"
-                  className="size-4 shrink-0 text-subtle transition-colors group-hover:text-accent"
+                  className="size-4 shrink-0 text-subtle transition-colors group-hover:text-fg"
                 />
               </Link>
             </li>

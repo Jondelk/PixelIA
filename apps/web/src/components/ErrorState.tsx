@@ -14,10 +14,11 @@ export function ErrorState({
   return (
     <section
       role="alert"
-      className="rounded-2xl border border-rose-500/20 bg-rose-500/[0.04] px-6 py-10 text-center"
+      className="rounded-2xl border border-line-strong bg-surface px-6 py-12 text-center"
     >
-      <h2 className="font-display text-lg font-semibold">{title}</h2>
-      <p className="mx-auto mt-2 max-w-md text-sm text-muted">{errorMessage(error)}</p>
+      <span className="mx-auto mb-6 block size-2.5 bg-alert" aria-hidden="true" />
+      <h2 className="font-display text-lg font-bold">{title}</h2>
+      <p className="mx-auto mt-3 max-w-md text-sm text-muted">{errorMessage(error)}</p>
       {onRetry && (
         <Button variant="secondary" className="mt-6" onClick={onRetry}>
           Reintentar

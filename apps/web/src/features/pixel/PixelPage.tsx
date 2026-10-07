@@ -12,7 +12,7 @@ import { buttonClasses } from '../../components/buttonClasses';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorState } from '../../components/ErrorState';
 import { Icon } from '../../components/Icon';
-import { PixelMark } from '../../components/PixelMark';
+import { Pixi } from '../../components/Pixi';
 import { Spinner } from '../../components/Spinner';
 import { companyBasePath } from '../../app/navigation';
 import { errorMessage } from '../../lib/api';
@@ -42,7 +42,7 @@ export function PixelPage() {
   if (state.status === 'loading') {
     return (
       <div className="flex items-center gap-3 py-16 text-sm text-muted" role="status">
-        <Spinner className="size-5 text-accent" /> Cargando tu Pixel…
+        <Spinner className="size-5 text-fg" /> Cargando el personaje…
       </div>
     );
   }
@@ -51,7 +51,6 @@ export function PixelPage() {
   if (!state.data.brandDnaVersion) {
     return (
       <EmptyState
-        icon="pixel"
         title="Pixel aún no conoce esta marca"
         description="Para crear su personaje, Pixel necesita primero el ADN de la marca. Completa el onboarding de 8 pasos."
         action={
@@ -118,17 +117,14 @@ function PixelStudio({
 
   if (!data.avatar) {
     return (
-      <section className="relative overflow-hidden rounded-3xl border border-line bg-surface px-6 py-12 sm:px-12">
-        <div className="bg-grid pointer-events-none absolute inset-0" aria-hidden="true" />
-        <div className="relative grid items-center gap-10 lg:grid-cols-[320px_1fr]">
-          <div className="mx-auto grid size-64 place-items-center rounded-full border border-dashed border-line-strong">
-            <PixelMark className="size-24 opacity-80 drop-shadow-[0_0_30px_rgba(34,211,238,0.4)]" />
-          </div>
+      <section className="rounded-3xl border border-line bg-surface px-6 py-14 sm:px-14">
+        <div className="grid items-center gap-12 lg:grid-cols-[280px_1fr]">
+          <Pixi size={220} className="mx-auto" />
           <div className="max-w-xl">
-            <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent">
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-subtle">
               Avatar Concept Engine
             </p>
-            <h1 className="mt-4 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+            <h1 className="mt-5 font-display text-3xl font-bold tracking-tight sm:text-4xl">
               {companyName} ya tiene ADN. Ahora puede tener cuerpo.
             </h1>
             <p className="mt-4 text-sm leading-relaxed text-muted">
@@ -142,7 +138,8 @@ function PixelStudio({
               </div>
             )}
             <Button className="mt-8" onClick={generate} loading={generating}>
-              {!generating && <Icon name="sparkle" className="size-4" />} Crear mi Pixel
+              {!generating && <Icon name="create" className="size-4" />} Crear el personaje de tu
+              marca
             </Button>
           </div>
         </div>
@@ -173,8 +170,8 @@ function Panel({
   className?: string;
 }) {
   return (
-    <section className={`rounded-2xl border border-line bg-surface/80 p-6 ${className}`}>
-      <h2 className="font-display text-base font-semibold tracking-tight">{title}</h2>
+    <section className={`rounded-2xl border border-line bg-surface p-6 ${className}`}>
+      <h2 className="font-display text-base font-bold tracking-tight">{title}</h2>
       <div className="mt-4">{children}</div>
     </section>
   );
@@ -185,18 +182,18 @@ function Chips({
   tone = 'default',
 }: {
   items: string[];
-  tone?: 'default' | 'accent' | 'danger';
+  tone?: 'default' | 'strong' | 'avoid';
 }) {
   if (items.length === 0) return <p className="text-sm text-subtle">—</p>;
   const style = {
-    default: 'border-line-strong text-fg/90',
-    accent: 'border-accent/40 bg-accent/[0.07] text-accent-soft',
-    danger: 'border-rose-500/30 bg-rose-500/[0.06] text-rose-200',
+    default: 'border-line-strong text-fg',
+    strong: 'border-line-strong bg-elevated font-medium text-fg',
+    avoid: 'border-line text-muted line-through decoration-subtle',
   }[tone];
   return (
     <ul className="flex flex-wrap gap-1.5">
       {items.map((item) => (
-        <li key={item} className={`rounded-full border px-3 py-1 text-[13px] ${style}`}>
+        <li key={item} className={`rounded-md border px-3 py-1 text-[13px] ${style}`}>
           {item}
         </li>
       ))}
@@ -207,8 +204,8 @@ function Chips({
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
-      <dt className="text-xs uppercase tracking-wider text-subtle">{label}</dt>
-      <dd className="mt-1 text-sm text-fg/90">{children}</dd>
+      <dt className="text-[11px] font-medium uppercase tracking-[0.16em] text-subtle">{label}</dt>
+      <dd className="mt-1.5 text-sm text-fg">{children}</dd>
     </div>
   );
 }
@@ -240,17 +237,9 @@ function AvatarConceptView({
     <div className="grid gap-5 xl:grid-cols-[380px_1fr]">
       {/* Columna izquierda: vista provisional y acciones */}
       <div className="space-y-4 xl:sticky xl:top-24 xl:self-start">
-        <section className="animate-rise relative overflow-hidden rounded-3xl border border-line bg-surface">
-          <div className="bg-grid pointer-events-none absolute inset-0" aria-hidden="true" />
-          <div
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 opacity-30 blur-3xl"
-            style={{
-              background: `radial-gradient(ellipse at 50% 100%, ${avatar.accentColor.hex}, transparent 70%)`,
-            }}
-            aria-hidden="true"
-          />
+        <section className="animate-rise overflow-hidden rounded-3xl border border-line bg-surface">
           <AvatarStage avatar={avatar} state={avatarState} className="!h-80 sm:!h-96" />
-          <p className="relative border-t border-line px-5 py-3 text-center font-mono text-[11px] text-subtle">
+          <p className="border-t border-line px-5 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-subtle">
             Avatar paramétrico · arrastra para girarlo
           </p>
         </section>
@@ -260,26 +249,28 @@ function AvatarConceptView({
         )}
 
         {response.isStale && (
-          <div className="rounded-xl border border-amber-400/30 bg-amber-400/[0.06] px-4 py-3 text-sm text-amber-100">
+          <Alert>
             El ADN de la marca cambió desde que se creó este concepto. Regenera para actualizarlo.
-          </div>
+          </Alert>
         )}
         {error && <Alert>{error}</Alert>}
 
         <Button variant="secondary" className="w-full" onClick={onRegenerate} loading={generating}>
-          {!generating && <Icon name="sparkle" className="size-4 text-accent" />} Regenerar concepto
+          {!generating && <Icon name="create" className="size-4" />} Regenerar concepto
         </Button>
 
         {response.history.length > 1 && (
-          <section className="rounded-2xl border border-line bg-surface/80 p-5">
-            <h2 className="text-xs font-medium uppercase tracking-wider text-subtle">Versiones</h2>
+          <section className="rounded-2xl border border-line bg-surface p-5">
+            <h2 className="text-[11px] font-medium uppercase tracking-[0.16em] text-subtle">
+              Versiones
+            </h2>
             <ol className="mt-3 space-y-2">
               {response.history.map((item) => (
                 <li key={item.version} className="flex items-center justify-between gap-3 text-sm">
                   <span className={item.version === avatar.version ? 'text-fg' : 'text-muted'}>
                     v{item.version} · {item.name}
                   </span>
-                  <span className="shrink-0 font-mono text-[11px] text-subtle">
+                  <span className="shrink-0 text-[11px] tabular-nums text-subtle">
                     ADN v{item.brandDnaVersion} · {dateFormat.format(new Date(item.createdAt))}
                   </span>
                 </li>
@@ -295,14 +286,14 @@ function AvatarConceptView({
           className="animate-rise rounded-3xl border border-line bg-surface p-6 sm:p-8"
           style={{ animationDelay: '80ms' }}
         >
-          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-subtle">
             {AVATAR_TYPE_LABELS[avatar.avatarType]} · versión {avatar.version}
           </p>
-          <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight sm:text-5xl">
+          <h1 className="mt-4 font-display text-4xl font-bold tracking-tight sm:text-5xl">
             {avatar.name}
           </h1>
-          <p className="mt-4 max-w-2xl text-base leading-relaxed text-fg/90">{avatar.concept}</p>
-          <dl className="mt-6 grid gap-4 sm:grid-cols-3">
+          <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted">{avatar.concept}</p>
+          <dl className="mt-8 grid gap-5 sm:grid-cols-3">
             <Field label="Objeto base">{avatar.baseObject.label}</Field>
             <Field label="Cuerpo">{BODY_SHAPE_LABEL[avatar.bodyShape]}</Field>
             <Field label="Rostro">
@@ -313,26 +304,24 @@ function AvatarConceptView({
         </header>
 
         <section
-          className="animate-rise rounded-2xl border border-accent/25 bg-accent/[0.04] p-6"
+          className="animate-rise rounded-2xl bg-brand p-6 text-on-brand sm:p-8"
           style={{ animationDelay: '140ms' }}
         >
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-accent/80">
-            Razón creativa
-          </p>
-          <p className="mt-3 text-[15px] leading-relaxed text-fg">{avatar.rationale.summary}</p>
+          <p className="text-[11px] font-medium uppercase tracking-[0.2em]">Razón creativa</p>
+          <p className="mt-4 text-[15px] leading-relaxed">{avatar.rationale.summary}</p>
           <details className="group mt-4">
-            <summary className="cursor-pointer text-sm text-accent hover:text-accent-soft">
+            <summary className="cursor-pointer text-sm font-medium underline decoration-on-brand/40 underline-offset-4 hover:decoration-on-brand">
               Ver cada decisión y de qué parte del ADN sale
             </summary>
             <ul className="mt-4 space-y-4">
               {avatar.rationale.decisions.map((decision) => (
-                <li key={decision.attribute} className="border-l border-line-strong pl-4">
-                  <p className="text-sm text-fg/90">{decision.reason}</p>
+                <li key={decision.attribute} className="border-l border-on-brand/40 pl-4">
+                  <p className="text-sm">{decision.reason}</p>
                   <p className="mt-1.5 flex flex-wrap gap-1">
                     {decision.sources.map((source) => (
                       <code
                         key={source}
-                        className="rounded bg-elevated px-1.5 py-0.5 font-mono text-[10px] text-subtle"
+                        className="rounded-sm bg-on-brand/15 px-1.5 py-0.5 text-[10px]"
                       >
                         {source}
                       </code>
@@ -346,7 +335,7 @@ function AvatarConceptView({
 
         <div className="grid gap-5 lg:grid-cols-2">
           <Panel title="Personalidad">
-            <Chips items={avatar.personalityTraits} tone="accent" />
+            <Chips items={avatar.personalityTraits} tone="strong" />
             <dl className="mt-5 space-y-4">
               <Field label="Cómo se mueve">
                 {ANIMATION_PERSONALITY_LABELS[avatar.animationPersonality]}
@@ -358,9 +347,9 @@ function AvatarConceptView({
                 {avatar.speakingBehavior.description}
               </Field>
               <Field label={`Expresividad · ${avatar.expressiveness}/100`}>
-                <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-elevated">
+                <span className="mt-1 block h-1 overflow-hidden bg-elevated">
                   <span
-                    className="block h-full rounded-full bg-gradient-to-r from-electric to-accent"
+                    className="block h-full bg-fg"
                     style={{ width: `${avatar.expressiveness}%` }}
                   />
                 </span>
@@ -373,12 +362,12 @@ function AvatarConceptView({
               {colors.map((color) => (
                 <li key={color.label} className="flex items-center gap-3">
                   <span
-                    className="size-11 shrink-0 rounded-xl border border-line-strong"
+                    className="size-11 shrink-0 rounded-lg border border-line-strong"
                     style={{ background: color.hex }}
                   />
                   <span className="min-w-0">
                     <span className="block truncate text-sm">{color.name}</span>
-                    <span className="block font-mono text-[11px] text-subtle">
+                    <span className="block text-[11px] tabular-nums text-subtle">
                       {color.label} · {color.hex}
                     </span>
                   </span>
@@ -399,11 +388,8 @@ function AvatarConceptView({
             {avatar.accessories.length ? (
               <ul className="space-y-2">
                 {avatar.accessories.map((item) => (
-                  <li key={item} className="flex gap-2.5 text-sm text-fg/90">
-                    <span
-                      className="mt-2 size-1 shrink-0 rounded-full bg-accent"
-                      aria-hidden="true"
-                    />
+                  <li key={item} className="flex gap-2.5 text-sm text-fg">
+                    <span className="mt-2 size-1 shrink-0 bg-subtle" aria-hidden="true" />
                     {item}
                   </li>
                 ))}
@@ -414,11 +400,11 @@ function AvatarConceptView({
           </Panel>
 
           <Panel title="Palabras clave visuales">
-            <Chips items={avatar.visualKeywords} tone="accent" />
+            <Chips items={avatar.visualKeywords} tone="strong" />
           </Panel>
 
-          <Panel title="Pixel debe evitar">
-            <Chips items={avatar.avoid} tone="danger" />
+          <Panel title="El personaje evita">
+            <Chips items={avatar.avoid} tone="avoid" />
           </Panel>
         </div>
       </div>

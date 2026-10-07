@@ -36,10 +36,10 @@ export function ScaleInput({
               className={[
                 'h-9 rounded-md border text-xs transition-colors',
                 level === value
-                  ? 'border-accent bg-accent/20 text-fg'
+                  ? 'border-brand bg-brand font-semibold text-on-brand'
                   : active
-                    ? 'border-accent/30 bg-accent/[0.08] text-muted'
-                    : 'border-line-strong text-subtle hover:border-accent/40',
+                    ? 'border-line-strong bg-elevated text-fg'
+                    : 'border-line-strong text-subtle hover:border-fg',
               ].join(' ')}
             >
               {level}
@@ -51,7 +51,12 @@ export function ScaleInput({
         <span>{levels[0]}</span>
         <span>{levels[levels.length - 1]}</span>
       </div>
-      {error && <p className="mt-1.5 text-xs text-rose-300">{error}</p>}
+      {error && (
+        <p className="mt-1.5 flex items-center gap-2 text-xs text-fg">
+          <span className="size-1.5 shrink-0 bg-alert" aria-hidden="true" />
+          {error}
+        </p>
+      )}
     </div>
   );
 }

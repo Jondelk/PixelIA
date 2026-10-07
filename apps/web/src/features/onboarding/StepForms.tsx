@@ -207,7 +207,7 @@ function CommunicationStep(props: StepProps<'communication'>) {
           id={languageId}
           value={value.language}
           onChange={(e) => set('language')(e.target.value as LanguageCode)}
-          className="w-full rounded-lg border border-line-strong bg-canvas/60 px-3.5 py-2.5 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-accent/30"
+          className="w-full rounded-lg border border-line-strong bg-canvas px-3.5 py-2.5 text-sm text-fg focus:outline-none focus:ring-1 focus:ring-focus"
         >
           {Object.entries(LANGUAGES).map(([code, name]) => (
             <option key={code} value={code} className="bg-surface">

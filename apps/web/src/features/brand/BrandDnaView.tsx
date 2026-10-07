@@ -3,7 +3,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { Link } from 'react-router';
 import { buttonClasses } from '../../components/buttonClasses';
 import { Icon } from '../../components/Icon';
-import { PixelMark } from '../../components/PixelMark';
+import { brandAssets } from '../../brand/assets';
 import { DIMENSIONS, PALETTE_ROLE_LABEL, SHAPE_LANGUAGE_LABEL, TEMPERATURE_LABEL } from './labels';
 
 const dateFormat = new Intl.DateTimeFormat('es', { dateStyle: 'long' });
@@ -25,12 +25,12 @@ function Section({
 }) {
   return (
     <section
-      className={`animate-rise rounded-2xl border border-line bg-surface/80 p-6 ${className}`}
+      className={`animate-rise rounded-2xl border border-line bg-surface p-6 sm:p-8 ${className}`}
       style={rise(step)}
     >
-      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-accent/70">{eyebrow}</p>
-      <h2 className="mt-1.5 font-display text-lg font-semibold tracking-tight">{title}</h2>
-      <div className="mt-5">{children}</div>
+      <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-subtle">{eyebrow}</p>
+      <h2 className="mt-2 font-display text-lg font-bold tracking-tight">{title}</h2>
+      <div className="mt-6">{children}</div>
     </section>
   );
 }
@@ -40,18 +40,18 @@ function Chips({
   tone = 'default',
 }: {
   items: string[];
-  tone?: 'default' | 'accent' | 'muted';
+  tone?: 'default' | 'strong' | 'muted';
 }) {
   if (items.length === 0) return <p className="text-sm text-subtle">—</p>;
   const styles = {
-    default: 'border-line-strong text-fg/90',
-    accent: 'border-accent/40 bg-accent/[0.07] text-accent-soft',
+    default: 'border-line-strong text-fg',
+    strong: 'border-line-strong bg-elevated font-medium text-fg',
     muted: 'border-line text-muted',
   }[tone];
   return (
     <ul className="flex flex-wrap gap-1.5">
       {items.map((item) => (
-        <li key={item} className={`rounded-full border px-3 py-1 text-[13px] ${styles}`}>
+        <li key={item} className={`rounded-md border px-3 py-1 text-[13px] ${styles}`}>
           {item}
         </li>
       ))}
@@ -61,7 +61,9 @@ function Chips({
 
 function Label({ children }: { children: ReactNode }) {
   return (
-    <p className="mb-2 text-xs font-medium uppercase tracking-wider text-subtle">{children}</p>
+    <p className="mb-2.5 text-[11px] font-medium uppercase tracking-[0.16em] text-subtle">
+      {children}
+    </p>
   );
 }
 
@@ -70,13 +72,10 @@ function Meter({ level, label }: { level: number; label: string }) {
     <div className="flex items-center gap-3">
       <div className="flex gap-1" aria-hidden="true">
         {[1, 2, 3, 4, 5].map((n) => (
-          <span
-            key={n}
-            className={`h-1.5 w-5 rounded-full ${n <= level ? 'bg-accent' : 'bg-elevated'}`}
-          />
+          <span key={n} className={`h-1.5 w-5 ${n <= level ? 'bg-fg' : 'bg-elevated'}`} />
         ))}
       </div>
-      <span className="text-sm text-fg/90">{label}</span>
+      <span className="text-sm text-fg">{label}</span>
     </div>
   );
 }
@@ -86,14 +85,14 @@ function BulletList({ items, icon }: { items: string[]; icon?: 'check' | 'x' }) 
   return (
     <ul className="space-y-2">
       {items.map((item) => (
-        <li key={item} className="flex gap-2.5 text-sm leading-relaxed text-fg/90">
+        <li key={item} className="flex gap-2.5 text-sm leading-relaxed text-fg">
           {icon ? (
             <Icon
               name={icon}
-              className={`mt-0.5 size-4 shrink-0 ${icon === 'check' ? 'text-accent' : 'text-rose-400'}`}
+              className={`mt-0.5 size-4 shrink-0 ${icon === 'check' ? 'text-fg' : 'text-subtle'}`}
             />
           ) : (
-            <span className="mt-2 size-1 shrink-0 rounded-full bg-accent/70" aria-hidden="true" />
+            <span className="mt-2 size-1 shrink-0 bg-subtle" aria-hidden="true" />
           )}
           {item}
         </li>
@@ -123,37 +122,29 @@ export function BrandDnaView({
   return (
     <div className="space-y-5">
       {/* Encabezado: lo que Pixel aprendió */}
-      <header className="relative overflow-hidden rounded-3xl border border-line bg-surface px-6 py-10 sm:px-10 sm:py-14">
-        <div
-          className="bg-grid pointer-events-none absolute inset-0 opacity-70"
-          aria-hidden="true"
-        />
-        <div
-          className="pointer-events-none absolute -right-24 -top-24 size-80 rounded-full blur-[100px]"
-          style={{ background: v.palette[0]?.hex, opacity: 0.25 }}
-          aria-hidden="true"
-        />
-        <div className="relative flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+      {/* El momento de Pixel: bloque azul PIXELES, texto blanco (8,1:1). */}
+      <header className="rounded-3xl bg-brand px-6 py-12 text-on-brand sm:px-12 sm:py-16">
+        <div className="flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">
-            <div className="animate-rise flex items-center gap-3">
-              <PixelMark className="size-9 drop-shadow-[0_0_18px_rgba(34,211,238,0.45)]" />
-              <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent">
+            <div className="animate-rise flex items-center gap-4">
+              <img src={brandAssets.logo.isotipoOnBrand} alt="" width={24} height={32} />
+              <p className="text-xs font-medium uppercase tracking-[0.2em]">
                 Brand Brain · versión {dna.version}
               </p>
             </div>
             <h1
-              className="animate-rise mt-6 font-display text-3xl font-semibold tracking-tight sm:text-5xl sm:leading-[1.05]"
+              className="animate-rise mt-8 font-display text-3xl font-bold tracking-tight sm:text-5xl sm:leading-[1.08]"
               style={rise(0)}
             >
               Así entiende Pixel tu marca
             </h1>
-            <p className="animate-rise mt-4 text-sm text-muted" style={rise(1)}>
+            <p className="animate-rise mt-5 text-sm" style={rise(1)}>
               {justLearned
                 ? `Listo. Estudié ${dna.identity.name} y esto es lo que aprendí.`
                 : `Lo que Pixel sabe de ${dna.identity.name}, aprendido el ${dateFormat.format(new Date(dna.createdAt))}.`}
             </p>
             <blockquote
-              className="animate-rise mt-8 border-l-2 border-accent/60 pl-5 font-display text-xl leading-snug text-fg sm:text-2xl"
+              className="animate-rise mt-10 border-l-2 border-on-brand pl-6 text-xl font-medium leading-snug sm:text-2xl"
               style={rise(2)}
             >
               {dna.identity.essence}
@@ -161,7 +152,7 @@ export function BrandDnaView({
           </div>
           <Link
             to={editHref}
-            className={`${buttonClasses('secondary')} animate-rise shrink-0 self-start lg:self-auto`}
+            className={`${buttonClasses('ghost', 'border border-on-brand text-on-brand hover:bg-on-brand hover:text-brand')} animate-rise shrink-0 self-start lg:self-auto`}
             style={rise(3)}
           >
             Editar respuestas
@@ -176,7 +167,7 @@ export function BrandDnaView({
             {dna.personality.traits.map((trait) => (
               <li
                 key={trait.label}
-                className="rounded-full border border-accent/40 bg-accent/[0.07] px-3 py-1 text-[13px] text-fg"
+                className="rounded-md border border-line-strong bg-elevated px-3 py-1 text-[13px] text-fg"
                 style={{ opacity: 0.55 + trait.weight * 0.45 }}
                 title={trait.recognized ? 'Pixel reconoce este rasgo' : 'Rasgo propio de la marca'}
               >
@@ -194,7 +185,7 @@ export function BrandDnaView({
                     <span className={value > 55 ? 'text-fg' : ''}>{high}</span>
                   </div>
                   <div
-                    className="relative h-1.5 rounded-full bg-elevated"
+                    className="relative h-1 bg-elevated"
                     role="meter"
                     aria-label={`${low} a ${high}`}
                     aria-valuemin={0}
@@ -206,7 +197,7 @@ export function BrandDnaView({
                       aria-hidden="true"
                     />
                     <span
-                      className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent shadow-[0_0_10px_var(--color-accent)]"
+                      className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 bg-fg"
                       style={{ left: `${value}%` }}
                     />
                   </div>
@@ -218,11 +209,9 @@ export function BrandDnaView({
 
         {/* Arquetipo */}
         <Section eyebrow="Cómo se comporta" title="Arquetipo" step={4}>
-          <p className="font-display text-3xl font-semibold tracking-tight text-accent-soft">
-            {primary.name}
-          </p>
+          <p className="font-display text-3xl font-bold tracking-tight">{primary.name}</p>
           <p className="mt-1 text-sm italic text-muted">“{primary.motto}”</p>
-          <p className="mt-4 text-sm leading-relaxed text-fg/90">{primary.description}</p>
+          <p className="mt-4 text-sm leading-relaxed text-fg">{primary.description}</p>
           {dna.archetypes.primary.signals.length > 0 && (
             <p className="mt-3 text-xs text-subtle">
               Lo deduje de: {dna.archetypes.primary.signals.join(', ')}.
@@ -240,13 +229,10 @@ export function BrandDnaView({
                 className="grid grid-cols-[110px_1fr_36px] items-center gap-3 text-xs"
               >
                 <span className="truncate text-muted">{BRAND_ARCHETYPES[match.id].name}</span>
-                <span className="h-1.5 overflow-hidden rounded-full bg-elevated">
-                  <span
-                    className="block h-full rounded-full bg-gradient-to-r from-electric to-accent"
-                    style={{ width: `${match.score}%` }}
-                  />
+                <span className="h-1 overflow-hidden bg-elevated">
+                  <span className="block h-full bg-fg" style={{ width: `${match.score}%` }} />
                 </span>
-                <span className="text-right font-mono text-subtle">{match.score}</span>
+                <span className="text-right tabular-nums text-subtle">{match.score}</span>
               </li>
             ))}
           </ul>
@@ -254,7 +240,7 @@ export function BrandDnaView({
 
         {/* Tono */}
         <Section eyebrow="Cómo habla" title="Tono" step={5}>
-          <Chips items={c.tone} tone="accent" />
+          <Chips items={c.tone} tone="strong" />
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <div>
               <Label>Formalidad</Label>
@@ -279,7 +265,7 @@ export function BrandDnaView({
 
         {/* Público */}
         <Section eyebrow="Para quién" title="Público" step={6}>
-          <p className="text-sm leading-relaxed text-fg/90">{dna.audience.summary}</p>
+          <p className="text-sm leading-relaxed text-fg">{dna.audience.summary}</p>
           <div className="mt-5 grid gap-5 sm:grid-cols-2">
             <div>
               <Label>Necesita</Label>
@@ -302,15 +288,15 @@ export function BrandDnaView({
             {v.palette.map((color) => (
               <div key={color.hex} className="overflow-hidden rounded-xl border border-line">
                 <div
-                  className="flex h-24 items-end p-3 font-mono text-xs"
+                  className="flex h-24 items-end p-3 text-xs font-medium tabular-nums"
                   style={{
                     background: color.hex,
-                    color: color.luminance > 0.45 ? '#0b0f19' : '#f5f7fb',
+                    color: color.luminance > 0.45 ? 'var(--color-ink)' : 'var(--color-paper)',
                   }}
                 >
                   {color.hex}
                 </div>
-                <div className="bg-elevated/70 px-3 py-2.5">
+                <div className="bg-elevated px-3 py-2.5">
                   <p className="truncate text-sm">{color.name ?? '—'}</p>
                   <p className="text-xs text-subtle">
                     {PALETTE_ROLE_LABEL[color.role]} ·{' '}
@@ -330,14 +316,14 @@ export function BrandDnaView({
         <Section eyebrow="Cómo se ve" title="Estilo visual" step={8}>
           <p className="text-sm text-muted">
             Lenguaje de formas{' '}
-            <span className="font-medium text-accent-soft">
+            <span className="font-medium text-fg">
               {SHAPE_LANGUAGE_LABEL[v.shapeLanguage].toLowerCase()}
             </span>
           </p>
           <div className="mt-5 space-y-5">
             <div>
               <Label>Estilo</Label>
-              <Chips items={v.styles} tone="accent" />
+              <Chips items={v.styles} tone="strong" />
             </div>
             <div>
               <Label>Formas</Label>
@@ -358,8 +344,8 @@ export function BrandDnaView({
         <Section eyebrow="Por qué la eligen" title="Diferenciadores" step={9}>
           <ol className="space-y-3">
             {dna.differentiators.statements.map((statement, i) => (
-              <li key={statement} className="flex gap-3 text-sm leading-relaxed text-fg/90">
-                <span className="font-mono text-xs text-accent">
+              <li key={statement} className="flex gap-3 text-sm leading-relaxed text-fg">
+                <span className="pt-0.5 text-xs font-semibold tabular-nums text-subtle">
                   {String(i + 1).padStart(2, '0')}
                 </span>
                 {statement}
@@ -399,8 +385,14 @@ export function BrandDnaView({
             </div>
           </div>
           {restrictions.length > 0 && (
-            <div className="mt-6 rounded-xl border border-rose-500/20 bg-rose-500/[0.04] p-4">
-              <Label>Pixel nunca</Label>
+            <div className="mt-8 rounded-xl border border-line-strong p-5">
+              <Label>
+                <span
+                  className="mr-2 inline-block size-1.5 bg-alert align-middle"
+                  aria-hidden="true"
+                />
+                Pixel nunca
+              </Label>
               <BulletList items={restrictions} icon="x" />
             </div>
           )}

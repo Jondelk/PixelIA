@@ -22,7 +22,7 @@ export function BrandPage() {
   if (state.status === 'loading') {
     return (
       <div className="flex items-center gap-3 py-16 text-sm text-muted" role="status">
-        <Spinner className="size-5 text-accent" /> Cargando el ADN de marca…
+        <Spinner className="size-5 text-fg" /> Cargando el ADN de marca…
       </div>
     );
   }
@@ -42,7 +42,6 @@ export function BrandPage() {
   const done = onboarding.completedSteps.length;
   return (
     <EmptyState
-      icon="dna"
       title={done === 0 ? 'Pixel aún no conoce esta marca' : 'Pixel está aprendiendo tu marca'}
       description={
         done === 0

@@ -2,6 +2,7 @@ import { useMatches } from 'react-router';
 import { Icon } from '../components/Icon';
 import { ApiStatus } from '../features/system/ApiStatus';
 import { isRouteHandle } from './navigation';
+import { ThemeToggle } from './ThemeToggle';
 import { UserMenu } from './UserMenu';
 
 export function Header({ onOpenNav }: { onOpenNav: () => void }) {
@@ -11,11 +12,11 @@ export function Header({ onOpenNav }: { onOpenNav: () => void }) {
     .at(-1);
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-line bg-canvas/75 px-4 backdrop-blur-xl sm:px-6 lg:px-10">
+    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-line bg-canvas px-4 sm:px-6 lg:px-12">
       <button
         type="button"
         onClick={onOpenNav}
-        className="-ml-1 rounded-lg p-2 text-muted hover:bg-white/[0.04] hover:text-fg lg:hidden"
+        className="-ml-1 rounded-lg p-2 text-muted hover:bg-elevated hover:text-fg lg:hidden"
         aria-label="Abrir navegación"
         aria-controls="app-sidebar"
       >
@@ -26,7 +27,7 @@ export function Header({ onOpenNav }: { onOpenNav: () => void }) {
         {handle && (
           <>
             <span className="hidden text-subtle sm:inline">{handle.section}</span>
-            <Icon name="chevron" className="hidden size-3.5 text-subtle/70 sm:inline" />
+            <Icon name="chevron" className="hidden size-3.5 text-subtle sm:inline" />
             <span className="truncate font-medium text-fg">{handle.title}</span>
           </>
         )}
@@ -34,6 +35,7 @@ export function Header({ onOpenNav }: { onOpenNav: () => void }) {
 
       <div className="ml-auto flex items-center gap-3">
         <ApiStatus />
+        <ThemeToggle />
         <span className="h-6 w-px bg-line" aria-hidden="true" />
         <UserMenu />
       </div>

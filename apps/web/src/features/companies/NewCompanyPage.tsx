@@ -54,12 +54,12 @@ export function NewCompanyPage() {
       </Link>
       <PageHeader
         eyebrow="Nueva empresa"
-        title="Crea un nuevo Pixel"
+        title="Crea una empresa"
         description="Empieza con lo básico. Después, Pixel estudiará el ADN de la marca en el onboarding."
       />
 
       <form
-        className="space-y-5 rounded-2xl border border-line bg-surface/80 p-5 sm:p-8"
+        className="space-y-5 rounded-2xl border border-line bg-surface p-5 sm:p-8"
         onSubmit={onSubmit}
         noValidate
       >

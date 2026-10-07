@@ -33,7 +33,7 @@ export function OnboardingPage() {
   if (state.status === 'loading') {
     return (
       <div className="flex items-center gap-3 py-16 text-sm text-muted" role="status">
-        <Spinner className="size-5 text-accent" /> Preparando el onboarding…
+        <Spinner className="size-5 text-fg" /> Preparando el onboarding…
       </div>
     );
   }
@@ -126,14 +126,12 @@ function OnboardingWizard({
   return (
     <div className="grid gap-8 lg:grid-cols-[230px_1fr] lg:gap-10">
       <aside aria-label="Progreso del onboarding" className="lg:sticky lg:top-24 lg:self-start">
-        <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-accent/80">
-          Brand Brain
-        </p>
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-subtle">Brand Brain</p>
         <p className="mt-2 text-sm text-muted">
           {company.name} · {completed.length} de {ONBOARDING_STEPS.length} pasos
         </p>
         <div
-          className="mt-3 h-1.5 overflow-hidden rounded-full bg-elevated"
+          className="mt-4 h-1 overflow-hidden bg-elevated"
           role="progressbar"
           aria-valuemin={0}
           aria-valuemax={100}
@@ -141,7 +139,7 @@ function OnboardingWizard({
           aria-label="Progreso del onboarding"
         >
           <div
-            className="h-full rounded-full bg-gradient-to-r from-electric to-accent transition-[width] duration-500"
+            className="h-full bg-brand transition-[width] duration-500 ease-pxl"
             style={{ width: `${percent}%` }}
           />
         </div>
@@ -158,18 +156,16 @@ function OnboardingWizard({
                   aria-current={current ? 'step' : undefined}
                   className={[
                     'flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm transition-colors',
-                    current
-                      ? 'bg-accent/[0.08] text-fg'
-                      : 'text-muted hover:bg-white/[0.03] hover:text-fg',
+                    current ? 'bg-elevated font-medium text-fg' : 'text-muted hover:text-fg',
                   ].join(' ')}
                 >
                   <span
                     className={[
-                      'grid size-6 shrink-0 place-items-center rounded-full border text-[11px]',
+                      'grid size-6 shrink-0 place-items-center rounded-md border text-[11px]',
                       done
-                        ? 'border-accent/60 bg-accent/15 text-accent'
+                        ? 'border-brand bg-brand text-on-brand'
                         : current
-                          ? 'border-accent text-accent'
+                          ? 'border-fg text-fg'
                           : 'border-line-strong text-subtle',
                     ].join(' ')}
                   >
@@ -185,9 +181,9 @@ function OnboardingWizard({
         {brain.brandDna && (
           <Link
             to={`${companyBasePath(company.id)}/brand`}
-            className="mt-6 hidden items-center gap-2 text-sm text-accent hover:text-accent-soft lg:inline-flex"
+            className="mt-6 hidden items-center gap-2 text-sm text-muted hover:text-fg lg:inline-flex"
           >
-            <Icon name="dna" className="size-4" /> Ver el ADN actual
+            <Icon name="brand" className="size-4" /> Ver el ADN actual
           </Link>
         )}
       </aside>
@@ -195,16 +191,16 @@ function OnboardingWizard({
       <form
         onSubmit={onSubmit}
         noValidate
-        className="animate-rise rounded-2xl border border-line bg-surface/80 p-5 sm:p-8"
+        className="animate-rise rounded-2xl border border-line bg-surface p-5 sm:p-10"
         key={step}
       >
-        <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-subtle">
           Paso {index + 1} de {ONBOARDING_STEPS.length} · {meta.title}
         </p>
-        <h1 className="mt-3 font-display text-2xl font-semibold tracking-tight sm:text-3xl">
+        <h1 className="mt-4 font-display text-2xl font-bold tracking-tight sm:text-3xl">
           {meta.heading}
         </h1>
-        <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">{meta.description}</p>
+        <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted">{meta.description}</p>
 
         <div className="mt-8 space-y-5">
           {formError && <Alert>{formError}</Alert>}
@@ -226,7 +222,7 @@ function OnboardingWizard({
           </Button>
           <Button type="submit" loading={saving}>
             {isLast ? 'Guardar y que Pixel aprenda' : 'Guardar y continuar'}
-            {!saving && <Icon name={isLast ? 'sparkle' : 'arrowRight'} className="size-4" />}
+            {!saving && <Icon name={isLast ? 'create' : 'arrowRight'} className="size-4" />}
           </Button>
         </div>
       </form>

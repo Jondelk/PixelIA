@@ -2,14 +2,14 @@ import type { Company } from '@pixel/contracts';
 
 export type PixelTone = 'idle' | 'progress' | 'learned' | 'ready' | 'error';
 
-/** Cómo se presenta el estado del Pixel de una empresa. */
+/** Cómo se presenta el estado de una empresa (ADN y personaje). */
 export function pixelStatus(company: Pick<Company, 'status' | 'brandDnaVersion'>): {
   label: string;
   tone: PixelTone;
 } {
   switch (company.status) {
     case 'ready':
-      return { label: 'Pixel listo', tone: 'ready' };
+      return { label: 'Lista para crear', tone: 'ready' };
     case 'failed':
       return { label: 'El análisis necesita reintentarse', tone: 'error' };
     case 'analyzing':
@@ -17,10 +17,10 @@ export function pixelStatus(company: Pick<Company, 'status' | 'brandDnaVersion'>
     case 'draft':
     case 'onboarding':
       if (company.brandDnaVersion)
-        return { label: 'ADN de marca listo · avatar pendiente', tone: 'learned' };
+        return { label: 'ADN de marca listo · personaje pendiente', tone: 'learned' };
       if (company.status === 'onboarding')
         return { label: 'Onboarding de marca en curso', tone: 'progress' };
-      return { label: 'Pixel aún no configurado', tone: 'idle' };
+      return { label: 'Marca sin configurar', tone: 'idle' };
   }
 }
 

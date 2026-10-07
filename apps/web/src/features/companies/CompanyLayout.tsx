@@ -21,7 +21,7 @@ export function CompanyLayout() {
   if (state.status === 'loading') {
     return (
       <div className="flex items-center gap-3 py-16 text-sm text-muted" role="status">
-        <Spinner className="size-5 text-accent" /> Cargando empresa…
+        <Spinner className="size-5 text-fg" /> Cargando empresa…
       </div>
     );
   }

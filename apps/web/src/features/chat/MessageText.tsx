@@ -26,10 +26,7 @@ export function MessageText({ text }: { text: string }) {
           <ul key={index} className="space-y-1.5 pl-1">
             {block.items.map((item, i) => (
               <li key={i} className="flex gap-2.5">
-                <span
-                  className="mt-2 size-1 shrink-0 rounded-full bg-accent/80"
-                  aria-hidden="true"
-                />
+                <span className="mt-2 size-1 shrink-0 bg-subtle" aria-hidden="true" />
                 <span>
                   <Inlines inlines={item} />
                 </span>

@@ -1,6 +1,7 @@
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorState } from '../../components/ErrorState';
 import { PageHeader } from '../../components/PageHeader';
+import { Reveal } from '../../components/Reveal';
 import { useResource } from '../../lib/useResource';
 import { NewCompanyLink } from '../companies/CompaniesPage';
 import { listCompanies } from '../companies/companiesApi';
@@ -17,8 +18,8 @@ export function DashboardPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <PageHeader
           eyebrow={`Hola, ${firstName}`}
-          title="Tus Pixels"
-          description="Cada empresa tiene su propio Pixel: un director creativo que aprende el ADN de su marca."
+          title="Tus marcas"
+          description="Pixel es el director creativo de cada una: aprende su ADN y le da un personaje propio."
         />
         {state.status === 'success' && state.data.length > 0 && (
           <NewCompanyLink className="mb-8 sm:mb-10" />
@@ -37,9 +38,8 @@ export function DashboardPage() {
 
       {state.status === 'success' && state.data.length === 0 && (
         <EmptyState
-          icon="pixel"
-          title="Aún no tienes ningún Pixel"
-          description="Crea tu primera empresa. Pixel estudiará su marca y se convertirá en su director creativo."
+          title="Aún no tienes ninguna marca"
+          description="Crea tu primera empresa. Pixel estudiará su marca y será su director creativo."
           action={<NewCompanyLink />}
         />
       )}
@@ -47,7 +47,9 @@ export function DashboardPage() {
       {state.status === 'success' && state.data.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {state.data.map((company) => (
-            <PixelCard key={company.id} company={company} />
+            <Reveal key={company.id}>
+              <PixelCard company={company} />
+            </Reveal>
           ))}
         </div>
       )}

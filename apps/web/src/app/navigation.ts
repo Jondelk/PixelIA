@@ -28,8 +28,8 @@ export function companyNav(companyId: string): NavItem[] {
   const base = companyBasePath(companyId);
   return [
     { to: base, label: 'Resumen', icon: 'overview', end: true },
-    { to: `${base}/brand`, label: 'ADN de marca', icon: 'dna' },
-    { to: `${base}/pixel`, label: 'Pixel', icon: 'pixel' },
+    { to: `${base}/brand`, label: 'ADN de marca', icon: 'brand' },
+    { to: `${base}/pixel`, label: 'Personaje', icon: 'character' },
     { to: `${base}/chat`, label: 'Chat', icon: 'chat' },
   ];
 }

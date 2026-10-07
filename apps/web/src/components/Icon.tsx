@@ -22,19 +22,18 @@ const paths = {
       <path d="M12 7.5V12l3 2" />
     </>
   ),
-  dna: (
+  /** ADN de marca: un cuadro con su píxel origen. */
+  brand: (
     <>
-      <path d="M7 3c0 5 10 5 10 9s-10 4-10 9" />
-      <path d="M17 3c0 5-10 5-10 9s10 4 10 9" />
-      <path d="M8.5 6.5h7M8.5 17.5h7" />
+      <rect x="4" y="4" width="16" height="16" rx="1" />
+      <rect x="10" y="10" width="4" height="4" fill="currentColor" stroke="none" />
     </>
   ),
-  pixel: (
+  /** Personaje de la marca: un cubo. */
+  character: (
     <>
-      <rect x="4" y="4" width="7" height="7" rx="1.5" />
-      <rect x="13" y="4" width="7" height="7" rx="1.5" fill="currentColor" fillOpacity="0.25" />
-      <rect x="4" y="13" width="7" height="7" rx="1.5" />
-      <rect x="13" y="13" width="7" height="7" rx="1.5" />
+      <path d="M12 3.5 19.5 7.5v9L12 20.5 4.5 16.5v-9L12 3.5Z" />
+      <path d="M4.5 7.5 12 11.5l7.5-4M12 11.5v9" />
     </>
   ),
   chat: <path d="M20 12a7.5 7.5 0 0 1-11 6.6L4 20l1.4-4.6A7.5 7.5 0 1 1 20 12Z" />,
@@ -45,9 +44,20 @@ const paths = {
   plus: <path d="M12 5v14M5 12h14" />,
   check: <path d="m5 12.5 4.5 4.5L19 7.5" />,
   x: <path d="M6 6l12 12M18 6 6 18" />,
-  sparkle: (
-    <path d="M12 3.5c.4 3.9 2.6 6.1 6.5 6.5-3.9.4-6.1 2.6-6.5 6.5-.4-3.9-2.6-6.1-6.5-6.5 3.9-.4 6.1-2.6 6.5-6.5ZM18.5 15.5c.2 1.6 1 2.4 2.5 2.5-1.5.2-2.3 1-2.5 2.5-.2-1.5-1-2.3-2.5-2.5 1.5-.1 2.3-.9 2.5-2.5Z" />
+  /** Crear / generar: un píxel que aparece en una esquina libre. */
+  create: (
+    <>
+      <path d="M13.5 4.5h-8a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h13a1 1 0 0 0 1-1v-8" />
+      <rect x="16" y="3" width="5" height="5" fill="currentColor" stroke="none" />
+    </>
   ),
+  sun: (
+    <>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4" />
+    </>
+  ),
+  moon: <path d="M19.5 14.5A7.5 7.5 0 0 1 9.5 4.5a7.5 7.5 0 1 0 10 10Z" />,
   logout: (
     <>
       <path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4" />
@@ -64,7 +74,7 @@ export function Icon({ name, ...props }: { name: IconName } & SVGProps<SVGSVGEle
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.6}
+      strokeWidth={1.5}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"

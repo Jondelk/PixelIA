@@ -64,23 +64,23 @@ export function TagInput({
       </label>
       <div
         className={[
-          'flex flex-wrap items-center gap-1.5 rounded-lg border bg-canvas/60 p-1.5 transition-colors focus-within:ring-2 focus-within:ring-accent/30',
-          error ? 'border-rose-500/60' : 'border-line-strong focus-within:border-accent/60',
+          'flex flex-wrap items-center gap-1.5 rounded-lg border bg-canvas p-1.5 transition-colors focus-within:ring-1 focus-within:ring-focus',
+          error ? 'border-alert' : 'border-line-strong focus-within:border-focus',
         ].join(' ')}
       >
         {values.map((value, index) => (
           <span
             key={value}
-            className="inline-flex max-w-full items-center gap-1 rounded-md border border-accent/25 bg-accent/[0.08] py-1 pl-2.5 pr-1 text-[13px] text-fg"
+            className="inline-flex max-w-full items-center gap-1 rounded-md border border-line-strong bg-elevated py-1 pl-2.5 pr-1 text-[13px] text-fg"
           >
             {index < 3 && values.length > 3 && (
-              <span className="font-mono text-[10px] text-accent/80">{index + 1}</span>
+              <span className="text-[10px] font-semibold text-subtle">{index + 1}</span>
             )}
             <span className="truncate">{value}</span>
             <button
               type="button"
               onClick={() => remove(value)}
-              className="rounded p-0.5 text-subtle hover:bg-white/10 hover:text-fg"
+              className="rounded p-0.5 text-subtle hover:bg-line hover:text-fg"
               aria-label={`Quitar ${value}`}
             >
               <Icon name="x" className="size-3" />
@@ -113,10 +113,10 @@ export function TagInput({
                 aria-pressed={selected}
                 disabled={!selected && full}
                 className={[
-                  'rounded-full border px-3 py-1 text-xs transition-colors disabled:opacity-40',
+                  'rounded-md border px-3 py-1 text-xs transition-colors disabled:opacity-40',
                   selected
-                    ? 'border-accent/60 bg-accent/15 text-accent-soft'
-                    : 'border-line-strong text-muted hover:border-accent/40 hover:text-fg',
+                    ? 'border-brand bg-brand text-on-brand'
+                    : 'border-line-strong text-muted hover:border-fg hover:text-fg',
                 ].join(' ')}
               >
                 {selected ? '✓ ' : '+ '}
@@ -128,7 +128,8 @@ export function TagInput({
       )}
 
       {error ? (
-        <p id={`${id}-error`} className="mt-1.5 text-xs text-rose-300">
+        <p id={`${id}-error`} className="mt-1.5 flex items-center gap-2 text-xs text-fg">
+          <span className="size-1.5 shrink-0 bg-alert" aria-hidden="true" />
           {error}
         </p>
       ) : (

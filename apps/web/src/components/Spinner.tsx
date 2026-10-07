@@ -1,3 +1,5 @@
+import { Pixi } from './Pixi';
+
 export function Spinner({ className = 'size-5' }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={`animate-spin ${className}`} aria-hidden="true">
@@ -24,9 +26,12 @@ export function Spinner({ className = 'size-5' }: { className?: string }) {
 export function FullScreenLoader({ label = 'Cargando…' }: { label?: string }) {
   return (
     <div className="grid min-h-dvh place-items-center bg-canvas text-muted" role="status">
-      <div className="flex items-center gap-3 text-sm">
-        <Spinner className="size-5 text-accent" />
-        {label}
+      <div className="flex flex-col items-center gap-6 text-sm">
+        <Pixi size={96} />
+        <span className="flex items-center gap-3">
+          <Spinner className="size-4 text-fg" />
+          {label}
+        </span>
       </div>
     </div>
   );

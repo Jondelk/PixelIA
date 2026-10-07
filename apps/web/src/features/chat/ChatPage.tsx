@@ -8,7 +8,8 @@ import { buttonClasses } from '../../components/buttonClasses';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorState } from '../../components/ErrorState';
 import { Icon } from '../../components/Icon';
-import { PixelMark } from '../../components/PixelMark';
+import { BrandLogo } from '../../components/BrandLogo';
+import { Pixi } from '../../components/Pixi';
 import { Spinner } from '../../components/Spinner';
 import { companyBasePath } from '../../app/navigation';
 import { errorMessage } from '../../lib/api';
@@ -58,7 +59,6 @@ export function ChatPage() {
   if (!ready) {
     return (
       <EmptyState
-        icon="chat"
         title="Pixel aún no conoce esta marca"
         description="Para conversar con su director creativo, la empresa necesita su ADN de marca. Completa el onboarding."
         action={
@@ -75,7 +75,7 @@ export function ChatPage() {
   if (state.status === 'loading') {
     return (
       <div className="flex items-center gap-3 py-16 text-sm text-muted" role="status">
-        <Spinner className="size-5 text-accent" /> Preparando la conversación…
+        <Spinner className="size-5 text-fg" /> Preparando la conversación…
       </div>
     );
   }
@@ -196,13 +196,9 @@ function ChatStudio({
   const isDemo = messages.some((m) => m.meta?.mode === 'demo');
 
   return (
-    <div className="-mx-4 -my-8 flex h-[calc(100dvh-4rem)] flex-col sm:-mx-6 lg:mx-0 lg:my-0 lg:grid lg:h-[calc(100dvh-10rem)] lg:grid-cols-[minmax(280px,360px)_1fr] lg:gap-5">
+    <div className="-mx-4 -my-10 flex h-[calc(100dvh-4rem)] flex-col sm:-mx-6 lg:mx-0 lg:my-0 lg:grid lg:h-[calc(100dvh-12rem)] lg:grid-cols-[minmax(280px,360px)_1fr] lg:gap-5">
       {/* Avatar: zona compacta arriba en móvil, columna lateral en escritorio */}
-      <aside className="relative flex shrink-0 items-center gap-4 border-b border-line bg-surface px-4 lg:flex-col lg:justify-center lg:rounded-3xl lg:border lg:px-0">
-        <div
-          className="bg-grid pointer-events-none absolute inset-0 hidden lg:block"
-          aria-hidden="true"
-        />
+      <aside className="flex shrink-0 items-center gap-4 border-b border-line bg-surface px-4 lg:flex-col lg:justify-center lg:rounded-3xl lg:border lg:px-0">
         <div className="relative h-36 w-32 shrink-0 lg:h-[min(28rem,60vh)] lg:w-full">
           {avatar ? (
             <AvatarStage
@@ -213,13 +209,13 @@ function ChatStudio({
             />
           ) : (
             <div className="grid h-full place-items-center">
-              <PixelMark className="size-14 opacity-80 lg:size-24" />
+              <Pixi size={96} />
             </div>
           )}
         </div>
-        <div className="relative min-w-0 lg:px-6 lg:pb-8 lg:text-center">
-          <p className="font-display text-base font-semibold tracking-tight lg:text-lg">
-            {avatar?.name ?? `Pixel de ${companyName}`}
+        <div className="min-w-0 lg:px-6 lg:pb-8 lg:text-center">
+          <p className="font-display text-base font-bold tracking-tight lg:text-lg">
+            {avatar?.name ?? `Personaje de ${companyName}`}
           </p>
           <p
             className="mt-1 flex items-center gap-2 text-xs text-muted lg:justify-center"
@@ -227,7 +223,7 @@ function ChatStudio({
             aria-live="polite"
           >
             <span
-              className={`size-1.5 rounded-full ${avatarState === 'idle' ? 'bg-subtle' : 'animate-pulse bg-accent'}`}
+              className={`size-1.5 ${avatarState === 'idle' ? 'bg-subtle' : 'animate-pulse bg-fg'}`}
               aria-hidden="true"
             />
             {STATE_LABEL[avatarState]}
@@ -235,7 +231,7 @@ function ChatStudio({
           {!avatar && (
             <Link
               to={`${companyBasePath(companyId)}/pixel`}
-              className="mt-2 inline-block text-xs text-accent hover:text-accent-soft"
+              className="mt-2 inline-block text-xs text-muted underline decoration-line-strong underline-offset-4 hover:text-fg"
             >
               Crear su personaje 3D
             </Link>
@@ -244,7 +240,7 @@ function ChatStudio({
       </aside>
 
       {/* Chat */}
-      <section className="flex min-h-0 flex-1 flex-col bg-surface/60 lg:rounded-3xl lg:border lg:border-line">
+      <section className="flex min-h-0 flex-1 flex-col bg-surface lg:rounded-3xl lg:border lg:border-line">
         <header className="flex items-center gap-3 border-b border-line px-4 py-3 sm:px-5">
           <div className="min-w-0 flex-1">
             {conversations.length > 0 ? (
@@ -253,11 +249,11 @@ function ChatStudio({
                 onChange={(event) => void openConversation(event.target.value)}
                 disabled={switching || Boolean(pending)}
                 aria-label="Conversación"
-                className="w-full max-w-sm truncate rounded-lg border border-line bg-canvas/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
+                className="w-full max-w-sm truncate rounded-lg border border-line bg-canvas px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-focus"
               >
                 {!conversation && <option value="">Nueva conversación</option>}
                 {conversations.map((c) => (
-                  <option key={c.id} value={c.id} className="bg-surface">
+                  <option key={c.id} value={c.id} className="bg-canvas">
                     {c.title}
                   </option>
                 ))}
@@ -282,21 +278,21 @@ function ChatStudio({
           aria-live="polite"
         >
           {messages.length === 0 && !pending && (
-            <div className="mx-auto max-w-lg py-6 text-center">
-              <p className="font-display text-xl font-semibold tracking-tight">
+            <div className="mx-auto max-w-lg py-10 text-center">
+              <p className="font-display text-xl font-bold tracking-tight">
                 ¿En qué trabajamos hoy?
               </p>
-              <p className="mt-2 text-sm text-muted">
+              <p className="mt-3 text-sm text-muted">
                 Soy el director creativo de {companyName}. Cuéntame qué necesitas y lo pensamos con
                 nuestro criterio.
               </p>
-              <div className="mt-6 flex flex-wrap justify-center gap-2">
+              <div className="mt-8 flex flex-wrap justify-center gap-2">
                 {SUGGESTIONS.map((suggestion) => (
                   <button
                     key={suggestion}
                     type="button"
                     onClick={() => void submit(suggestion)}
-                    className="rounded-full border border-line-strong px-3.5 py-1.5 text-xs text-muted transition-colors hover:border-accent/50 hover:text-fg"
+                    className="rounded-md border border-line-strong px-3.5 py-1.5 text-xs text-muted transition-colors hover:border-fg hover:text-fg"
                   >
                     {suggestion}
                   </button>
@@ -308,14 +304,14 @@ function ChatStudio({
           {messages.map((message) =>
             message.role === 'user' ? (
               <div key={message.id} className="flex justify-end">
-                <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-accent/15 px-4 py-2.5 text-sm text-fg">
+                <div className="max-w-[85%] whitespace-pre-wrap rounded-xl rounded-br-sm bg-brand px-4 py-2.5 text-sm text-on-brand">
                   {message.content}
                 </div>
               </div>
             ) : (
               <div key={message.id} className="flex gap-3">
-                <PixelMark className="mt-0.5 size-7 shrink-0" />
-                <div className="min-w-0 max-w-[90%] text-sm leading-relaxed text-fg/90">
+                <BrandLogo variant="isotipo" height={24} decorative className="mt-0.5" />
+                <div className="min-w-0 max-w-[90%] text-sm leading-relaxed text-fg">
                   {message.id === speakingId ? (
                     <RevealingText
                       text={message.content}
@@ -333,18 +329,18 @@ function ChatStudio({
           {pending && (
             <>
               <div className="flex justify-end">
-                <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-accent/15 px-4 py-2.5 text-sm text-fg/70">
+                <div className="max-w-[85%] whitespace-pre-wrap rounded-xl rounded-br-sm bg-brand px-4 py-2.5 text-sm text-on-brand opacity-70">
                   {pending}
                 </div>
               </div>
               <div className="flex items-center gap-3 text-sm text-muted" role="status">
-                <PixelMark className="size-7 shrink-0" />
-                <span className="flex gap-1" aria-label="Pixel está pensando">
+                <BrandLogo variant="isotipo" height={24} decorative />
+                <span className="flex gap-1.5" aria-label="Pixel está pensando">
                   {[0, 1, 2].map((i) => (
                     <span
                       key={i}
-                      className="size-1.5 animate-bounce rounded-full bg-accent"
-                      style={{ animationDelay: `${i * 120}ms` }}
+                      className="size-1.5 animate-pulse bg-fg"
+                      style={{ animationDelay: `${i * 200}ms` }}
                     />
                   ))}
                 </span>
@@ -359,7 +355,7 @@ function ChatStudio({
               <Alert>{error}</Alert>
             </div>
           )}
-          <div className="flex items-end gap-2 rounded-2xl border border-line-strong bg-canvas/60 p-2 focus-within:border-accent/60 focus-within:ring-2 focus-within:ring-accent/20">
+          <div className="flex items-end gap-2 rounded-xl border border-line-strong bg-canvas p-2 focus-within:border-focus">
             <textarea
               ref={input}
               value={draft}

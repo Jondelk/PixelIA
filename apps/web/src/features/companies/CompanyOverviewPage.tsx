@@ -15,13 +15,13 @@ export function CompanyOverviewPage() {
   const cta = company.avatarVersion
     ? {
         to: `${base}/pixel`,
-        label: 'Ver mi Pixel',
-        text: 'Pixel ya tiene ADN y un concepto de personaje derivado de él. El avatar 3D será el siguiente paso.',
+        label: 'Ver el personaje de tu marca',
+        text: 'La marca ya tiene ADN y un personaje derivado de él. Ábrelo para verlo en 3D.',
       }
     : company.brandDnaVersion
       ? {
           to: `${base}/pixel`,
-          label: 'Crear mi Pixel',
+          label: 'Crear el personaje de tu marca',
           text: 'Pixel ya conoce el ADN de esta marca. Ahora puede convertirlo en su personaje.',
         }
       : company.status === 'onboarding'
@@ -32,8 +32,8 @@ export function CompanyOverviewPage() {
           }
         : {
             to: `${base}/onboarding`,
-            label: 'Enseñarle a Pixel tu marca',
-            text: 'Para que Pixel tome forma, primero estudiará el ADN de la marca en el onboarding. De ahí saldrán su personalidad, su voz y su avatar 3D.',
+            label: 'Enseñarle tu marca a Pixel',
+            text: 'Para que Pixel tome forma, primero estudiará el ADN de la marca en el onboarding. De ahí saldrán su voz, su criterio y el personaje de tu marca.',
           };
 
   return (
@@ -43,24 +43,24 @@ export function CompanyOverviewPage() {
           <img
             src={company.logoUrl}
             alt={`Logo de ${company.name}`}
-            className="size-16 rounded-2xl border border-line-strong bg-elevated object-contain p-2"
+            className="size-16 rounded-xl border border-line-strong bg-elevated object-contain p-2"
           />
         ) : (
           <CompanyAvatar name={company.name} size="lg" />
         )}
         <div className="min-w-0">
-          <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.18em] text-accent/80">
+          <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-subtle">
             {company.industry}
           </p>
-          <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-[2.5rem] sm:leading-tight">
+          <h1 className="font-display text-3xl font-bold tracking-tight sm:text-[2.5rem] sm:leading-[1.1]">
             {company.name}
           </h1>
         </div>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
-        <section className="rounded-2xl border border-line bg-surface/80 p-6">
-          <h2 className="font-display text-base font-semibold">Su Pixel</h2>
+        <section className="rounded-2xl border border-line bg-surface p-6 sm:p-8">
+          <h2 className="font-display text-base font-bold">Su personaje</h2>
           <div className="mt-3">
             <PixelStatusBadge company={company} />
           </div>
@@ -73,27 +73,27 @@ export function CompanyOverviewPage() {
               <li key={item.to}>
                 <Link
                   to={item.to}
-                  className="flex items-center gap-2 rounded-lg border border-line px-3 py-2.5 text-sm text-muted transition-colors hover:border-accent/40 hover:text-fg"
+                  className="flex items-center gap-2 rounded-lg border border-line px-3 py-2.5 text-sm text-muted transition-colors hover:border-line-strong hover:text-fg"
                 >
-                  <Icon name={item.icon} className="size-4 text-accent" /> {item.label}
+                  <Icon name={item.icon} className="size-4" /> {item.label}
                 </Link>
               </li>
             ))}
           </ul>
         </section>
 
-        <section className="rounded-2xl border border-line bg-surface/80 p-6">
-          <h2 className="font-display text-base font-semibold">Datos de la empresa</h2>
+        <section className="rounded-2xl border border-line bg-surface p-6 sm:p-8">
+          <h2 className="font-display text-base font-bold">Datos de la empresa</h2>
           <dl className="mt-4 space-y-4 text-sm">
             <div>
               <dt className="text-subtle">Descripción</dt>
-              <dd className="mt-1 whitespace-pre-line text-fg/90">
+              <dd className="mt-1 whitespace-pre-line text-fg">
                 {company.description || <span className="text-subtle">Sin descripción</span>}
               </dd>
             </div>
             <div>
               <dt className="text-subtle">Identificador</dt>
-              <dd className="mt-1 font-mono text-xs text-muted">{company.slug}</dd>
+              <dd className="mt-1 text-xs text-muted">{company.slug}</dd>
             </div>
             <div>
               <dt className="text-subtle">Creada</dt>

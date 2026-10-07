@@ -42,8 +42,8 @@ export function LoginPage() {
 
   return (
     <AuthLayout>
-      <h2 className="font-display text-2xl font-semibold tracking-tight">Iniciar sesión</h2>
-      <p className="mt-2 text-sm text-muted">Entra para hablar con los Pixels de tus marcas.</p>
+      <h2 className="font-display text-2xl font-bold tracking-tight">Iniciar sesión</h2>
+      <p className="mt-2 text-sm text-muted">Entra para seguir creando con Pixel.</p>
 
       <form className="mt-8 space-y-5" onSubmit={onSubmit} noValidate>
         {formError && <Alert>{formError}</Alert>}
@@ -72,7 +72,10 @@ export function LoginPage() {
 
       <p className="mt-8 text-center text-sm text-muted">
         ¿Aún no tienes cuenta?{' '}
-        <Link to="/register" className="font-medium text-accent hover:text-accent-soft">
+        <Link
+          to="/register"
+          className="font-medium text-fg underline decoration-line-strong underline-offset-4 hover:decoration-fg"
+        >
           Crear cuenta
         </Link>
       </p>

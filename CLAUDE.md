@@ -101,6 +101,41 @@ registro/login → crea empresa → onboarding de marca → Pixel analiza
 - Secretos solo en `apps/api/.env` (nunca en el frontend ni en el repo). Mantener los `.env.example` de cada app.
 - Mensajes de commit claros, en imperativo.
 
+## Identidad visual (PIXELES)
+
+Pixel es un producto de **PIXELES — Tecnología creativa y entretenimiento** ("Creamos mundos").
+Fuente de verdad: `brand-assets/PIXELES — Manual de marca (español).pdf` (no borrar `/brand-assets`).
+
+- **Nombres.** *Pixel* = el producto (director creativo asistido por IA), no un chatbot.
+  *Pixi* = el personaje de PIXELES (cubo amarillo 3D): mascota de la app en login, estados vacíos y
+  cargas. **Nunca** llamar "Pixel" al personaje. El avatar de cada empresa es "el personaje de tu
+  marca". La evolución de Pixi (6 niveles) es opcional: el cubo base basta y nunca se presenta como meta.
+- **Tokens.** Un único archivo: `apps/web/src/styles/theme.css` (colores, fuentes, radios, sombra,
+  easing). La paleta por defecto de Tailwind está desactivada: solo existen las utilidades de marca
+  (`canvas`, `surface`, `elevated`, `line`, `line-strong`, `fg`, `muted`, `subtle`, `brand`,
+  `on-brand`, `signal`, `alert`, `focus`, `overlay`). Prohibidos hex, `rgb()` y fuentes sueltas en
+  componentes. Excepción: colores que son **datos de la empresa** (paleta del BrandDNA, renderer 3D,
+  vista previa 2D del personaje, selector de colores del onboarding).
+- **Paleta.** Negro Cine `#08080B` (fondo), Azul PIXELES `#1E14FF` (reconocimiento: botones
+  principales, selección, bloques destacados), Blanco `#FFFFFF`, Grafito `#2B2D33`, Amarillo Origen
+  `#F2E500` (solo el *píxel señal*: un acento pequeño por pantalla; nunca fondos grandes).
+  - Azul sobre negro = 2,5:1 → el azul nunca es texto ni icono fino sobre fondo oscuro.
+  - Sin colores de error fuera de la paleta: los avisos usan texto normal + `bg-alert` (amarillo en
+    oscuro, azul en claro).
+- **Tipografía.** Unbounded 700–800 (`font-display`, títulos) e Instrument Sans 400–600 (`font-sans`,
+  interfaz y texto). Con `font-display` usar siempre `font-bold`.
+- **Logo.** Solo los archivos de `apps/web/public/brand/` vía `<BrandLogo>`; nunca redibujarlo ni
+  escribir "PIXELES" con una fuente. Mínimos: logotipo 160 px de ancho, isotipo 24 px.
+  Pixi solo vía `<Pixi>` (`public/pixi/`), completo, sin recolorear y nunca sobre azul.
+- **Tema.** La app **siempre arranca en oscuro** (`data-theme="dark"` en `index.html`), sin leer
+  preferencias del sistema ni almacenamiento. El modo claro (botón del header) dura solo la sesión
+  y tiene paridad: cada token tiene valor claro y logos/Pixi tienen versión sobre blanco.
+- **Dirección de arte.** Minimalista, premium, mucho espacio negativo, la tipografía protagoniza.
+  Sin brillos, neón, degradados, blur, partículas, elementos flotantes decorativos ni iconografía
+  infantil o de "IA" (cerebros, circuitos, robots, hexágonos, destellos). "Que no se vea con tanta IA."
+- **Movimiento.** Suave y sin rebotes (`ease-pxl`). Aparición al hacer scroll con `<Reveal>` (se
+  revierte al subir). Todo respeta `prefers-reduced-motion`.
+
 ## Forma de trabajar
 
 Antes de modificar código:

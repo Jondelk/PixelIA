@@ -9,8 +9,8 @@ export function AvatarStateControls({
   onChange: (state: AvatarState) => void;
 }) {
   return (
-    <div className="rounded-xl border border-dashed border-amber-400/30 bg-amber-400/[0.04] p-3">
-      <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-amber-200/70">
+    <div className="rounded-xl border border-dashed border-line-strong p-3">
+      <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.18em] text-subtle">
         Dev · estado de animación
       </p>
       <div role="radiogroup" aria-label="Estado de animación" className="grid grid-cols-5 gap-1">
@@ -24,8 +24,8 @@ export function AvatarStateControls({
             className={[
               'rounded-md px-1 py-1.5 text-[11px] transition-colors sm:text-xs',
               state === value
-                ? 'bg-accent/20 text-accent-soft'
-                : 'text-muted hover:bg-white/[0.04] hover:text-fg',
+                ? 'bg-elevated font-medium text-fg'
+                : 'text-muted hover:bg-elevated hover:text-fg',
             ].join(' ')}
           >
             {AVATAR_STATE_LABELS[state]}

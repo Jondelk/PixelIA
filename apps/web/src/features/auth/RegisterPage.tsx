@@ -40,8 +40,10 @@ export function RegisterPage() {
 
   return (
     <AuthLayout>
-      <h2 className="font-display text-2xl font-semibold tracking-tight">Crear cuenta</h2>
-      <p className="mt-2 text-sm text-muted">Empieza a construir el Pixel de tu marca.</p>
+      <h2 className="font-display text-2xl font-bold tracking-tight">Crear cuenta</h2>
+      <p className="mt-2 text-sm text-muted">
+        Empieza a construir el director creativo de tu marca.
+      </p>
 
       <form className="mt-8 space-y-5" onSubmit={onSubmit} noValidate>
         {formError && <Alert>{formError}</Alert>}
@@ -79,7 +81,10 @@ export function RegisterPage() {
 
       <p className="mt-8 text-center text-sm text-muted">
         ¿Ya tienes cuenta?{' '}
-        <Link to="/login" className="font-medium text-accent hover:text-accent-soft">
+        <Link
+          to="/login"
+          className="font-medium text-fg underline decoration-line-strong underline-offset-4 hover:decoration-fg"
+        >
           Inicia sesión
         </Link>
       </p>

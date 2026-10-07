@@ -1,10 +1,10 @@
 import { useId, type InputHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 
 const CONTROL =
-  'w-full rounded-lg border bg-canvas/60 px-3.5 py-2.5 text-sm text-fg placeholder:text-subtle transition-colors focus:outline-none focus:ring-2 focus:ring-accent/30';
+  'w-full rounded-lg border bg-canvas px-3.5 py-2.5 text-sm text-fg placeholder:text-subtle transition-colors focus:outline-none focus:ring-1 focus:ring-focus';
 
 function controlClasses(error?: string) {
-  return `${CONTROL} ${error ? 'border-rose-500/60 focus:border-rose-400' : 'border-line-strong focus:border-accent/60'}`;
+  return `${CONTROL} ${error ? 'border-alert' : 'border-line-strong focus:border-focus'}`;
 }
 
 interface FieldProps {
@@ -27,7 +27,8 @@ function FieldFrame({
       </label>
       {children}
       {error ? (
-        <p id={`${id}-error`} className="mt-1.5 text-xs text-rose-300">
+        <p id={`${id}-error`} className="mt-1.5 flex items-center gap-2 text-xs text-fg">
+          <span className="size-1.5 shrink-0 bg-alert" aria-hidden="true" />
           {error}
         </p>
       ) : (
