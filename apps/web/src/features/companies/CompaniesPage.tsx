@@ -68,7 +68,7 @@ export function CompaniesPage() {
                   <p className="truncate text-sm text-subtle">{company.industry}</p>
                 </div>
                 <div className="hidden text-right sm:block">
-                  <PixelStatusBadge status={company.status} />
+                  <PixelStatusBadge company={company} />
                   <p className="mt-1 text-xs text-subtle">
                     Creada el {dateFormat.format(new Date(company.createdAt))}
                   </p>

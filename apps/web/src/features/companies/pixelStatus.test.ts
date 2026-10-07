@@ -3,13 +3,25 @@ import { companyInitials, pixelStatus } from './pixelStatus';
 
 describe('pixelStatus', () => {
   it('una empresa nueva aún no tiene Pixel configurado', () => {
-    expect(pixelStatus('draft')).toEqual({ label: 'Pixel aún no configurado', tone: 'idle' });
+    expect(pixelStatus({ status: 'draft', brandDnaVersion: null })).toEqual({
+      label: 'Pixel aún no configurado',
+      tone: 'idle',
+    });
   });
 
-  it('cubre todos los estados', () => {
-    expect(pixelStatus('ready').tone).toBe('ready');
-    expect(pixelStatus('failed').tone).toBe('error');
-    expect(pixelStatus('analyzing').tone).toBe('progress');
+  it('refleja el avance del onboarding y del ADN', () => {
+    expect(pixelStatus({ status: 'onboarding', brandDnaVersion: null }).label).toBe(
+      'Onboarding de marca en curso',
+    );
+    expect(pixelStatus({ status: 'onboarding', brandDnaVersion: 2 })).toEqual({
+      label: 'ADN de marca listo · avatar pendiente',
+      tone: 'learned',
+    });
+  });
+
+  it('cubre los estados finales', () => {
+    expect(pixelStatus({ status: 'ready', brandDnaVersion: 1 }).tone).toBe('ready');
+    expect(pixelStatus({ status: 'failed', brandDnaVersion: null }).tone).toBe('error');
   });
 });
 

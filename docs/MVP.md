@@ -24,9 +24,9 @@ Documentos relacionados: [`ARCHITECTURE.md`](./ARCHITECTURE.md) · [`ENTITIES.md
 |---|---|
 | Autenticación | Registro y login con email + contraseña. Sesión con JWT en cookie httpOnly. Logout. |
 | Empresas | Un usuario crea y lista sus empresas. Un dueño por empresa (sin equipos/roles). |
-| Onboarding | Formulario por pasos con guardado de borrador. Solo texto y colores hex (sin subida de archivos, sin scraping de web). |
+| Onboarding | "Brand Brain": 8 pasos (empresa, propósito, público, personalidad, comunicación, identidad visual, competencia, preferencias creativas), guardado paso a paso con progreso. Solo texto, listas y colores hex (sin subida de archivos, sin scraping de web). |
 | Análisis | Generación asíncrona (en proceso) de BrandDNA y luego AvatarProfile, con estado consultable y reintento. |
-| BrandDNA | Vista de lectura del ADN generado. Versionado simple (regenerar = nueva versión). |
+| BrandDNA | Datos estructurados (identity, purpose, audience, personality, archetypes, communication, visualLanguage, differentiators, creativePreferences, restrictions). Hoy se genera con reglas determinísticas; luego con IA, mismo contrato. Pantalla "Así entiende Pixel tu marca". Versionado (cada cambio = nueva versión). |
 | Avatar 3D | Render paramétrico con React Three Fiber a partir del AvatarProfile: forma base de catálogo, proporciones, paleta, material, rostro, expresión, animación idle y estados (idle / pensando / hablando). Vista de la *rationale* (por qué se ve así). |
 | Chat | Conversaciones por empresa, mensajes persistidos, respuestas de Pixel con contexto de BrandDNA + memorias + historial. Respuesta completa (sin streaming). |
 | CreativeMemory | Mínima: el usuario puede fijar un mensaje/idea como memoria, listarla y borrarla. Las memorias activas entran al contexto del chat. |

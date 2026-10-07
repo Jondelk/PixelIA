@@ -55,7 +55,7 @@ flowchart TB
 │  │  │  │  └─ errors.ts              # AppError + helpers (notFound, badRequest, ...)
 │  │  │  ├─ db/
 │  │  │  │  ├─ connection.ts          # startDatabase / stopDatabase / getDatabaseStatus
-│  │  │  │  └─ tenantScoped.plugin.ts # (Etapa 2) exige companyId en queries de modelos de empresa
+│  │  │  │  └─ tenantScoped.plugin.ts # exige companyId en queries de modelos de empresa
 │  │  │  ├─ middleware/
 │  │  │  │  ├─ requestLogger.ts       # requestId (X-Request-Id) + log por petición
 │  │  │  │  ├─ notFound.ts
@@ -68,7 +68,7 @@ flowchart TB
 │  │  │  │  ├─ health/            GET /api/health
 │  │  │  │  ├─ auth/              user.model · auth.service · auth.routes
 │  │  │  │  ├─ companies/         company.model · company.service · companies.routes (+ onboarding)
-│  │  │  │  ├─ brand-dna/         brandDna.model · brandAnalysis.service · brandAnalysis.job · brand-dna.routes
+│  │  │  │  ├─ brand-dna/         brandDna.model · brandDna.service · brandDna.generator · brandDna.lexicon · brand-dna.routes
 │  │  │  │  ├─ avatars/           avatarProfile.model · avatarDesign.service · avatars.routes
 │  │  │  │  ├─ conversations/     conversation.model · message.model · contextBuilder · pixelChat.service · conversations.routes
 │  │  │  │  └─ creative-memory/   creativeMemory.model · creativeMemory.service · creative-memory.routes
@@ -147,6 +147,11 @@ Defensa en capas — basta con que una falle para que otra lo detenga:
    (lectura y escritura cruzada → 404) y el contenido del contexto de IA.
 
 ## 5. Capa de IA
+
+> **Estado actual:** aún no hay IA. El BrandDNA se genera con reglas determinísticas
+> (`brandDna.generator.ts`) para validar la arquitectura de punta a punta. El servicio de IA
+> (`BrandAnalysisService`) producirá el mismo contrato `BrandDnaContentSchema`, así que el resto del
+> producto no cambia al activarla.
 
 ### 5.1 Interfaz
 
@@ -237,10 +242,10 @@ Prefijo `/api`. JSON. Errores con forma `ApiError { code, message, details? }`.
 | POST | `/companies` | Crear empresa |
 | GET | `/companies/:companyId` | Empresa + estado del análisis |
 | PATCH | `/companies/:companyId` | Actualizar `name`, `industry`, `description`, `logoUrl` (slug y estado no editables) |
-| PUT | `/companies/:companyId/onboarding` | Guardar borrador del onboarding |
-| POST | `/companies/:companyId/onboarding/submit` | Validar y lanzar análisis (`202`) |
+| GET | `/companies/:companyId/brand-dna` | Progreso del onboarding (respuestas, pasos completos) + BrandDNA vigente ✅ |
+| PUT | `/companies/:companyId/brand-dna` | Guarda un paso `{ step, data }`; con los 8 pasos completos (re)genera el BrandDNA ✅ |
+| POST | `/companies/:companyId/onboarding/submit` | (Etapa 6, con IA) Lanzar análisis asíncrono (`202`) |
 | POST | `/companies/:companyId/analysis/retry` | Reintentar/regenerar análisis (`202`) |
-| GET | `/companies/:companyId/brand-dna` | BrandDNA activo |
 | GET | `/companies/:companyId/avatar-profile` | AvatarProfile activo |
 | GET | `/companies/:companyId/conversations` | Conversaciones |
 | POST | `/companies/:companyId/conversations` | Nueva conversación |

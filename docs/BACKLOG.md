@@ -10,12 +10,12 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 |---|---|---|
 | — | Contexto y documentación (CLAUDE.md, docs/) | ✅ |
 | 0 | Fundaciones del monorepo | ✅ |
-| 1 | Contratos de dominio | 🟨 (auth, user, company hechos) |
-| 2 | Persistencia y aislamiento | 🟨 (User, Company, infra de tests hechos) |
+| 1 | Contratos de dominio | 🟨 (auth, user, company, onboarding y BrandDNA hechos) |
+| 2 | Persistencia y aislamiento | 🟨 (User, Company, BrandDNA, plugin tenantScoped hechos) |
 | 3 | Autenticación | ✅ |
-| 4 | Empresas y onboarding | 🟨 (empresas hechas; onboarding pendiente) |
+| 4 | Empresas y onboarding | ✅ (edición de empresa en la UI pendiente) |
 | 5 | Capa de IA | ⬜ |
-| 6 | Análisis de marca: BrandDNA → AvatarProfile | ⬜ |
+| 6 | Análisis de marca: BrandDNA → AvatarProfile | 🟨 (BrandDNA determinístico hecho; IA y AvatarProfile pendientes) |
 | 7 | Avatar 3D | ⬜ |
 | 8 | Chat con Pixel | ⬜ |
 | 9 | CreativeMemory básica | ⬜ |
@@ -49,8 +49,9 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 
 - [x] `common.ts` (ObjectId string, timestamps), `errors.ts` (`ApiError`, códigos). Falta `HexColor`.
 - [x] Schemas: `User` (DTO público), `auth` (register/login), `Company`, `CompanyStatus`, create/update de empresa.
-- [ ] `BrandOnboardingInput` (completo y parcial/borrador).
-- [ ] `BrandDNASchema` con todos los bloques de `ENTITIES.md §3`.
+- [x] Onboarding de 8 pasos (`brandOnboarding.ts`): schemas por paso, borrador, `SaveOnboardingStepInput`.
+- [x] `BrandDNA` (`brandDna.ts`) con catálogo de 12 arquetipos.
+- [x] `BrandDnaSchema` con todos los bloques de `ENTITIES.md §3`.
 - [ ] `AvatarProfileSchema` con catálogos cerrados (`enum`) y `rationale` (mín. 5).
 - [ ] `Conversation`, `Message`, `CreativeMemory` y DTOs de request/response de cada endpoint.
 - [ ] Fixtures de los 3 escenarios de demo (café, tech, constructora): onboarding, BrandDNA, AvatarProfile.
@@ -65,10 +66,10 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 - [x] Conexión Mongo (`MONGODB_URI`), cierre limpio, `health` reporta estado de DB.
 - [x] Modelos `User` y `Company` con sus índices.
 - [ ] Modelos `BrandDNA`, `AvatarProfile`, `Conversation`, `Message`, `CreativeMemory` (se crean en sus etapas).
-- [ ] Plugin `tenantScoped` aplicado a los 5 modelos de empresa.
+- [x] Plugin `tenantScoped` (aplicado a BrandDNA; se aplicará a cada nuevo modelo de empresa).
 - [x] Mappers `toDTO` hacia los schemas de contracts (User, Company).
 - [x] Infra de tests de integración (mongodb-memory-server o `MONGODB_URI_TEST`).
-- [ ] Tests: el plugin lanza error sin `companyId`; índices únicos de versión funcionan.
+- [x] Tests: el plugin lanza error sin `companyId`; versión única por empresa.
 
 **Aceptación:** tests de modelos en verde; la API inicia conectada a Mongo.
 
@@ -84,9 +85,10 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 ## Etapa 4 — Empresas y onboarding
 
 - [x] `GET/POST /companies`, `GET/PATCH /companies/:companyId`, middleware reutilizable `requireCompanyAccess` (también protege los submódulos).
-- [ ] `PUT /companies/:companyId/onboarding` (borrador) y `POST .../onboarding/submit` (validación completa; en esta etapa solo cambia estado, sin IA).
+- [x] `GET/PUT /companies/:companyId/brand-dna`: guardado por paso con validación compartida.
 - [x] Web: dashboard "Tus Pixels", `CompaniesPage`, creación de empresa, vista de empresa (`CompanyLayout`), estados de carga/error/vacío.
-- [ ] Web: `OnboardingWizard` de 5 pasos con guardado de borrador. Edición de empresa (PATCH) en la UI.
+- [x] Web: onboarding de 8 pasos con progreso, "Guardar y continuar", retomar donde quedó, sugerencias + texto libre, colores y escalas.
+- [ ] Edición de empresa (PATCH) en la UI.
 - [x] **Suite de aislamiento** (inicio): usuario B no puede listar, leer ni modificar empresas de A ni sus submódulos (404).
 
 **Aceptación:** un usuario crea una empresa, completa el onboarding en varias sesiones y lo envía.
@@ -108,7 +110,9 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 - [ ] `BrandAnalysisService` y `AvatarDesignService`.
 - [ ] Job en proceso disparado por `submit`; estados `analyzing → ready | failed`; protección contra doble ejecución.
 - [ ] `POST /analysis/retry`, recuperación de jobs al arrancar (`ANALYSIS_TIMEOUT_MS`).
-- [ ] `GET /brand-dna`, `GET /avatar-profile`.
+- [x] `GET /brand-dna`.
+- [x] Generador determinístico de BrandDNA (`rules-1`), versionado por `sourceHash`, pantalla "Así entiende Pixel tu marca".
+- [ ] `GET /avatar-profile`.
 - [ ] Web: `AnalysisPage` con polling y estado de error con reintento; `BrandDnaSummary`.
 - [ ] Tests: job completo con mock; fallo de IA → `failed`; aislamiento de los nuevos endpoints.
 

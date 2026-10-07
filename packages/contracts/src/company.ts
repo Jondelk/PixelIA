@@ -18,6 +18,8 @@ export const CompanySchema = z.object({
   description: z.string(),
   logoUrl: z.string().nullable(),
   status: CompanyStatusSchema,
+  /** Versión del BrandDNA vigente; null mientras el onboarding no esté completo. */
+  brandDnaVersion: z.number().int().min(1).nullable(),
   createdAt: IsoDateSchema,
   updatedAt: IsoDateSchema,
 });

@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
+import { buttonClasses } from '../../components/buttonClasses';
 import { Icon } from '../../components/Icon';
-import { companyNav } from '../../app/navigation';
+import { companyBasePath, companyNav } from '../../app/navigation';
 import { CompanyAvatar } from './CompanyAvatar';
 import { useCompany } from './companyContext';
 import { PixelStatusBadge } from './PixelStatusBadge';
@@ -10,6 +11,24 @@ const dateFormat = new Intl.DateTimeFormat('es', { dateStyle: 'long' });
 export function CompanyOverviewPage() {
   const { company } = useCompany();
   const sections = companyNav(company.id).slice(1);
+  const base = companyBasePath(company.id);
+  const cta = company.brandDnaVersion
+    ? {
+        to: `${base}/brand`,
+        label: 'Ver cómo entiende Pixel tu marca',
+        text: 'Pixel ya conoce el ADN de esta marca. El siguiente paso será darle forma a su avatar 3D.',
+      }
+    : company.status === 'onboarding'
+      ? {
+          to: `${base}/onboarding`,
+          label: 'Continuar onboarding',
+          text: 'Pixel está aprendiendo esta marca. Completa los 8 pasos del onboarding para que genere su ADN.',
+        }
+      : {
+          to: `${base}/onboarding`,
+          label: 'Enseñarle a Pixel tu marca',
+          text: 'Para que Pixel tome forma, primero estudiará el ADN de la marca en el onboarding. De ahí saldrán su personalidad, su voz y su avatar 3D.',
+        };
 
   return (
     <>
@@ -37,12 +56,12 @@ export function CompanyOverviewPage() {
         <section className="rounded-2xl border border-line bg-surface/80 p-6">
           <h2 className="font-display text-base font-semibold">Su Pixel</h2>
           <div className="mt-3">
-            <PixelStatusBadge status={company.status} />
+            <PixelStatusBadge company={company} />
           </div>
-          <p className="mt-4 text-sm leading-relaxed text-muted">
-            Para que Pixel tome forma, primero estudiará el ADN de la marca en el onboarding. De ahí
-            saldrán su personalidad, su voz y su avatar 3D.
-          </p>
+          <p className="mt-4 text-sm leading-relaxed text-muted">{cta.text}</p>
+          <Link to={cta.to} className={`${buttonClasses('primary')} mt-5`}>
+            {cta.label} <Icon name="arrowRight" className="size-4" />
+          </Link>
           <ul className="mt-6 grid gap-2 sm:grid-cols-3">
             {sections.map((item) => (
               <li key={item.to}>

@@ -61,56 +61,58 @@ entidad aparte en 0.1).
 | `analysis.startedAt` / `finishedAt` | Date \| null | |
 | `analysis.attempts` | number | |
 | `analysis.error` | `{ code, message } \| null` | Mensaje apto para el usuario |
-| `activeBrandDnaId` | ObjectId \| null | Versión vigente |
+| `onboarding` | `{ answers, updatedAt }` | Ver "Onboarding de marca" ✅ |
+| `brandDnaVersion` | number \| null | Versión vigente del BrandDNA ✅ |
 | `activeAvatarProfileId` | ObjectId \| null | Versión vigente |
 
 Índices: `{ ownerId: 1, createdAt: -1 }`, `{ ownerId: 1, slug: 1 }` único ✅; `{ status: 1, 'analysis.startedAt': 1 }` (recuperación de jobs, Etapa 6).
 
 ✅ = implementado. Los campos `onboarding.*`, `analysis.*` y `active*Id` llegan en las Etapas 4 y 6.
 
-### BrandOnboardingInput (contrato, embebido en Company)
+### Onboarding de marca (embebido en `Company.onboarding`) ✅
 
-| Campo | Requerido | Descripción |
+`Company.onboarding = { answers: { <paso>: <datos> }, updatedAt }`. Cada paso se valida completo con
+su schema de `packages/contracts/src/brandOnboarding.ts` al guardarse (`PUT /brand-dna`) y al leerse
+(un paso inválido se descarta y vuelve a quedar pendiente). Los pasos completados se derivan de las
+respuestas presentes. Las listas se recortan y deduplican (sin distinguir mayúsculas).
+
+| Paso | Campos (requeridos en **negrita**) |
+|---|---|
+| `company` | **name**, **industry**, **description**, **history**, origin (opcional). Sincroniza name/industry/description de la empresa |
+| `purpose` | **mission**, **vision**, **purpose**, **values[]** (1–8) |
+| `audience` | **targetAudience**, **needs[]**, **problems[]**, **characteristics[]** (≥ 1 cada una) |
+| `personality` | **attributes[]** (3–10, sugerencias o texto libre; el orden indica importancia) |
+| `communication` | **tone[]** (1–6), **formality** (1–5), **energy** (1–5), **language** (`es`, `en`, `pt`, `fr`, `it`, `de`), wordsToUse[], wordsToAvoid[] |
+| `visual` | **colors[]** (1–8, `{ hex, name? }`), **styles[]**, materials[], **shapes[]**, references[], recurringElements[], avoid[] |
+| `competition` | competitors[], **differentiators[]** |
+| `creative` | **likes[]**, dislikes[], visualReferences[], restrictions[] |
+
+## 3. BrandDNA — lo que la empresa **ES** ✅
+
+Colección `brand_dnas`. Schema: `BrandDnaContentSchema` / `BrandDnaSchema` en
+`packages/contracts/src/brandDna.ts` (fuente de verdad, validada al escribir y al leer).
+
+**Generación (fase actual): determinística, sin IA** (`apps/api/src/modules/brand-dna/brandDna.generator.ts`,
+versión de reglas `rules-1`). Mismas respuestas → mismo ADN. Se genera cuando los 8 pasos están
+completos; cada cambio posterior en las respuestas crea una **versión nueva** (historial). Si las
+respuestas no cambian (`sourceHash`), no se crea versión. La vigente está en `Company.brandDnaVersion`.
+Cuando exista la capa de IA, `generator.kind` pasará a `ai` con el mismo contrato.
+
+| Bloque | Campos | Cómo se obtiene (reglas) |
 |---|---|---|
-| `companyName` | ✔ | Nombre comercial |
-| `industry` | ✔ | Sector |
-| `location` | | País/ciudad (origen puede ser rasgo de marca) |
-| `description` | ✔ | Qué hace la empresa (texto libre, ≤ 2000) |
-| `offering` | | Productos/servicios principales (lista) |
-| `audience` | ✔ | A quién se dirige (texto) |
-| `mission` / `vision` | | |
-| `values` | | Lista de valores |
-| `personalityWords` | ✔ | 3–5 palabras que describen la marca |
-| `antiPersonalityWords` | | Lo que la marca **no** es |
-| `toneExamples` | | Frases de ejemplo de cómo habla (o hablaría) la marca |
-| `differentiators` | | Qué la hace distinta |
-| `references` | | Marcas que admiran / competidores |
-| `brandColors` | | Lista de colores hex existentes |
-| `visualLikes` / `visualDislikes` | | Estéticas que gustan / que rechazan |
-| `wordsToAvoid` | | Vocabulario prohibido |
-| `websiteUrl` | | Solo se guarda (sin scraping en 0.1) |
-| `notes` | | Cualquier contexto adicional |
+| **meta** | `companyId`, `version`, `generator { kind, version }`, `sourceHash`, `createdAt` | — |
+| **identity** | `name`, `industry`, `description`, `story`, `origin`, `essence` | `essence` = "{nombre} es una marca {3 primeros atributos} de {sector}, con origen en {origen}." |
+| **purpose** | `mission`, `vision`, `purpose`, `values[]` | Directo del paso 2 |
+| **audience** | `summary`, `needs[]`, `problems[]`, `characteristics[]` | Directo del paso 3 |
+| **personality** | `traits[{ label, weight 0–1, recognized }]`, `dimensions { innovation, sophistication, warmth, playfulness, energy }` (0–100) | Peso por orden. Léxico de rasgos (`brandDna.lexicon.ts`, insensible a tildes/género/número) → ejes; la formalidad empuja la sofisticación; la energía viene del paso 5 |
+| **archetypes** | `primary`, `secondary \| null`, `ranking[]` — cada uno `{ id, score 0–100, signals[] }` | Afinidad del léxico × peso del rasgo (+ tono al 50 %). 12 arquetipos (`BRAND_ARCHETYPES`). Sin señales → `everyman`. Secundario si score ≥ 40 |
+| **communication** | `tone[]`, `formality { level, label }`, `energy { level, label }`, `language { code, name }`, `vocabulary { preferred[], avoid[] }`, `guidelines { do[], dont[] }` | Pautas derivadas de tono, formalidad, energía, idioma y vocabulario |
+| **visualLanguage** | `palette[{ hex, name, role, temperature, luminance }]`, `temperature`, `styles[]`, `materials[]`, `shapes[]`, `shapeLanguage`, `references[]`, `recurringElements[]` | Roles: los colores cromáticos en orden → primary, secondary, accent, support; grises/blancos rotos → neutral. Temperatura por tono (HSL). `shapeLanguage` por votos de formas (×1) y estilos (×0,5): organic/geometric/structural/fluid/soft/mixed |
+| **differentiators** | `statements[]`, `competitors[]` | Paso 7 |
+| **creativePreferences** | `likes[]`, `dislikes[]`, `visualReferences[]` | Paso 8 |
+| **restrictions** | `creative[]`, `words[]`, `visual[]` | Consolidado de restricciones (paso 8), palabras a evitar (paso 5) y elementos visuales a evitar (paso 6) |
 
----
-
-## 3. BrandDNA — lo que la empresa **ES**
-
-Generado por `BrandAnalysisService` a partir del onboarding. Versionado: cada regeneración crea
-una versión nueva; la vigente está referenciada en `Company.activeBrandDnaId`.
-
-| Bloque | Campos | Uso principal |
-|---|---|---|
-| **meta** | `companyId`, `version`, `generatedBy { provider, model, promptVersion }` | Trazabilidad |
-| **identity** | `name`, `industry`, `essence` (una frase), `mission?`, `vision?`, `values[{ name, meaning }]`, `story?`, `offering[]`, `differentiators[]` | Conocimiento estructurado |
-| **audience** | `segments[{ name, description, needs[] }]`, `insights[]` | Conocimiento estructurado |
-| **personality** | `archetype` (enum de 12 arquetipos de marca: `creator`, `caregiver`, `explorer`, `sage`, `hero`, `magician`, `rebel`, `lover`, `jester`, `everyman`, `ruler`, `innocent`), `traits[{ name, intensity: 1–5, expression }]`, `antiTraits[]` | Personalidad |
-| **voice** | `summary`, `language` (ej. `es`), `toneScales { formalCasual, seriousPlayful, rationalEmotional, traditionalInnovative, reservedExpressive }` (0–100), `vocabulary { preferred[], avoid[] }`, `do[]`, `dont[]`, `samplePhrases[]` | Estilo de comunicación |
-| **creativeCriteria** | `principles[]`, `goodIdeaTests[]` ("una idea es buena para esta marca si…"), `redFlags[]` | Criterio creativo |
-| **visualDirection** | `palette[{ hex, name, role: primary\|secondary\|accent\|neutral }]`, `moodKeywords[]`, `shapeLanguage: organic\|geometric\|structural\|fluid\|soft`, `materials[]`, `imageryStyle`, `typographyMood` | Dirección visual (insumo del avatar) |
-| **behavior** | `roleStatement` (cómo actúa Pixel como director creativo de esta marca), `feedbackStyle`, `proactivity: low\|medium\|high`, `boundaries[]` | Comportamiento |
-| **confidence** | `overall` (0–1), `gaps[]` (información faltante que Pixel debería preguntar) | Honestidad del análisis |
-
-Índices: `{ companyId: 1, version: -1 }` único.
+Índices: `{ companyId: 1, version: -1 }` único. Plugin `tenantScoped`: toda consulta exige `companyId`.
 
 ## 4. AvatarProfile — cómo esa identidad **se ve** como Pixel
 

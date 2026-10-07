@@ -29,7 +29,7 @@ export function PixelCard({ company }: { company: Company }) {
           className="mt-1 size-4 shrink-0 text-subtle transition-colors group-hover:text-accent"
         />
       </div>
-      <PixelStatusBadge status={company.status} />
+      <PixelStatusBadge company={company} />
     </Link>
   );
 }

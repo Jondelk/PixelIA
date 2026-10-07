@@ -8,6 +8,7 @@ import { CompaniesPage } from '../features/companies/CompaniesPage';
 import { CompanyLayout } from '../features/companies/CompanyLayout';
 import { CompanyOverviewPage } from '../features/companies/CompanyOverviewPage';
 import { NewCompanyPage } from '../features/companies/NewCompanyPage';
+import { OnboardingPage } from '../features/onboarding/OnboardingPage';
 import { DashboardPage } from '../features/dashboard/DashboardPage';
 import { PixelPage } from '../features/pixel/PixelPage';
 import { NotFoundPage } from '../features/system/NotFoundPage';
@@ -52,6 +53,11 @@ export const router = createBrowserRouter([
         element: <CompanyLayout />,
         children: [
           { index: true, element: <CompanyOverviewPage />, handle: handle('Resumen', 'Empresa') },
+          {
+            path: 'onboarding',
+            element: <OnboardingPage />,
+            handle: handle('Onboarding de marca', 'Empresa'),
+          },
           { path: 'brand', element: <BrandPage />, handle: handle('ADN de marca', 'Empresa') },
           { path: 'pixel', element: <PixelPage />, handle: handle('Pixel', 'Empresa') },
           { path: 'chat', element: <ChatPage />, handle: handle('Chat', 'Empresa') },
