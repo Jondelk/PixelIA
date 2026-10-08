@@ -22,6 +22,8 @@ export interface ContextRequest {
   history: HistoryMessage[];
   userMessage: string;
   historyLimit: number;
+  /** Zona horaria si el workspace no tiene una (define el "hoy" de la dirección del día). */
+  defaultTimezone?: string;
 }
 
 export type ContextResult =

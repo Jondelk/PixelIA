@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   companyNav,
+  enterpriseNav,
   enterpriseRedirectPath,
+  enterpriseStaysInWorkspace,
   isRouteHandle,
   workspaceBasePath,
   workspaceNav,
@@ -57,18 +59,100 @@ describe('rutas de workspace', () => {
     );
   });
 
-  it('un Pixel Personal tiene Inicio, Mi ADN, Mi Pixel y Chat', () => {
-    expect(workspaceNav('w1', 'personal').map((item) => [item.label, item.to])).toEqual([
-      ['Inicio', '/workspace/w1'],
-      ['Mi ADN', '/workspace/w1/personal/dna'],
-      ['Mi Pixel', '/workspace/w1/pixel'],
-      ['Chat', '/workspace/w1/chat'],
+  it('un Pixel Personal: Inicio · Trabajo (Proyectos, Tareas, Contenido) · Pixel', () => {
+    expect(
+      workspaceNav('w1', 'personal').map((group) => [
+        group.label ?? null,
+        group.items.map((item) => [item.label, item.to]),
+      ]),
+    ).toEqual([
+      [null, [['Inicio', '/workspace/w1']]],
+      [
+        'Trabajo',
+        [
+          ['Proyectos', '/workspace/w1/projects'],
+          ['Tareas', '/workspace/w1/tasks'],
+          ['Contenido', '/workspace/w1/content'],
+          ['Plan de contenido', '/workspace/w1/content-planner'],
+        ],
+      ],
+      [
+        'Pixel',
+        [
+          ['Mi ADN', '/workspace/w1/personal/dna'],
+          ['Mi Pixel', '/workspace/w1/pixel'],
+          ['Chat', '/workspace/w1/chat'],
+        ],
+      ],
     ]);
   });
 
   it('una empresa sin configurar (o un tipo aún desconocido) solo tiene el resumen', () => {
-    expect(workspaceNav('w1', 'enterprise').map((item) => item.label)).toEqual(['Resumen']);
-    expect(workspaceNav('w1').map((item) => item.label)).toEqual(['Resumen']);
+    const labels = (groups: ReturnType<typeof workspaceNav>) =>
+      groups.flatMap((group) => group.items.map((item) => item.label));
+    expect(labels(workspaceNav('w1', 'enterprise'))).toEqual(['Resumen']);
+    expect(labels(workspaceNav('w1'))).toEqual(['Resumen']);
+  });
+
+  it('Operations de una empresa son workspace-first: se quedan en /workspace/:workspaceId', () => {
+    for (const path of [
+      '/workspace/w1/projects',
+      '/workspace/w1/projects/p1',
+      '/workspace/w1/tasks',
+      '/workspace/w1/content',
+    ]) {
+      expect(enterpriseStaysInWorkspace(path)).toBe(true);
+    }
+  });
+
+  it('el resto de rutas de una empresa redirige; Plan de contenido y Personal van al resumen', () => {
+    for (const path of ['/workspace/w1', '/workspace/w1/chat', '/workspace/w1/pixel']) {
+      expect(enterpriseStaysInWorkspace(path)).toBe(false);
+    }
+    for (const path of [
+      '/workspace/w1/content-planner',
+      '/workspace/w1/content-planner/p1',
+      '/workspace/w1/personal/dna',
+    ]) {
+      expect(enterpriseStaysInWorkspace(path)).toBe(false);
+      expect(enterpriseRedirectPath(path, company)).toBe(`/company/${company}`);
+    }
+  });
+
+  it('un Pixel de empresa: Inicio · Trabajo (sin Plan de contenido ni Campañas) · Marca', () => {
+    const groups = (companyId: string, workspaceId: string | null) =>
+      enterpriseNav(companyId, workspaceId).map((group) => [
+        group.label ?? null,
+        group.items.map((item) => [item.label, item.to]),
+      ]);
+    expect(groups('c1', 'w1')).toEqual([
+      [null, [['Inicio', '/company/c1']]],
+      [
+        'Trabajo',
+        [
+          ['Proyectos', '/workspace/w1/projects'],
+          ['Tareas', '/workspace/w1/tasks'],
+          ['Contenido', '/workspace/w1/content'],
+        ],
+      ],
+      [
+        'Marca',
+        [
+          ['ADN de marca', '/company/c1/brand'],
+          ['Personaje', '/company/c1/pixel'],
+          ['Chat', '/company/c1/chat'],
+        ],
+      ],
+    ]);
+    // Sin el workspace aún (cargando) no hay enlaces de Trabajo rotos.
+    expect(groups('c1', null).map(([label]) => label)).toEqual([null, 'Marca']);
+    const labels = enterpriseNav('c1', 'w1').flatMap((g) => g.items.map((item) => item.label));
+    expect(labels).not.toContain('Plan de contenido');
+    expect(labels).not.toContain('Campañas');
+  });
+
+  it('workspaceNav de una empresa con empresa usa la navegación Enterprise', () => {
+    expect(workspaceNav('w1', 'enterprise', 'c1')).toEqual(enterpriseNav('c1', 'w1'));
   });
 
   it('no depende de cómo venga escrito el id en la URL', () => {

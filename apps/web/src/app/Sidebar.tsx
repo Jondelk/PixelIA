@@ -2,8 +2,9 @@ import { NavLink, useMatches } from 'react-router';
 import { BrandLogo } from '../components/BrandLogo';
 import { Icon } from '../components/Icon';
 import { useResource } from '../lib/useResource';
+import { getCompany } from '../features/companies/companiesApi';
 import { getWorkspace } from '../features/workspaces/workspacesApi';
-import { companyNav, primaryNav, workspaceNav, type NavItem } from './navigation';
+import { enterpriseNav, primaryNav, workspaceNav, type NavGroup, type NavItem } from './navigation';
 
 interface SidebarProps {
   open: boolean;
@@ -37,7 +38,7 @@ export function Sidebar({ open, onNavigate }: SidebarProps) {
         <NavSection label="General" items={primaryNav} onNavigate={onNavigate} />
 
         {companyId ? (
-          <NavSection label="Empresa" items={companyNav(companyId)} onNavigate={onNavigate} />
+          <CompanyNavSection companyId={companyId} onNavigate={onNavigate} />
         ) : workspaceId ? (
           <WorkspaceNavSection workspaceId={workspaceId} onNavigate={onNavigate} />
         ) : (
@@ -59,6 +60,30 @@ export function Sidebar({ open, onNavigate }: SidebarProps) {
   );
 }
 
+/**
+ * Rutas /company/:companyId: la navegación de la empresa. Trabajo enlaza al workspace de la empresa
+ * (workspace-first), así que se muestra cuando se conoce su workspaceId.
+ */
+function CompanyNavSection({
+  companyId,
+  onNavigate,
+}: {
+  companyId: string;
+  onNavigate: () => void;
+}) {
+  const { state } = useResource(`sidebar-company:${companyId}`, (signal) =>
+    getCompany(companyId, signal),
+  );
+  const workspaceId = state.status === 'success' ? state.data.workspaceId : null;
+  return (
+    <NavGroups
+      groups={enterpriseNav(companyId, workspaceId)}
+      first="Empresa"
+      onNavigate={onNavigate}
+    />
+  );
+}
+
 /** La navegación de un workspace depende de su tipo (Personal tiene sus propias secciones). */
 function WorkspaceNavSection({
   workspaceId,
@@ -71,12 +96,38 @@ function WorkspaceNavSection({
     getWorkspace(workspaceId, signal),
   );
   const type = state.status === 'success' ? state.data.workspace.type : null;
+  const companyId = state.status === 'success' ? (state.data.company?.id ?? null) : null;
+  const first = type === 'personal' ? 'Pixel Personal' : companyId ? 'Empresa' : 'Pixel';
   return (
-    <NavSection
-      label={type === 'personal' ? 'Pixel Personal' : 'Pixel'}
-      items={workspaceNav(workspaceId, type)}
+    <NavGroups
+      groups={workspaceNav(workspaceId, type, companyId)}
+      first={first}
       onNavigate={onNavigate}
     />
+  );
+}
+
+/** Grupos de navegación; el primero (sin título) nombra el Pixel: "Pixel Personal", "Empresa"… */
+function NavGroups({
+  groups,
+  first,
+  onNavigate,
+}: {
+  groups: NavGroup[];
+  first: string;
+  onNavigate: () => void;
+}) {
+  return (
+    <>
+      {groups.map((group, index) => (
+        <NavSection
+          key={group.label ?? index}
+          label={group.label ?? first}
+          items={group.items}
+          onNavigate={onNavigate}
+        />
+      ))}
+    </>
   );
 }
 

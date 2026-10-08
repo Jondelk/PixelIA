@@ -1,6 +1,9 @@
+import { DEFAULT_TIMEZONE } from '@pixel/contracts';
 import { toAvatarProfileDTO, AvatarProfileModel } from '../../avatars/avatarProfile.model.js';
 import { BrandDnaModel, toBrandDnaDTO } from '../../brand-dna/brandDna.model.js';
 import { CreativeMemoryModel } from '../../creative-memory/creativeMemory.model.js';
+import { workspaceTimezone } from '../../daily-director/dailyTime.js';
+import { getOperationsStatus } from '../../operations/summary.service.js';
 import { findWorkspaceCompany } from '../../workspaces/workspace.service.js';
 import { buildPixelContext } from '../pixelContext.builder.js';
 import { notConfigured, type ContextBuilder } from './contextBuilder.js';
@@ -9,14 +12,15 @@ import { notConfigured, type ContextBuilder } from './contextBuilder.js';
 const MEMORY_LIMIT = 10;
 
 /**
- * Enterprise: Workspace → Company → BrandDNA (+ AvatarProfile y CreativeMemory del workspace).
- * Mantiene el comportamiento del chat anterior: mismas comprobaciones, mismos mensajes y el mismo
- * prompt (buildPixelContext).
+ * Enterprise: Workspace → Company → BrandDNA (+ AvatarProfile, CreativeMemory y el estado operativo
+ * del workspace). Mismas comprobaciones y mensajes que el chat anterior (buildPixelContext). Del
+ * trabajo (Projects, Tasks, ContentItems) solo entran CONTEOS del workspace activo: nunca listas,
+ * nombres ni datos de otro workspace.
  */
 export const enterpriseContextBuilder: ContextBuilder = {
   type: 'enterprise',
 
-  async build({ workspace, history, userMessage, historyLimit }) {
+  async build({ workspace, history, userMessage, historyLimit, defaultTimezone }) {
     const company = await findWorkspaceCompany(workspace);
     if (!company) {
       return notConfigured(
@@ -40,7 +44,7 @@ export const enterpriseContextBuilder: ContextBuilder = {
     }
     const brandDna = toBrandDnaDTO(dnaDoc);
 
-    const [avatarDoc, memories] = await Promise.all([
+    const [avatarDoc, memories, operations] = await Promise.all([
       company.avatarVersion
         ? AvatarProfileModel.findOne({ workspaceId: workspace._id, version: company.avatarVersion })
         : null,
@@ -49,6 +53,9 @@ export const enterpriseContextBuilder: ContextBuilder = {
         .limit(MEMORY_LIMIT)
         .select({ content: 1 })
         .lean(),
+      getOperationsStatus(workspace, {
+        timezone: workspaceTimezone(workspace, defaultTimezone ?? DEFAULT_TIMEZONE),
+      }),
     ]);
     const avatar = avatarDoc ? toAvatarProfileDTO(avatarDoc) : null;
 
@@ -57,6 +64,7 @@ export const enterpriseContextBuilder: ContextBuilder = {
       brandDna,
       avatar,
       memories: memories.map((memory) => memory.content),
+      operations,
       history,
       userMessage,
       limits: { historyMessages: historyLimit },

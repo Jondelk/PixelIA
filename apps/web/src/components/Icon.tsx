@@ -37,6 +37,37 @@ const paths = {
     </>
   ),
   chat: <path d="M20 12a7.5 7.5 0 0 1-11 6.6L4 20l1.4-4.6A7.5 7.5 0 1 1 20 12Z" />,
+  /** Proyectos: dos planos apilados. */
+  projects: (
+    <>
+      <rect x="3.5" y="7.5" width="13" height="13" rx="1" />
+      <path d="M7.5 3.5h12a1 1 0 0 1 1 1v12" />
+    </>
+  ),
+  /** Tareas: un cuadro marcado. */
+  tasks: (
+    <>
+      <rect x="4" y="4" width="16" height="16" rx="1" />
+      <path d="m8.5 12.5 2.5 2.5 4.5-5.5" />
+    </>
+  ),
+  /** Contenido: un encuadre con su línea de texto. */
+  content: (
+    <>
+      <rect x="3.5" y="4.5" width="17" height="15" rx="1" />
+      <path d="M3.5 15.5h17M7.5 9.5h5" />
+    </>
+  ),
+  /** Plan de contenido: una rejilla de días con un píxel marcado. */
+  planner: (
+    <>
+      <rect x="3.5" y="4.5" width="17" height="16" rx="1" />
+      <path d="M3.5 9.5h17M8 3v3M16 3v3" />
+      <rect x="13" y="13" width="4" height="4" fill="currentColor" stroke="none" />
+    </>
+  ),
+  pencil: <path d="M4.5 19.5 5.5 15 15.5 5a2.1 2.1 0 0 1 3 3l-10 10-4 1.5ZM13.5 7l3 3" />,
+  trash: <path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5" />,
   menu: <path d="M4 7h16M4 12h16M4 17h10" />,
   chevron: <path d="m9 6 6 6-6 6" />,
   arrowRight: <path d="M5 12h14M13 6l6 6-6 6" />,

@@ -13,6 +13,8 @@ import {
   createPersonalAvatarConceptEngine,
 } from './modules/avatars/engine/index.js';
 import { createApiRouter } from './modules/index.js';
+import { createContentPlanningEngine } from './modules/content-plans/contentPlanning.engine.js';
+import { createDailyDirectorEngine } from './modules/daily-director/dailyDirector.engine.js';
 import { createPersonalDnaGenerator } from './modules/personal/personalDna.generator.js';
 import type { DatabaseStatus } from '@pixel/contracts';
 import type { AIProvider } from './ai/index.js';
@@ -26,6 +28,7 @@ export interface AppOptions {
     | 'SESSION_TTL_DAYS'
     | 'BCRYPT_ROUNDS'
     | 'CHAT_HISTORY_LIMIT'
+    | 'DEFAULT_TIMEZONE'
   >;
   logger: Logger;
   getDatabaseStatus: () => DatabaseStatus;
@@ -60,8 +63,17 @@ export function createApp({ env, logger, getDatabaseStatus, ai }: AppOptions): E
       authService: createAuthService({ bcryptRounds: env.BCRYPT_ROUNDS }),
       avatarEngine: createAvatarConceptEngine(),
       personalAvatarEngine: createPersonalAvatarConceptEngine(),
-      chat: { ai, historyLimit: env.CHAT_HISTORY_LIMIT, logger },
+      chat: {
+        ai,
+        historyLimit: env.CHAT_HISTORY_LIMIT,
+        logger,
+        defaultTimezone: env.DEFAULT_TIMEZONE,
+      },
       personalDnaGenerator: createPersonalDnaGenerator({ ai, logger }),
+      planningEngine: createContentPlanningEngine({ ai, logger }),
+      dailyDirector: createDailyDirectorEngine({ ai, logger }),
+      defaultTimezone: env.DEFAULT_TIMEZONE,
+      logger,
       session: {
         jwtSecret: env.JWT_SECRET,
         ttlSeconds: env.SESSION_TTL_DAYS * 24 * 60 * 60,

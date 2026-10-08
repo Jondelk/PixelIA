@@ -12,6 +12,10 @@ import {
   type CreativeLever,
   type PersonalBrief,
 } from '../../ai/brief.js';
+import {
+  renderOperationsStatusContext,
+  type OperationsStatusContext,
+} from '../../ai/operationsStatusContext.js';
 
 /*
  * Composición del contexto Enterprise: el prompt con el que habla el Pixel de UNA marca.
@@ -33,6 +37,11 @@ export interface PixelContextInput {
   avatar: AvatarProfile | null;
   /** Memorias creativas activas del workspace (más recientes primero). Vacío = no se menciona. */
   memories?: string[];
+  /**
+   * Estado operativo del workspace (solo conteos de Proyectos, Tareas y Contenido). null/omitido =
+   * no se menciona. Nunca incluye nombres ni detalle.
+   */
+  operations?: OperationsStatusContext | null;
   /** Mensajes previos de ESTA conversación, del más antiguo al más reciente. */
   history: HistoryMessage[];
   userMessage: string;
@@ -64,6 +73,8 @@ export interface PixelContext<Brief = CreativeBrief | PersonalBrief> {
     systemChars: number;
     includesAvatar: boolean;
     memories: number;
+    /** Enterprise: el estado operativo (conteos) entró al prompt. */
+    includesOperations?: boolean;
   };
 }
 
@@ -306,7 +317,7 @@ Ejemplo de criterio (marca ficticia, solo para ilustrar la diferencia):
 
 Palancas creativas de ${input.company.name} (puntos de partida; elige, combina o descarta según la petición):
 ${levers}
-${brief.avatar ? `\nNuestro personaje, ${brief.avatar.name}: ${brief.avatar.concept} Personalidad: ${brief.avatar.personality.join(', ')}. Úsalo si ayuda a la idea.\n` : ''}${memories.length ? `\nLo que ya decidimos juntos (memoria creativa; respétalo):\n${memories.map((memory) => `- ${memory}`).join('\n')}\n` : ''}
+${brief.avatar ? `\nNuestro personaje, ${brief.avatar.name}: ${brief.avatar.concept} Personalidad: ${brief.avatar.personality.join(', ')}. Úsalo si ayuda a la idea.\n` : ''}${memories.length ? `\nLo que ya decidimos juntos (memoria creativa; respétalo):\n${memories.map((memory) => `- ${memory}`).join('\n')}\n` : ''}${input.operations ? renderOperations(input.company.name, input.operations) : ''}
 Contexto de marca (referencia para razonar; no lo cites literalmente):
 ${renderBrief(brief)}`;
 
@@ -321,6 +332,22 @@ ${renderBrief(brief)}`;
       systemChars: system.length,
       includesAvatar,
       memories: memories.length,
+      includesOperations: Boolean(input.operations),
     },
   };
+}
+
+/**
+ * Estado operativo: conteos y reglas para no inventar. El chat todavía no consulta proyectos ni
+ * tareas concretos (sin retrieval ni tools), así que lo dice en lugar de suponer.
+ */
+function renderOperations(brand: string, ops: OperationsStatusContext): string {
+  return `
+Estado del trabajo de ${brand} (solo conteos de las secciones Proyectos, Tareas y Contenido de este Pixel):
+- Proyectos activos: ${ops.activeProjects}
+- Tareas pendientes: ${ops.openTasks} (vencidas: ${ops.overdueTasks})
+- Contenido en curso: ${ops.activeContentItems}
+No ves nombres, fechas ni el detalle de ningún proyecto, campaña, tarea o pieza. Si te preguntan por uno concreto o por la lista completa, no lo inventes ni supongas que existe: di que desde el chat solo ves estos conteos y que el detalle está en Proyectos, Tareas o Contenido. No puedes crear ni modificar tareas desde el chat.
+${renderOperationsStatusContext(ops)}
+`;
 }

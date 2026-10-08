@@ -138,3 +138,66 @@ export const streamer: PersonalAnswers = {
     expectations: 'Ideas para crecer la comunidad y no repetir siempre lo mismo.',
   },
 };
+
+/** Persona de la prueba con datos reales del Content Planner (Prompt 10 §54). */
+export const creativeDirector: PersonalAnswers = {
+  identity: {
+    name: 'Jhon Trochez',
+    profession: 'Director creativo',
+    headline: 'Diseño, audiovisual y software para marcas',
+    bio: '',
+    roles: ['director creativo', 'diseñador gráfico', 'productor audiovisual', 'desarrollador'],
+    skills: ['diseño gráfico', 'producción audiovisual', 'software', 'dirección de arte'],
+    interests: ['tecnología', 'cine'],
+    location: '',
+  },
+  goals: {
+    professional: ['construir autoridad como director creativo'],
+    personal: [],
+    content: ['mostrar mi criterio creativo con procesos reales'],
+    shortTerm: ['publicar con constancia'],
+    longTerm: ['ser referente en dirección creativa con tecnología'],
+  },
+  audience: {
+    primaryAudience: 'Emprendedores y marcas que necesitan dirección creativa',
+    secondaryAudiences: ['creativos jóvenes'],
+    needs: ['claridad creativa', 'identidad coherente'],
+    problems: ['briefs confusos', 'marcas sin dirección visual'],
+    desiredPerception: ['estratégico', 'preciso', 'cinematográfico'],
+  },
+  personality: { traits: ['minimalista', 'visionario', 'preciso'] },
+  communication: {
+    tone: ['claro', 'seguro'],
+    formality: 3,
+    energy: 3,
+    language: 'es',
+    preferredWords: ['criterio', 'proceso', 'dirección'],
+    avoidWords: ['barato'],
+  },
+  creative: {
+    styles: ['tecnológico', 'minimalista', 'cinematográfico'],
+    colors: [{ hex: '#08080B', name: 'Negro' }],
+    references: ['títulos de cine'],
+    visualPreferences: ['mucho espacio negativo'],
+    avoidVisuals: ['plantillas genéricas'],
+  },
+  contentWork: {
+    content: {
+      themes: ['procesos creativos', 'dirección de arte', 'tecnología creativa'],
+      formats: ['reels', 'carruseles', 'stories'],
+      platforms: ['Instagram'],
+      frequency: '3 publicaciones por semana',
+    },
+    work: {
+      preferredWorkTimes: ['noche'],
+      planningStyle: ['planificación semanal'],
+      executionStyle: ['sprints cortos'],
+      focusStyle: ['trabajo profundo'],
+      productivityPreferences: ['revisión semanal'],
+    },
+  },
+  support: {
+    wantsHelpWith: ['contenido', 'marca personal', 'ideas creativas'],
+    expectations: 'Que me ayude a convertir mi trabajo real en contenido con criterio.',
+  },
+};

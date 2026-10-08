@@ -4,16 +4,15 @@ import { buttonClasses } from '../../components/buttonClasses';
 import { Icon, type IconName } from '../../components/Icon';
 import { Pixi } from '../../components/Pixi';
 import { workspaceBasePath } from '../../app/navigation';
-import { workspaceApiBase } from '../../lib/apiPaths';
-import { useResource } from '../../lib/useResource';
-import { AvatarStage } from '../avatar3d/AvatarStage';
-import { getAvatar } from '../pixel/avatarApi';
+import { DailyDirector } from '../daily-director/DailyDirector';
+import { OperationsOverview } from '../operations/OperationsOverview';
 import { useWorkspace } from '../workspaces/workspaceContext';
 
 /**
  * Inicio de un Pixel Personal.
  * - Sin PersonalDNA: "Configura tu Pixel Personal" → onboarding.
- * - Con PersonalDNA: Tu Pixel, tu ADN personal y el chat (nada más por ahora).
+ * - Con PersonalDNA: primero "TU DÍA" (Daily Director), después el resumen de su trabajo, Tu Pixel, su
+ *   ADN personal y el chat.
  */
 export function PersonalHomePage() {
   const { overview } = useWorkspace();
@@ -58,52 +57,24 @@ export function PersonalHomePage() {
 
 function PersonalHome({ name, workspaceId }: { name: string; workspaceId: string }) {
   const base = workspaceBasePath(workspaceId);
-  const { state } = useResource(`avatar:workspace:${workspaceId}`, (signal) =>
-    getAvatar(workspaceApiBase(workspaceId), signal),
-  );
-  const avatar = state.status === 'success' ? state.data.avatar : null;
   const firstName = name.split(' ')[0] ?? name;
 
   return (
     <>
-      <div className="mb-10">
-        <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-subtle">
-          Pixel Personal
-        </p>
-        <h1 className="font-display text-3xl font-bold tracking-tight sm:text-[2.5rem] sm:leading-[1.1]">
-          Hola, {firstName}.
-        </h1>
-        <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted">
-          Tu director creativo personal ya te conoce. ¿Por dónde seguimos?
-        </p>
-      </div>
+      {/* Lo primero: la dirección de hoy (Daily Director), con el personaje. */}
+      <DailyDirector workspaceId={workspaceId} firstName={firstName} base={base} />
 
-      <div className="grid gap-5 lg:grid-cols-[1.1fr_1fr]">
-        <section className="flex flex-col overflow-hidden rounded-2xl border border-line bg-surface">
-          <div className="h-72 border-b border-line">
-            {avatar ? (
-              <AvatarStage avatar={avatar} state="idle" interactive={false} className="!h-full" />
-            ) : (
-              <div className="grid h-full place-items-center">
-                <Pixi size={120} />
-              </div>
-            )}
-          </div>
-          <div className="flex flex-1 flex-col p-6 sm:p-8">
-            <h2 className="font-display text-base font-bold">Tu Pixel</h2>
-            <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">
-              {avatar
-                ? `${avatar.name}: ${avatar.concept}`
-                : 'Pixel puede convertir tu ADN personal en un personaje 3D único, sin caricaturas de tu oficio.'}
-            </p>
-            <Link to={`${base}/pixel`} className={`${buttonClasses('secondary')} mt-6 self-start`}>
-              {avatar ? 'Ver mi personaje' : 'Crear mi personaje'}
-              <Icon name="arrowRight" className="size-4" />
-            </Link>
-          </div>
-        </section>
+      <OperationsOverview workspaceId={workspaceId} base={base} />
 
-        <div className="grid gap-5">
+      <div className="grid gap-5 lg:grid-cols-3">
+        <HomeCard
+          to={`${base}/pixel`}
+          icon="character"
+          title="Tu Pixel"
+          text="Tu personaje 3D, creado a partir de tu ADN personal."
+          cta="Ver mi personaje"
+        />
+        <div className="contents">
           <HomeCard
             to={`${base}/personal/dna`}
             icon="brand"

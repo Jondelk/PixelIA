@@ -1,4 +1,8 @@
-import type { WorkspaceType } from '@pixel/contracts';
+import {
+  workspaceSupportsFeature,
+  type WorkspaceFeature,
+  type WorkspaceType,
+} from '@pixel/contracts';
 import type { IconName } from '../components/Icon';
 
 export interface NavItem {
@@ -12,7 +16,7 @@ export interface NavItem {
 /** Metadatos de cada ruta (en `handle`) para el header. */
 export interface RouteHandle {
   title: string;
-  section: 'General' | 'Empresa' | 'Pixel';
+  section: 'General' | 'Empresa' | 'Pixel' | 'Trabajo';
 }
 
 export const primaryNav: NavItem[] = [
@@ -20,28 +24,95 @@ export const primaryNav: NavItem[] = [
   { to: '/companies', label: 'Empresas', icon: 'companies' },
 ];
 
-/** Entrada única de cada Pixel (workspace). Enterprise redirige a sus rutas de empresa. */
+/** Entrada única de cada Pixel (workspace). Enterprise redirige a sus rutas de empresa salvo Trabajo. */
 export function workspaceBasePath(workspaceId: string): string {
   return `/workspace/${encodeURIComponent(workspaceId)}`;
 }
 
+/** Grupo de la navegación lateral (sin `label`: va arriba, sin título). */
+export interface NavGroup {
+  label?: string;
+  items: NavItem[];
+}
+
+/**
+ * Sección Trabajo de un workspace: Operations compartidas (Proyectos, Tareas, Contenido) y, si el
+ * tipo lo admite, el Plan de contenido. Siempre bajo /workspace/:workspaceId (workspace-first).
+ */
+function workNav(workspaceId: string, type: WorkspaceType): NavGroup {
+  const base = workspaceBasePath(workspaceId);
+  const items: [WorkspaceFeature, NavItem][] = [
+    ['projects', { to: `${base}/projects`, label: 'Proyectos', icon: 'projects' }],
+    ['tasks', { to: `${base}/tasks`, label: 'Tareas', icon: 'tasks' }],
+    ['content', { to: `${base}/content`, label: 'Contenido', icon: 'content' }],
+    [
+      'contentPlanner',
+      { to: `${base}/content-planner`, label: 'Plan de contenido', icon: 'planner' },
+    ],
+  ];
+  return {
+    label: 'Trabajo',
+    items: items
+      .filter(([feature]) => workspaceSupportsFeature(type, feature))
+      .map(([, item]) => item),
+  };
+}
+
 /**
  * Navegación de un workspace según su tipo:
- * - personal: Inicio, Mi ADN, Mi Pixel y Chat (nada que aún no exista).
+ * - personal: Inicio · Trabajo (Proyectos, Tareas, Contenido, Plan de contenido) · Pixel (Mi ADN,
+ *   Mi Pixel, Chat).
+ * - enterprise con empresa: la de la empresa (enterpriseNav).
  * - enterprise sin empresa (o tipo aún desconocido): solo el resumen.
- * Enterprise con empresa navega bajo /company/:companyId (companyNav).
  */
-export function workspaceNav(workspaceId: string, type: WorkspaceType | null = null): NavItem[] {
+export function workspaceNav(
+  workspaceId: string,
+  type: WorkspaceType | null = null,
+  companyId: string | null = null,
+): NavGroup[] {
   const base = workspaceBasePath(workspaceId);
+  if (type === 'enterprise' && companyId) return enterpriseNav(companyId, workspaceId);
   if (type === 'personal') {
     return [
-      { to: base, label: 'Inicio', icon: 'overview', end: true },
-      { to: `${base}/personal/dna`, label: 'Mi ADN', icon: 'brand' },
-      { to: `${base}/pixel`, label: 'Mi Pixel', icon: 'character' },
-      { to: `${base}/chat`, label: 'Chat', icon: 'chat' },
+      { items: [{ to: base, label: 'Inicio', icon: 'overview', end: true }] },
+      workNav(workspaceId, type),
+      {
+        label: 'Pixel',
+        items: [
+          { to: `${base}/personal/dna`, label: 'Mi ADN', icon: 'brand' },
+          { to: `${base}/pixel`, label: 'Mi Pixel', icon: 'character' },
+          { to: `${base}/chat`, label: 'Chat', icon: 'chat' },
+        ],
+      },
     ];
   }
-  return [{ to: base, label: 'Resumen', icon: 'overview', end: true }];
+  return [{ items: [{ to: base, label: 'Resumen', icon: 'overview', end: true }] }];
+}
+
+/** Subrutas de /workspace/:workspaceId que no existen bajo /company/:companyId. */
+const WORKSPACE_ONLY_SEGMENTS = new Set([
+  'personal',
+  'projects',
+  'tasks',
+  'content',
+  'content-planner',
+]);
+
+/** Primer segmento de /workspace/:workspaceId/<segmento> → funcionalidad que lo sirve. */
+const SEGMENT_FEATURES: Record<string, WorkspaceFeature> = {
+  projects: 'projects',
+  tasks: 'tasks',
+  content: 'content',
+  'content-planner': 'contentPlanner',
+};
+
+/**
+ * ¿Esta ruta de un Pixel de empresa vive en /workspace/:workspaceId? Sí para las funcionalidades
+ * workspace-first que Enterprise admite (Operations). El resto sigue en /company/:companyId.
+ */
+export function enterpriseStaysInWorkspace(pathname: string): boolean {
+  const feature = SEGMENT_FEATURES[pathname.split('/').filter(Boolean)[2] ?? ''];
+  return feature !== undefined && workspaceSupportsFeature('enterprise', feature);
 }
 
 /**
@@ -52,8 +123,9 @@ export function workspaceNav(workspaceId: string, type: WorkspaceType | null = n
 export function enterpriseRedirectPath(pathname: string, companyId: string): string {
   const segments = pathname.split('/').filter(Boolean).slice(2);
   const target = companyBasePath(companyId);
-  // Las rutas solo personales (/personal/...) no existen en una empresa: va a su resumen.
-  if (segments.length === 0 || segments[0] === 'personal') return target;
+  // Las rutas solo personales (/personal/...), el Plan de contenido y las de Operations (que viven en
+  // /workspace, ver enterpriseStaysInWorkspace) no existen bajo la empresa: van a su resumen.
+  if (segments.length === 0 || WORKSPACE_ONLY_SEGMENTS.has(segments[0]!)) return target;
   return `${target}/${segments.join('/')}`;
 }
 
@@ -69,6 +141,20 @@ export function companyNav(companyId: string): NavItem[] {
     { to: `${base}/brand`, label: 'ADN de marca', icon: 'brand' },
     { to: `${base}/pixel`, label: 'Personaje', icon: 'character' },
     { to: `${base}/chat`, label: 'Chat', icon: 'chat' },
+  ];
+}
+
+/**
+ * Navegación de un Pixel de empresa: Inicio · Trabajo (Operations, bajo /workspace/:workspaceId) ·
+ * Marca (ADN, personaje y chat, todavía bajo /company/:companyId). Sin workspaceId (aún cargando)
+ * se omite Trabajo. Sin Campañas: llegarán con Campaign Manager.
+ */
+export function enterpriseNav(companyId: string, workspaceId: string | null): NavGroup[] {
+  const [summary, ...brand] = companyNav(companyId);
+  return [
+    { items: [{ ...summary!, label: 'Inicio' }] },
+    ...(workspaceId ? [workNav(workspaceId, 'enterprise')] : []),
+    { label: 'Marca', items: brand },
   ];
 }
 

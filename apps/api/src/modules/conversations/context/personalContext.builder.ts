@@ -1,6 +1,8 @@
+import { DEFAULT_TIMEZONE } from '@pixel/contracts';
 import { AvatarProfileModel, toAvatarProfileDTO } from '../../avatars/avatarProfile.model.js';
 import { CreativeMemoryModel } from '../../creative-memory/creativeMemory.model.js';
 import { loadPersonalDna } from '../../personal/personal.service.js';
+import { currentBriefForContext } from '../../daily-director/dailyBrief.current.js';
 import { toPersonalDnaDTO } from '../../personal/personalDna.model.js';
 import { buildPersonalPixelContext } from '../personalPixelContext.builder.js';
 import { notConfigured, type ContextBuilder } from './contextBuilder.js';
@@ -20,7 +22,7 @@ const MEMORY_LIMIT = 10;
 export const personalContextBuilder: ContextBuilder = {
   type: 'personal',
 
-  async build({ workspace, history, userMessage, historyLimit }) {
+  async build({ workspace, history, userMessage, historyLimit, defaultTimezone }) {
     if (workspace.type !== 'personal') {
       return notConfigured('personal_context_not_configured', PERSONAL_CONTEXT_NOT_CONFIGURED);
     }
@@ -30,7 +32,7 @@ export const personalContextBuilder: ContextBuilder = {
     }
     const personalDna = toPersonalDnaDTO(dnaDoc);
 
-    const [avatarDoc, memories] = await Promise.all([
+    const [avatarDoc, memories, daily] = await Promise.all([
       profile.avatarVersion
         ? AvatarProfileModel.findOne({ workspaceId: workspace._id, version: profile.avatarVersion })
         : null,
@@ -39,6 +41,8 @@ export const personalContextBuilder: ContextBuilder = {
         .limit(MEMORY_LIMIT)
         .select({ content: 1 })
         .lean(),
+      // Solo la dirección vigente de HOY (nunca el historial), marcada si quedó desactualizada.
+      currentBriefForContext(workspace, defaultTimezone ?? DEFAULT_TIMEZONE),
     ]);
     const avatar = avatarDoc ? toAvatarProfileDTO(avatarDoc) : null;
 
@@ -46,6 +50,21 @@ export const personalContextBuilder: ContextBuilder = {
       personalDna,
       avatar,
       memories: memories.map((memory) => memory.content),
+      dailyBrief: daily
+        ? {
+            localDate: daily.brief.localDate,
+            stale: daily.stale,
+            summary: daily.brief.summary,
+            priorities: daily.brief.priorities.map((priority) => ({
+              title: priority.title,
+              rationale: priority.rationale,
+              urgency: priority.urgency,
+            })),
+            warnings: daily.brief.warnings.map((warning) => warning.message),
+            content: daily.brief.contentSuggestion?.title ?? null,
+            focus: daily.brief.focusBlocks.map((block) => block.title),
+          }
+        : null,
       history,
       userMessage,
       limits: { historyMessages: historyLimit },

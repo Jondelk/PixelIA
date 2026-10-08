@@ -3,8 +3,9 @@
 Director creativo asistido por IA de **PIXELES**. Cada usuario tiene sus **Pixels** (workspaces):
 uno por cada marca (**Pixel Enterprise**: estudia el ADN de la marca y lo materializa en un personaje
 3D) y uno personal (**Pixel Personal**: tu director creativo personal, con su propio ADN, avatar y
-chat). Ver `docs/WORKSPACES.md`, `docs/PERSONAL.md` y, para la identidad visual, `CLAUDE.md` ›
-Identidad visual.
+chat). Todos organizan su trabajo con las mismas Operations: proyectos, tareas y contenido, aislados
+por Pixel. Ver `docs/WORKSPACES.md`, `docs/PERSONAL.md`, `docs/ENTERPRISE-OPERATIONS.md` y, para
+la identidad visual, `CLAUDE.md` › Identidad visual.
 
 > Estado: **MVP 0.1 — base técnica, autenticación y empresas listas.** Ver [`docs/BACKLOG.md`](./docs/BACKLOG.md).
 
@@ -43,7 +44,8 @@ usa un secreto de desarrollo y la API lo avisa en el log.
 **IA**: sin configuración, Pixel responde en **modo demo** (reglas locales a partir del ADN, sin
 modelo de lenguaje). Para respuestas reales con Claude, añade `ANTHROPIC_API_KEY` en `apps/api/.env`
 (opcional `AI_MODEL`, por defecto `claude-opus-5-5`). La prueba con el modelo real
-(`apps/api/test/chat.live.test.ts`) solo corre cuando esa clave existe.
+(`apps/api/test/chat.live.test.ts` y `contentPlanning.live.test.ts`) solo corre cuando esa clave
+existe. **Pendiente**: ejecutar la del Content Planner y ajustar su prompt (`docs/CONTENT-PLANNER.md §10`).
 
 La API arranca aunque MongoDB no esté disponible: `/api/health` responde `503` con
 `"status": "degraded"` y reintenta la conexión cada 5 s. El header de la web muestra ese estado.
@@ -65,7 +67,7 @@ La API arranca aunque MongoDB no esté disponible: `/api/health` responde `503` 
 
 ```
 apps/web            React + Vite + Tailwind (shell y pantallas)
-apps/api            Express + Mongoose (módulos: auth, companies, brand-dna, avatars, conversations, creative-memory)
+apps/api            Express + Mongoose (módulos: auth, workspaces, companies, brand-dna, avatars, conversations, creative-memory, personal, operations, content-plans, daily-director)
 packages/contracts  Schemas Zod y tipos compartidos
 docs/               MVP, arquitectura, entidades, backlog
 ```
@@ -79,4 +81,8 @@ docs/               MVP, arquitectura, entidades, backlog
 - [`docs/BACKLOG.md`](./docs/BACKLOG.md) — backlog técnico por etapas.
 - [`docs/WORKSPACES.md`](./docs/WORKSPACES.md) — Workspaces: Enterprise y Personal.
 - [`docs/PERSONAL.md`](./docs/PERSONAL.md) — Pixel Personal: perfil, ADN personal, avatar y chat.
+- [`docs/OPERATIONS.md`](./docs/OPERATIONS.md) — Shared Operations: proyectos, tareas y contenido de cualquier Pixel.
+- [`docs/ENTERPRISE-OPERATIONS.md`](./docs/ENTERPRISE-OPERATIONS.md) — Operations en un Pixel de empresa: gating, aislamiento, Inicio y chat.
+- [`docs/CONTENT-PLANNER.md`](./docs/CONTENT-PLANNER.md) — Content Planner: estrategia de contenido con PersonalDNA y proyectos.
+- [`docs/DAILY-DIRECTOR.md`](./docs/DAILY-DIRECTOR.md) — Daily Director: la dirección del día en Inicio.
 - [`docs/WORKSPACE-MIGRATION.md`](./docs/WORKSPACE-MIGRATION.md) — migración Company → Workspace.

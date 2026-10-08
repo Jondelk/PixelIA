@@ -31,6 +31,7 @@ Documentos relacionados: [`ARCHITECTURE.md`](./ARCHITECTURE.md) · [`ENTITIES.md
 | Chat | Conversaciones por empresa, mensajes persistidos, respuestas de Pixel con contexto de BrandDNA + memorias + historial. Respuesta completa (sin streaming). |
 | CreativeMemory | Mínima: el usuario puede fijar un mensaje/idea como memoria, listarla y borrarla. Las memorias activas entran al contexto del chat. |
 | IA | Interfaz `AIProvider`, `MockAIProvider` determinista y un adaptador de proveedor real (proveedor a confirmar). |
+| Operations | Proyectos, tareas y contenido en **cualquier** Pixel (Personal y Enterprise) con los mismos modelos y pantallas (`docs/OPERATIONS.md`, `docs/ENTERPRISE-OPERATIONS.md`). En Enterprise: "Trabajo de la marca" en el Inicio y estado operativo (solo conteos) en el chat. Content Planner y Daily Director solo en Personal. |
 
 ### Excluido explícitamente
 
@@ -62,6 +63,8 @@ Rutas del frontend: `/login`, `/dashboard` ("Tus Pixels"), `/pixels/new` (Person
 `/workspace/:workspaceId` (entrada de cada Pixel; en Personal también `personal/onboarding`,
 `personal/dna`, `pixel` y `chat`, ver `docs/PERSONAL.md`), `/companies` y, por empresa, `/company/:companyId`
 (resumen), `/company/:companyId/brand`, `/company/:companyId/pixel`, `/company/:companyId/chat`.
+El trabajo de cualquier Pixel (también de una empresa) vive en
+`/workspace/:workspaceId/{projects,tasks,content}` (workspace-first).
 La API expone `/api/workspaces/:workspaceId/...` y mantiene `/api/companies/:companyId/...` para
 Enterprise (`docs/WORKSPACES.md`).
 

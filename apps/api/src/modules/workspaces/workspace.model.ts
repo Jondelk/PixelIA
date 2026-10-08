@@ -13,6 +13,8 @@ export interface WorkspaceAttrs {
   name: string;
   slug: string;
   status: WorkspaceStatus;
+  /** Zona horaria IANA (explícita; null = DEFAULT_TIMEZONE). */
+  timezone: string | null;
   /**
    * Solo la migración lo escribe: empresa legacy de la que nació este workspace. Su índice único
    * hace que migrar sea idempotente incluso si el proceso se interrumpe a mitad (ver
@@ -41,6 +43,7 @@ const workspaceSchema = new Schema<WorkspaceAttrs>(
       default: 'active',
       required: true,
     },
+    timezone: { type: String, default: null, maxlength: 64 },
     migratedFromCompanyId: { type: Schema.Types.ObjectId, ref: 'Company' },
   },
   { timestamps: true },
@@ -71,6 +74,7 @@ export function toWorkspaceDTO(workspace: WorkspaceDocument): Workspace {
     name: workspace.name,
     slug: workspace.slug,
     status: workspace.status,
+    timezone: workspace.timezone ?? null,
     createdAt: workspace.createdAt.toISOString(),
     updatedAt: workspace.updatedAt.toISOString(),
   };

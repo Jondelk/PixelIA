@@ -256,15 +256,25 @@ solo su objetivo, sus plataformas, su ritmo y sus límites.
 
 | Ruta | Pantalla |
 |---|---|
-| `/workspace/:workspaceId` | Inicio: "Configura tu Pixel Personal" (sin ADN) o Home (Tu Pixel, Tu ADN personal, Chat) |
+| `/workspace/:workspaceId` | Inicio: "Configura tu Pixel Personal" (sin ADN) o Home (resumen de trabajo, Tu Pixel, Tu ADN personal, Chat) |
+| `/workspace/:workspaceId/projects[/:projectId]` | Proyectos y detalle de proyecto (`docs/OPERATIONS.md`) |
+| `/workspace/:workspaceId/tasks` | Tareas: Inbox, Hoy, Próximas, Todas, Completadas |
+| `/workspace/:workspaceId/content` | Contenido: pipeline Ideas → Publicado |
+| `/workspace/:workspaceId/content-planner[/:planId]` | Plan de contenido: estrategia y propuestas de Pixel (`docs/CONTENT-PLANNER.md`) |
+| `/workspace/:workspaceId` (sección TU DÍA) | Daily Director: prioridades, avisos, contenido y bloques de enfoque del día (`docs/DAILY-DIRECTOR.md`) |
 | `/workspace/:workspaceId/personal/onboarding` | Onboarding de 8 pasos |
 | `/workspace/:workspaceId/personal/dna` | "Así te entiende Pixel" |
 | `/workspace/:workspaceId/pixel` | Mi Pixel (mismo `PixelStudio` que Enterprise) |
 | `/workspace/:workspaceId/chat` | Chat (mismo `ChatStudio` que Enterprise); sin ADN → onboarding |
 
-Navegación personal: **Inicio · Mi ADN · Mi Pixel · Chat** (`workspaceNav(id, 'personal')`).
-Enterprise conserva la suya. En "Tus Pixels" la tarjeta personal muestra **Configurado** (hay
-PersonalDNA) o **Configurar**. Las rutas `personal/*` en un workspace enterprise redirigen a su inicio.
+Navegación personal (`workspaceNav(id, 'personal')`, por grupos): **Inicio · Trabajo** (Proyectos,
+Tareas, Contenido) **· Pixel** (Mi ADN, Mi Pixel, Chat). Enterprise conserva la suya. En "Tus Pixels"
+la tarjeta personal muestra **Configurado** (hay PersonalDNA) o **Configurar**. Las rutas
+`personal/*` y las de Operations en un workspace enterprise redirigen a su inicio.
+
+Projects, Tasks y ContentItems **no** son modelos de Personal: son recursos del workspace
+(`workspaceId`) que hoy solo tienen interfaz en Personal. No usan el PersonalDNA ni entran en el
+contexto del chat. Ver `docs/OPERATIONS.md`.
 
 ## 9. Endpoints
 
@@ -348,9 +358,10 @@ personales. Al volver a esta versión, el arranque deja los índices como arriba
   crean desde el chat.
 - Un Pixel Personal por usuario; sin compartir ni colaboradores.
 
-## 13. Próximos pasos (Prompt 9 en adelante; no construidos)
+## 13. Próximos pasos
 
-Tasks, Projects, ContentItem y Content Planner/Calendar con `workspaceId` como clave de aislamiento,
-Daily Director, memoria creativa desde el chat, y convergencia de las pantallas Enterprise a
-`/workspace/:workspaceId`. Fuera de alcance por ahora: notificaciones, calendarios externos, Gmail,
+Hecho en Prompt 09: Projects, Tasks y ContentItems (`docs/OPERATIONS.md`). Hecho en Prompt 10: Content
+Planner con PersonalDNA + Projects + contenido reciente (`docs/CONTENT-PLANNER.md`). Hecho en Prompt 11: Daily Director (`docs/DAILY-DIRECTOR.md`). Pendiente:
+calendario, memoria creativa
+desde el chat, y convergencia de las pantallas Enterprise a `/workspace/:workspaceId`. Fuera de alcance por ahora: notificaciones, calendarios externos, Gmail,
 redes sociales, analytics, hábitos, recordatorios, automatizaciones, equipos y billing.

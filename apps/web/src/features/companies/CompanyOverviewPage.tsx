@@ -2,6 +2,7 @@ import { Link } from 'react-router';
 import { buttonClasses } from '../../components/buttonClasses';
 import { Icon } from '../../components/Icon';
 import { companyBasePath, companyNav } from '../../app/navigation';
+import { BrandWorkSection } from './BrandWorkSection';
 import { CompanyAvatar } from './CompanyAvatar';
 import { useCompany } from './companyContext';
 import { PixelStatusBadge } from './PixelStatusBadge';
@@ -102,6 +103,8 @@ export function CompanyOverviewPage() {
           </dl>
         </section>
       </div>
+
+      <BrandWorkSection company={company} />
     </>
   );
 }

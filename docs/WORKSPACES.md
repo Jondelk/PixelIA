@@ -116,7 +116,9 @@ Código: `apps/api/src/modules/conversations/context/`.
   `enterprise_company_missing`, `personal_context_not_configured`).
 - `EnterpriseContextBuilder` mantiene el comportamiento anterior: usa la composición pura
   `buildPixelContext` (mismo prompt) y añade las memorias activas del workspace si existen (hoy no
-  se crean: llegan con la etapa de memoria).
+  se crean: llegan con la etapa de memoria) y, desde el Prompt 12, el **estado operativo** del
+  workspace: solo conteos de Proyectos, Tareas y Contenido (`getOperationsStatus`), nunca nombres ni
+  listas (`docs/ENTERPRISE-OPERATIONS.md` §7).
 - `PersonalContextBuilder` carga solo datos del workspace personal (nunca `Company` ni `BrandDNA`) y
   compone el prompt del Director Creativo Personal (`buildPersonalPixelContext`). Sin PersonalDNA
   responde `personal_context_not_configured` (409) y la web lleva al onboarding. Ver
@@ -163,15 +165,32 @@ transacciones).
   (onboardings) y `DnaBlocks` (presentación de un ADN). Los clientes de avatar y chat reciben la raíz
   de la API (`companyApiBase` o `workspaceApiBase`).
 
+### Capacidades por tipo (feature gating)
+
+Qué existe en cada tipo se **deriva** de `workspace.type` con `workspaceSupportsFeature(type,
+feature)` / `workspaceCapabilities(type)` (`packages/contracts/src/capabilities.ts`); no se guarda en
+Mongo. Operations (`projects`, `tasks`, `content`) en ambos; `contentPlanner` y `dailyDirector` solo
+en Personal. La API responde **400** `feature_not_available` (`assertWorkspaceFeature`) y la web
+filtra la navegación y protege las rutas con `<FeatureOnly>`. No se reparten comprobaciones
+`workspace.type === …` para funcionalidades: se añade una fila a la tabla.
+
 ### Convergencia de rutas
 
-Las pantallas Enterprise siguen en `/company/:companyId/...` para no arriesgar el MVP:
-`/workspace/:id` de un workspace enterprise con empresa **redirige** a `/company/:companyId`
-conservando la subruta (las rutas `personal/*` llevan a su resumen). Pasos siguientes, sin duplicar
-páginas:
+**Regla desde el Prompt 12: toda funcionalidad nueva es workspace-first** (`/workspace/:workspaceId/...`
+y `/api/workspaces/:workspaceId/...`), también en Enterprise.
+
+Las pantallas Enterprise anteriores (resumen, ADN, personaje, chat, onboarding) siguen en
+`/company/:companyId/...` para no arriesgar el MVP: `/workspace/:id` de un workspace enterprise con
+empresa **redirige** a `/company/:companyId` conservando la subruta, **salvo** las rutas de
+funcionalidades que Enterprise admite y que viven en el workspace (`enterpriseStaysInWorkspace`: hoy
+Proyectos, Tareas y Contenido). Las rutas `personal/*` y `content-planner` llevan al resumen de la
+empresa. La navegación Enterprise (`enterpriseNav`) mezcla ambas familias: Inicio y Marca bajo
+`/company/:companyId`, Trabajo bajo `/workspace/:workspaceId` (ver `docs/ENTERPRISE-OPERATIONS.md`).
+
+Pasos siguientes, sin duplicar páginas:
 
 1. Mover `CompanyLayout` y sus páginas bajo `/workspace/:workspaceId/...` (la empresa se obtiene del
-   workspace; las páginas no cambian).
+   workspace; las páginas no cambian), de una en una: cada pantalla movida deja de redirigir.
 2. Invertir la redirección: `/company/:companyId/*` → `/workspace/:workspaceId/*`.
 3. Pasar los clientes de la API del frontend a `/api/workspaces/:workspaceId/...` y, cuando nada use
    las rutas `/api/companies/:companyId/{avatar,conversations}`, retirarlas.

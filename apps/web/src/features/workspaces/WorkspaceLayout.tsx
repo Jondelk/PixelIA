@@ -3,19 +3,20 @@ import { buttonClasses } from '../../components/buttonClasses';
 import { ErrorState } from '../../components/ErrorState';
 import { PageHeader } from '../../components/PageHeader';
 import { Spinner } from '../../components/Spinner';
-import { enterpriseRedirectPath } from '../../app/navigation';
+import { enterpriseRedirectPath, enterpriseStaysInWorkspace } from '../../app/navigation';
 import { ApiRequestError } from '../../lib/api';
 import { useResource } from '../../lib/useResource';
 import type { WorkspaceOutletContext } from './workspaceContext';
 import { getWorkspace } from './workspacesApi';
 
 /**
- * Entrada única de un Pixel: /workspace/:workspaceId[/chat|/pixel].
+ * Entrada única de un Pixel: /workspace/:workspaceId[/...].
  *
- * Estrategia de convergencia (docs/WORKSPACES.md): por ahora las pantallas Enterprise siguen
- * viviendo en /company/:companyId, así que un workspace enterprise con empresa redirige allí
- * conservando la subruta. Personal (y enterprise aún sin empresa) se muestran aquí. Cuando las
- * pantallas de empresa se muden a /workspace/:workspaceId, se invierte la redirección.
+ * Estrategia de convergencia (docs/WORKSPACES.md): las funcionalidades nuevas son workspace-first.
+ * Las pantallas Enterprise anteriores (resumen, ADN, personaje, chat) siguen en /company/:companyId,
+ * así que un workspace enterprise con empresa redirige allí conservando la subruta, SALVO las de
+ * Operations (Proyectos, Tareas, Contenido), que viven aquí para ambos tipos. Personal (y enterprise
+ * aún sin empresa) se muestran aquí. Cuando el resto se mude, la redirección desaparece.
  * La API devuelve 404 tanto si el workspace no existe como si es de otro usuario.
  */
 export function WorkspaceLayout() {
@@ -52,7 +53,7 @@ export function WorkspaceLayout() {
   }
 
   const { workspace, company } = state.data;
-  if (workspace.type === 'enterprise' && company) {
+  if (workspace.type === 'enterprise' && company && !enterpriseStaysInWorkspace(pathname)) {
     return <Navigate to={enterpriseRedirectPath(pathname, company.id)} replace />;
   }
 

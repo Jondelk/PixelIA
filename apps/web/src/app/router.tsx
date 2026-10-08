@@ -13,7 +13,14 @@ import { DashboardPage } from '../features/dashboard/DashboardPage';
 import { PersonalDnaPage } from '../features/personal/PersonalDnaPage';
 import { PersonalOnboardingPage } from '../features/personal/PersonalOnboardingPage';
 import { PersonalOnly } from '../features/personal/PersonalOnly';
+import { ContentPlannerPage } from '../features/content-planner/ContentPlannerPage';
+import { ContentPlanPage } from '../features/content-planner/ContentPlanPage';
+import { ContentPage } from '../features/operations/ContentPage';
+import { ProjectDetailPage } from '../features/operations/ProjectDetailPage';
+import { ProjectsPage } from '../features/operations/ProjectsPage';
+import { TasksPage } from '../features/operations/TasksPage';
 import { PixelPage } from '../features/pixel/PixelPage';
+import { FeatureOnly } from '../features/workspaces/FeatureOnly';
 import { NewPixelPage } from '../features/workspaces/NewPixelPage';
 import { WorkspaceHomePage } from '../features/workspaces/WorkspaceHomePage';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
@@ -54,8 +61,8 @@ export const router = createBrowserRouter([
       { path: '/dashboard', element: <DashboardPage />, handle: handle('Tus Pixels') },
       { path: '/pixels/new', element: <NewPixelPage />, handle: handle('Nuevo Pixel') },
       {
-        // Entrada única de cada Pixel. Enterprise con empresa redirige a /company/:companyId;
-        // Personal vive aquí: Inicio, Mi ADN (personal/dna), Mi Pixel (pixel) y Chat (chat).
+        // Entrada única de cada Pixel. Personal vive aquí entero. Enterprise con empresa vive aquí
+        // solo en Operations (Proyectos, Tareas, Contenido); el resto redirige a /company/:companyId.
         path: '/workspace/:workspaceId',
         element: <WorkspaceLayout />,
         children: [
@@ -88,6 +95,62 @@ export const router = createBrowserRouter([
               </PersonalOnly>
             ),
             handle: handle('Mi ADN', 'Pixel'),
+          },
+          // Operations: compartidas por Personal y Enterprise (capacidades de contracts).
+          {
+            path: 'projects',
+            element: (
+              <FeatureOnly feature="projects">
+                <ProjectsPage />
+              </FeatureOnly>
+            ),
+            handle: handle('Proyectos', 'Trabajo'),
+          },
+          {
+            path: 'projects/:projectId',
+            element: (
+              <FeatureOnly feature="projects">
+                <ProjectDetailPage />
+              </FeatureOnly>
+            ),
+            handle: handle('Proyecto', 'Trabajo'),
+          },
+          {
+            path: 'tasks',
+            element: (
+              <FeatureOnly feature="tasks">
+                <TasksPage />
+              </FeatureOnly>
+            ),
+            handle: handle('Tareas', 'Trabajo'),
+          },
+          {
+            path: 'content',
+            element: (
+              <FeatureOnly feature="content">
+                <ContentPage />
+              </FeatureOnly>
+            ),
+            handle: handle('Contenido', 'Trabajo'),
+          },
+          // Content Planner: generación con Pixel solo en Personal (capacidad contentPlanner).
+          {
+            path: 'content-planner',
+            element: (
+              <FeatureOnly feature="contentPlanner">
+                <ContentPlannerPage />
+              </FeatureOnly>
+            ),
+            handle: handle('Plan de contenido', 'Trabajo'),
+          },
+          {
+            path: 'content-planner/:planId',
+            element: (
+              <FeatureOnly feature="contentPlanner">
+                <ContentPlanPage />
+              </FeatureOnly>
+            ),
+            handle: handle('Plan de contenido', 'Trabajo'),
           },
         ],
       },

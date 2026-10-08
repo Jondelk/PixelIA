@@ -8,8 +8,8 @@ Convenciones comunes:
 - Todas tienen `id`, `createdAt`, `updatedAt` (en Mongo: `_id` + `timestamps: true`).
 - **Workspace es la frontera de aislamiento** (`docs/WORKSPACES.md`). Los recursos del workspace
   (`AvatarProfile`, `Conversation`, `Message`, `CreativeMemory`) y los de Pixel Personal
-  (`PersonalProfile`, `PersonalDNA`) tienen `workspaceId` **requerido e indexado** y usan
-  `tenantScoped` con clave `workspaceId`.
+  (`PersonalProfile`, `PersonalDNA`) y de Operations (`Project`, `Task`, `ContentItem`) tienen
+  `workspaceId` **requerido e indexado** y usan `tenantScoped` con clave `workspaceId`.
 - `BrandDNA` es un dato propio de la empresa: `companyId` requerido y `tenantScoped` con clave
   `companyId`. Su workspace se deriva de `Company.workspaceId`.
 - Raíces de acceso: `Workspace.ownerId` y `Company.ownerId` (legacy, igual al del workspace).
@@ -34,6 +34,16 @@ erDiagram
   WORKSPACE ||--o{ MESSAGE : "workspaceId"
   WORKSPACE ||--o{ CREATIVE_MEMORY : "workspaceId"
   MESSAGE |o--o{ CREATIVE_MEMORY : "source.messageId"
+  WORKSPACE ||--o{ PROJECT : "workspaceId"
+  WORKSPACE ||--o{ TASK : "workspaceId"
+  WORKSPACE ||--o{ CONTENT_ITEM : "workspaceId"
+  PROJECT |o--o{ TASK : "projectId (mismo workspace)"
+  PROJECT |o--o{ CONTENT_ITEM : "projectId (mismo workspace)"
+  WORKSPACE ||--o{ CONTENT_PLAN : "workspaceId"
+  CONTENT_PLAN ||--o{ CONTENT_PLAN_ITEM : "contentPlanId (mismo workspace)"
+  PROJECT |o--o{ CONTENT_PLAN_ITEM : "projectId (fuente real)"
+  CONTENT_PLAN_ITEM |o--o| CONTENT_ITEM : "convertedContentItemId"
+  WORKSPACE ||--o{ DAILY_BRIEF : "workspaceId (una versión vigente por día local)"
 ```
 
 ---
@@ -64,6 +74,44 @@ entiende de ella: identidad, perfil profesional, objetivos, audiencia, personali
 identidad creativa, contenido, forma de trabajar, ayuda que espera, preferencias y restricciones.
 Entidad independiente de BrandDNA. Campos, índices, generación y reglas en
 [`PERSONAL.md`](./PERSONAL.md#2-modelos).
+
+## 1d. Project, Task y ContentItem (Operations) ✅
+
+Capa operacional del workspace, **de cualquier tipo** (Personal o Enterprise): `Project`
+(`projects`), `Task` (`tasks`) y `ContentItem` (`content_items`). Los tres llevan `workspaceId`
+requerido y `tenantScoped` por `workspaceId`. Tasks y ContentItems pueden tener un `projectId`, que
+siempre apunta a un Project del **mismo** workspace (lo verifica el servicio). `Project.progress` se
+calcula, no se guarda. `completedAt`, `publishedAt` y `source` los gestiona el servidor. DELETE de un
+proyecto lo archiva. Campos, estados, índices y reglas en [`OPERATIONS.md`](./OPERATIONS.md).
+
+**Shared Workspace Operations (Prompt 12):** Enterprise usa los mismos tres modelos, sin
+`companyId` (el workspace ya conoce su empresa) ni modelos `Enterprise*`. `Project.type` admite
+`general · content · client · creative · study · personal · campaign · branding · product_launch ·
+event · internal · other` (por defecto `general`; solo se añadieron valores, sin migración). Sin
+`campaignId` todavía: llegará con Campaign (opcional, no destructivo). Ver
+[`ENTERPRISE-OPERATIONS.md`](./ENTERPRISE-OPERATIONS.md). Las capacidades por tipo
+(`WorkspaceCapabilities`) se derivan de `workspace.type`: no son una entidad ni un campo.
+
+## 1e. ContentPlan y ContentPlanItem (Content Planner) ✅
+
+`ContentPlan` (`content_plans`) es la estrategia de un periodo (máx. 30 días), con sus pilares, sus
+plataformas y su `personalDnaVersion`. `ContentPlanItem` (`content_plan_items`) es una **propuesta**
+justificada (`rationale`), no una pieza en producción: al aceptarla se crea un ContentItem
+(`source pixel`, `status idea`) y la propuesta queda `converted` con `convertedContentItemId`.
+Ambos son recursos del workspace (`tenantScoped` por `workspaceId`). Generar con Pixel solo está
+disponible en Personal. Detalle en [`CONTENT-PLANNER.md`](./CONTENT-PLANNER.md).
+
+## 1f. DailyBrief (Daily Director) ✅
+
+`DailyBrief` (`daily_briefs`) es la dirección del día de un workspace: resumen, hasta 3
+prioridades, avisos, sugerencia de contenido y bloques de enfoque. Es un resultado **derivado**:
+no se edita; regenerar crea la versión siguiente del día (`{ workspaceId, localDate, version }`
+único) y se devuelve siempre la última. Guarda `contextSnapshotAt` y una huella de conteos para
+marcar `stale`. Es un recurso del workspace (`tenantScoped`, `contextType`), y hoy solo se genera en
+Personal.
+
+`Workspace.timezone` (IANA, opcional; fallback `DEFAULT_TIMEZONE`) define el "hoy". Detalle en
+[`DAILY-DIRECTOR.md`](./DAILY-DIRECTOR.md).
 
 ## 2. Company
 

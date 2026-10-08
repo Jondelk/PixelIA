@@ -19,9 +19,27 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 | 7 | Avatar 3D | ✅ (Coffee Pixel completo; afinar otros sujetos) |
 | 8 | Chat con Pixel | ✅ |
 | W | Arquitectura de Workspaces (Enterprise / Personal) | ✅ |
-| P | Pixel Personal MVP (perfil, ADN, avatar, contexto y chat) | ✅ (Tasks/Projects/Content: Prompt 9+) |
+| P | Pixel Personal MVP (perfil, ADN, avatar, contexto y chat) | ✅ |
+| O | Operations: Projects, Tasks y ContentItems (Prompt 09) | ✅ |
+| C | Content Planner Personal (Prompt 10) | ✅ (Enterprise: después) |
+| D | Daily Director Personal (Prompt 11) | ✅ (Enterprise y acciones: después) |
+| E | Shared Operations + Enterprise Projects (Prompt 12) | ✅ (Campaign Manager: Prompt 13) |
 | 9 | CreativeMemory básica | ⬜ |
 | 10 | Cierre end-to-end del MVP | ⬜ |
+
+### ⏳ Pendiente: requiere `ANTHROPIC_API_KEY` (aún sin configurar)
+
+- [ ] **Content Planner con Claude real**: ejecutar `apps/api/test/contentPlanning.live.test.ts`,
+  revisar `%TEMP%\pixel-content-plan-live.json` y ajustar `PLANNING_SYSTEM` y la validación de
+  fundamento según el resultado. Procedimiento y criterios en `docs/CONTENT-PLANNER.md §10`.
+  Hasta entonces, el planner solo está validado en modo demo.
+- [ ] Ejecutar también `chat.live.test.ts` (chat Enterprise con el modelo real), que tampoco se ha
+  ejecutado en este entorno.
+- [ ] **Daily Director con Claude real**: en local siempre usa el fallback determinístico (`demo`).
+  Hay que probar `DAILY_SYSTEM` con un modelo y revisar `sanitizedFields` y `fallbackReason` en
+  `generation` (`docs/DAILY-DIRECTOR.md §15`).
+
+No bloquea el resto de etapas: todas se desarrollan y se prueban con el proveedor demo.
 
 ---
 
@@ -206,7 +224,120 @@ Ver `docs/PERSONAL.md`.
   chat, prueba conceptual fotógrafa vs streamer, contratos y navegación web.
 - [ ] Editar secciones del ADN desde la web (la API ya lo permite con `PUT personal-dna`).
 - [ ] Memoria creativa personal desde el chat (Etapa 9).
-- [ ] Tasks, Projects, ContentItem, Content Planner y Daily Director (Prompt 9 en adelante).
+- [x] Tasks, Projects y ContentItem (Etapa O). Content Planner y Daily Director: pendientes.
+
+## Etapa O — Operations: Projects, Tasks y ContentItems ✅
+
+Ver `docs/OPERATIONS.md`.
+
+- [x] Contratos: `operations.ts` (prioridad, `source`, primitivas de query), `project.ts`, `task.ts`,
+  `contentItem.ts`, `operationsSummary.ts` (enums, DTOs, create/update `strict`, filtros, respuestas,
+  etiquetas en español).
+- [x] Modelos `Project`, `Task`, `ContentItem` como recursos del workspace (`tenantScoped` por
+  `workspaceId`), con índices compuestos sin redundancias.
+- [x] API CRUD bajo `/api/workspaces/:workspaceId/{projects,tasks,content}` + `operations/summary`,
+  para ambos tipos de workspace (Opción A). `projectId` verificado en el mismo workspace (400 si no).
+  `completedAt`/`publishedAt`/`source` gestionados por el servidor. DELETE de proyecto = archivar.
+- [x] Progreso calculado (completadas / tareas sin canceladas) con dos agregaciones por página.
+- [x] Filtros: estado (lista), prioridad, proyecto, plataforma, formato, búsqueda literal y
+  `due=today|overdue|upcoming` con `tzOffset`. Paginación `limit`/`offset` + `total`.
+- [x] Web (Personal): navegación Inicio · Trabajo · Pixel; Proyectos (filtros, tarjetas, alta en
+  línea), detalle (tareas + contenido), Tareas (Inbox/Hoy/Próximas/Todas/Completadas, Quick Task,
+  completar optimista con deshacer, edición en línea), Contenido (pipeline por pestañas, avanzar
+  etapa), Inicio con contadores y próximos elementos. Carga, error con reintento, vacío y aviso de
+  éxito en todas.
+- [x] Tests: API (CRUD, reglas, filtros, aislamiento A/B con 404, workspaces del mismo dueño,
+  Enterprise, `tenantScoped` con operadores, índices), contracts y web (clientes, lógica, vistas).
+- [x] Interfaz Operations para Enterprise (Etapa E, workspace-first, sin esperar la convergencia).
+- [ ] Content Planner (PersonalDNA + Projects + ContentItems) y Daily Director.
+- [ ] Incluir Operations en el contexto del chat (`getOperationsSummary` ya existe; hoy no se usa ahí).
+- [ ] Calendario de contenido, recordatorios y notificaciones.
+- [ ] Code splitting por ruta en la web (el chunk principal supera 500 kB; el avatar ya va aparte).
+
+## Etapa C — Content Planner Personal ✅
+
+Ver `docs/CONTENT-PLANNER.md`.
+
+- [x] Contratos `contentPlan.ts`: ContentPlan, ContentPlanItem, pilares, ángulos, petición de
+  generación (máx. 30 días), edición, rechazo, respuestas y `GeneratedContentPlanSchema` (salida
+  estructurada de la IA).
+- [x] Modelos `content_plans` y `content_plan_items` (`tenantScoped` por `workspaceId`).
+- [x] `ContentPlanningEngine`: contexto controlado y limitado (ADN, 10 proyectos, 30 contenidos,
+  40 propuestas), AIProvider con salida estructurada y validación de fundamento (datos
+  inventados, plataformas, proyectos, fechas, duplicados, formatos, ángulos).
+- [x] Frecuencia: la petición, el ADN o el fallback de 3 por semana.
+- [x] Plan demo con reglas (solo `AI_PROVIDER=demo`), marcado como demo.
+- [x] API: generate, CRUD (DELETE archiva), editar / aceptar / rechazar propuestas; conversión
+  idempotente a ContentItem (`source pixel`, `idea`); regenerar crea un plan nuevo; Enterprise →
+  `feature_not_available`; sin ADN → 409; IA caída → 503.
+- [x] Web: "Plan de contenido" (lista, formulario, Pixel pensando con el avatar, estrategia, pilares
+  y tarjetas con su porqué; Aceptar / Editar / Rechazar / Recuperar); "Propuesto por Pixel" en
+  Contenido.
+- [x] Tests: engine (personas distintas, proyectos como fuente, no inventar, plataformas,
+  duplicados, fechas, frecuencia, errores), API (conversión, concurrencia, edición, rechazo,
+  regeneración, aislamiento, `tenantScoped`, índices), contracts y web. Test con el modelo real
+  (`contentPlanning.live.test.ts`, se omite sin `ANTHROPIC_API_KEY`).
+- [ ] Ejecutar el test en vivo con el modelo real y ajustar el prompt según los resultados (ver «Pendiente: requiere `ANTHROPIC_API_KEY`» arriba y `docs/CONTENT-PLANNER.md §10`).
+- [ ] Daily Director; uso de las propuestas rechazadas en la memoria creativa; vista de calendario.
+- [ ] Content Planner Enterprise basado en BrandDNA.
+- [ ] Generación en segundo plano si los planes crecen.
+
+## Etapa D — Daily Director Personal ✅
+
+Ver `docs/DAILY-DIRECTOR.md`.
+
+- [x] Contratos `dailyBrief.ts` (DailyBrief, prioridades, avisos, contenido, bloques, hechos,
+  generación, `DailyBriefGenerationSchema`) y `timezone.ts`; `Workspace.timezone` editable.
+- [x] `DEFAULT_TIMEZONE` en la configuración (fallback documentado).
+- [x] DailyDataCollector acotado, PriorityScorer determinístico documentado, ProjectHealth,
+  ContentHealth y personalización por `workStyle` y `supportNeeds`.
+- [x] DailyDirectorEngine:
+  - referencias controladas; una inválida dispara el fallback;
+  - saneamiento de reuniones, horarios, duraciones, cifras y nombres;
+  - lo crítico nunca se omite;
+  - fallback determinístico (`demo`, `ai_unavailable`, `invalid_output`, `no_work`).
+- [x] Persistencia versionada por día, stale (`updatedAt` + huella de conteos), candado contra el
+  doble clic, logs `daily_brief_generation_*` / `daily_brief_fallback_used` y metadata de
+  proveedor, modelo y tokens.
+- [x] API: `GET /daily-brief`, `POST /daily-brief/generate`, `GET /daily-briefs[/:id]`;
+  Enterprise → `feature_not_available`.
+- [x] Inicio Personal: "TU DÍA" con avatar (`thinking` → `idle`), prioridades, avisos, contenido,
+  bloques, stale, actualizar, sin trabajo y propuesta de zona horaria.
+- [x] Chat Personal: la dirección vigente en el contexto ("¿qué hago primero?"), sin acciones.
+- [x] Tests: scorer, fechas en zona horaria, salud, personalización, alucinaciones, referencias
+  inválidas, fallback, persistencia, stale, concurrencia, aislamiento, chat, contratos y web.
+- [ ] Probar `DAILY_SYSTEM` con Claude real (ver «Pendiente: requiere `ANTHROPIC_API_KEY`»).
+- [ ] Acciones con confirmación desde el brief o el chat; Daily Director Enterprise; calendario.
+
+## Etapa E — Shared Operations + Enterprise Projects ✅
+
+Ver `docs/ENTERPRISE-OPERATIONS.md`.
+
+- [x] Capacidades por tipo derivadas en contracts (`capabilities.ts`: `workspaceSupportsFeature`,
+  `workspaceCapabilities`); API (`assertWorkspaceFeature`) y web (`FeatureOnly`, navegación) las
+  usan. Content Planner y Daily Director pasan por el helper (mismo 400 `feature_not_available`).
+- [x] `Project.type` con `campaign`, `branding`, `product_launch`, `event`, `internal` (sin
+  migración) y `PROJECT_TYPES_BY_WORKSPACE` para la UI; por defecto `general`.
+- [x] Project, Task y ContentItem en Enterprise con los mismos modelos, endpoints y servicios (sin
+  `companyId`, sin `campaignId`).
+- [x] Tests de aislamiento entre workspaces del mismo usuario: prueba crítica Personal + TINTO +
+  INVENTIA con "Lanzamiento" en los tres; vínculos cruzados de tareas y contenido → 400; Personal ↔
+  Enterprise; enum; endpoints en ambos tipos; feature gating; legacy.
+- [x] Resumen operacional con `activeContentItems` y `getOperationsStatus` (solo conteos, zona del
+  workspace) sin IA.
+- [x] Web: rutas Enterprise workspace-first (`/workspace/:id/{projects,tasks,content}`,
+  `enterpriseStaysInWorkspace`), navegación Inicio · Trabajo · Marca (`enterpriseNav`), mismas
+  pantallas con `operationsCopy` y tipos por workspace.
+- [x] Inicio Enterprise: "Trabajo de la marca" (contadores y próximos elementos reales) + "Nuevo
+  proyecto".
+- [x] Chat Enterprise: estado operativo de solo conteos, sin nombres; no inventa campañas ni lista
+  tareas (demo: `composeOperationsReply`).
+- [x] Smoke HTTP (TINTO, INVENTIA, Personal) y docs.
+- [ ] Recorrido visual en navegador (sin herramienta de navegador en esta sesión).
+- [ ] Probar el estado operativo del chat Enterprise con Claude real (requiere `ANTHROPIC_API_KEY`).
+- [ ] Mover las pantallas de marca a `/workspace/:workspaceId` (convergencia, `docs/WORKSPACES.md`).
+- [ ] Campaign Manager (Prompt 13): `Campaign` + `campaignId` opcional en Project y ContentItem.
+- [ ] Responsables, aprobaciones, equipo y roles; Content Planner y Daily Director Enterprise.
 
 ## Etapa 9 — CreativeMemory básica
 

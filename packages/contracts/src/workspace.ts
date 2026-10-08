@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { IsoDateSchema, ObjectIdSchema } from './common.js';
 import { CompanySchema } from './company.js';
+import { TimezoneSchema } from './timezone.js';
 
 /*
  * Workspace: el contenedor contextual de Pixel (ver docs/WORKSPACES.md).
@@ -23,6 +24,8 @@ export const WorkspaceSchema = z.object({
   name: z.string(),
   slug: z.string(),
   status: WorkspaceStatusSchema,
+  /** Zona horaria IANA del workspace (null = DEFAULT_TIMEZONE del servidor). Define el "hoy". */
+  timezone: z.string().nullable().default(null),
   createdAt: IsoDateSchema,
   updatedAt: IsoDateSchema,
 });
@@ -45,7 +48,11 @@ export type CreateWorkspaceInput = z.infer<typeof CreateWorkspaceSchema>;
 
 /** PATCH /api/workspaces/:workspaceId. Ni el tipo ni el dueño son editables. */
 export const UpdateWorkspaceSchema = z
-  .object({ name: workspaceName, status: WorkspaceStatusSchema })
+  .object({
+    name: workspaceName,
+    status: WorkspaceStatusSchema,
+    timezone: TimezoneSchema.nullable(),
+  })
   .partial()
   .strict()
   .refine((value) => Object.keys(value).length > 0, 'Envía al menos un campo para actualizar');

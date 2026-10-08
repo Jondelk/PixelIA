@@ -1,4 +1,9 @@
-import type { Conversation, Message, SendMessageResponse } from '@pixel/contracts';
+import {
+  DEFAULT_TIMEZONE,
+  type Conversation,
+  type Message,
+  type SendMessageResponse,
+} from '@pixel/contracts';
 import { Types } from 'mongoose';
 import { AIProviderError, type AIProvider } from '../../ai/index.js';
 import { AppError, notFound } from '../../lib/errors.js';
@@ -29,6 +34,8 @@ export interface ChatDeps {
   ai: AIProvider;
   historyLimit: number;
   logger: Logger;
+  /** Zona horaria por defecto para saber qué es "hoy" (dirección del día en el contexto). */
+  defaultTimezone?: string;
 }
 
 async function findConversation(
@@ -143,6 +150,7 @@ export async function sendMessage(
     history: history.map((message) => ({ role: message.role, content: message.content })),
     userMessage: content,
     historyLimit: deps.historyLimit,
+    defaultTimezone: deps.defaultTimezone ?? DEFAULT_TIMEZONE,
   });
   if (result.status === 'not_configured') {
     throw new AppError(409, 'CONFLICT', result.message, { reason: result.reason });

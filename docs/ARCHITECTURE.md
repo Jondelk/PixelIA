@@ -55,7 +55,7 @@ flowchart TB
 │  │  │  │  └─ errors.ts              # AppError + helpers (notFound, badRequest, ...)
 │  │  │  ├─ db/
 │  │  │  │  ├─ connection.ts          # startDatabase / stopDatabase / getDatabaseStatus
-│  │  │  │  └─ tenantScoped.plugin.ts # exige companyId en queries de modelos de empresa
+│  │  │  │  └─ tenantScoped.plugin.ts # exige workspaceId (o companyId en BrandDNA) concreto en cada consulta
 │  │  │  ├─ middleware/
 │  │  │  │  ├─ requestLogger.ts       # requestId (X-Request-Id) + log por petición
 │  │  │  │  ├─ notFound.ts
@@ -71,7 +71,10 @@ flowchart TB
 │  │  │  │  ├─ brand-dna/         brandDna.model · brandDna.service · brandDna.generator · brandDna.lexicon · brand-dna.routes
 │  │  │  │  ├─ avatars/           avatarProfile.model · avatar.service · avatars.routes · engine/ (interfaz, catálogo, reglas)
 │  │  │  │  ├─ conversations/     conversation.model · message.model · contextBuilder · pixelChat.service · conversations.routes
-│  │  │  │  └─ creative-memory/   creativeMemory.model · creativeMemory.service · creative-memory.routes
+│  │  │  │  ├─ creative-memory/   creativeMemory.model · creativeMemory.service · creative-memory.routes
+│  │  │  │  ├─ operations/        project/task/contentItem.model · projects/tasks/content/summary.service · operations.scope · operations.routes (docs/OPERATIONS.md)
+│  │  │  │  ├─ content-plans/     contentPlan/contentPlanItem.model · contentPlanning.engine · contentPlanning.grounding · contentPlans.service · contentPlans.routes (docs/CONTENT-PLANNER.md)
+│  │  │  │  └─ daily-director/    dailyBrief.model · dailyData.collector · priorityScorer · projectHealth · contentHealth · dailyAnalysis · dailyDirector.engine · dailyFallback · dailyBrief.service · dailyBrief.routes (docs/DAILY-DIRECTOR.md)
 │  │  │  └─ ai/
 │  │  │     ├─ AIProvider.ts           # interfaz
 │  │  │     ├─ structured.ts           # generateObject + validación Zod + 1 reintento
@@ -149,8 +152,12 @@ flowchart TB
    requerida por schema.
 6. **Contexto de IA**: `resolveContextBuilder(workspace.type).build({ workspace, … })` solo lee datos de
    ese workspace. Los prompts nunca incluyen datos de otro workspace; por construcción, ni una
-   inyección de prompt puede exponer información ajena porque no está en el contexto.
-7. **Tests**: aislamiento entre usuarios y entre workspaces del mismo dueño en cada endpoint
+   inyección de prompt puede exponer información ajena porque no está en el contexto. El estado
+   operativo Enterprise (conteos de Operations) se calcula con el mismo `workspaceId`.
+7. **Capacidades**: `assertWorkspaceFeature` (contracts `capabilities.ts`) bloquea con 400
+   `feature_not_available` lo que un tipo de workspace no tiene (Content Planner y Daily Director
+   en Enterprise).
+8. **Tests**: aislamiento entre usuarios y entre workspaces del mismo dueño en cada endpoint
    (lectura y escritura cruzada → 404, sin rastro en la base) y en el contenido del contexto de IA.
 
 ## 5. Capa de IA ✅
@@ -281,6 +288,16 @@ Prefijo `/api`. JSON. Errores con forma `ApiError { code, message, details? }`.
 | GET/PUT | `/workspaces/:workspaceId/personal-profile` | Pixel Personal: perfil y onboarding por pasos (Enterprise → 400) ✅ |
 | GET/PUT | `/workspaces/:workspaceId/personal-dna` | Pixel Personal: ADN vigente y correcciones manuales ✅ |
 | POST | `/workspaces/:workspaceId/personal-dna/generate` | Pixel Personal: (re)genera el ADN desde el onboarding ✅ |
+| CRUD | `/workspaces/:workspaceId/projects[/:projectId]` | Operations: proyectos (cualquier tipo de workspace; DELETE archiva) ✅ |
+| CRUD | `/workspaces/:workspaceId/tasks[/:taskId]` | Operations: tareas (filtros `status`, `priority`, `projectId`, `due`, `search`) ✅ |
+| CRUD | `/workspaces/:workspaceId/content[/:contentItemId]` | Operations: piezas de contenido (filtros `status`, `platform`, `format`, `projectId`, `search`) ✅ |
+| GET | `/workspaces/:workspaceId/operations/summary` | Operations: conteos y próximos elementos del Inicio ✅ |
+| POST | `/workspaces/:workspaceId/content-plans/generate` | Content Planner: Pixel propone estrategia + propuestas (solo Personal; sin ADN → 409) ✅ |
+| CRUD | `/workspaces/:workspaceId/content-plans[/:planId]` | Planes de contenido (DELETE archiva) ✅ |
+| PATCH/POST | `/workspaces/:workspaceId/content-plans/:planId/items/:itemId[/accept · /reject]` | Editar, aceptar (→ ContentItem, idempotente) o rechazar una propuesta ✅ |
+| GET | `/workspaces/:workspaceId/daily-brief` | Daily Director: dirección vigente de hoy + `stale` (404 `daily_brief_not_generated`) ✅ |
+| POST | `/workspaces/:workspaceId/daily-brief/generate` | Genera o regenera la dirección del día (IA o determinística) ✅ |
+| GET | `/workspaces/:workspaceId/daily-briefs[/:briefId]` | Historial de direcciones ✅ |
 | GET | `/companies` | Empresas del usuario (legacy) |
 | POST | `/companies` | Crear empresa: crea también su workspace enterprise |
 | GET | `/companies/:companyId` | Empresa + estado del análisis |
@@ -374,7 +391,7 @@ Los tests de integración de la API arrancan un MongoDB efímero una vez por eje
 (`apps/api/test/support/globalSetup.ts`), con una base de datos distinta por archivo. La primera vez
 `mongodb-memory-server` descarga el binario de MongoDB (~100 MB). Alternativas: `MONGODB_URI_TEST`
 (un MongoDB existente) o `MONGOMS_SYSTEM_BINARY` (un `mongod` ya instalado).
-| Web | Vitest | `profileToScene`, cliente API, validación de formularios |
+| Web | Vitest (entorno `node`) | `profileToScene`, clientes API (con `fetch` simulado), formularios, navegación y vistas renderizadas con `react-dom/server` (sin jsdom ni Testing Library) |
 | E2E | Manual guiado (checklist) en 0.1 | Recorrido completo con `AI_PROVIDER=mock` |
 
 ## 12. Riesgos y mitigaciones
@@ -403,3 +420,18 @@ Los tests de integración de la API arrancan un MongoDB efímero una vez por eje
 | 6 | Jobs en proceso + polling | Evita colas/infra extra en 0.1 |
 | 7 | Respuestas de chat sin streaming | Menos complejidad; streaming (SSE) en backlog |
 | 8 | Sin librería de estado/servidor en web (fetch + hooks + context) | Evitar dependencias no necesarias; reevaluar si crece |
+| 9 | Operations (Projects, Tasks, ContentItems) como recursos del workspace, API para ambos tipos (Opción A) y UI solo Personal | Reutilizable en Enterprise sin duplicar modelos; `workspaceId` es la única frontera |
+| 10 | `DELETE` de un proyecto = archivar; tareas y contenido se borran de verdad | Un proyecto tiene hijos (sin cascadas ni huérfanos); los recursos hoja se conservan con `cancelled`/`archived` si se quiere |
+| 11 | `Project.progress` calculado en cada respuesta (2 agregaciones por página) | Nunca inconsistente ni manipulable por el cliente |
+| 12 | Filtros "hoy/vencidas/próximas" con `tzOffset` del navegador por petición | Día local correcto sin guardar preferencias de zona horaria |
+| 13 | ContentPlanItem separado de ContentItem; conversión explícita e idempotente (reserva atómica) | Planificar ≠ producir; nunca duplicados |
+| 14 | Validación de fundamento posterior a la IA (cifras, nombres propios, afirmaciones sobre la audiencia) que descarta propuestas | Pixel no inventa datos personales; se cuenta lo descartado |
+| 15 | Plan demo con reglas solo en `AI_PROVIDER=demo`; con un proveedor real caído → 503 sin plan | Desarrollo y tests sin clave, sin calendarios falsos con un modelo real |
+| 16 | Daily Director: PriorityScorer determinístico + IA que interpreta refs controladas (TASK_1…); avisos 100 % del backend | El backend controla los hechos; la IA no puede inventar ids, tareas ni urgencias |
+| 17 | Daily Director con fallback determinístico (a diferencia del Content Planner) | Un orden útil del día no requiere creatividad; nunca dejar el Inicio vacío |
+| 18 | `Workspace.timezone` IANA explícito + `DEFAULT_TIMEZONE` | "Hoy" correcto sin inferir de texto libre ni usar UTC |
+| 19 | DailyBrief persistido y versionado por día; GET nunca regenera, solo marca `stale` | Coste de IA controlado e historial para memoria futura |
+| 20 | Shared Workspace Operations: Enterprise reutiliza Project, Task y ContentItem (mismos endpoints, servicios y pantallas), sin `companyId` | Una sola frontera de tenant (`workspaceId`); sin modelos `Enterprise*` duplicados |
+| 21 | Capacidades por tipo derivadas en contracts (`workspaceSupportsFeature`), nunca persistidas | Un solo punto de feature gating para API y web; sin `if (type === …)` dispersos |
+| 22 | Funcionalidades nuevas workspace-first; Enterprise deja en `/workspace/:id` solo las rutas que admite y redirige el resto a `/company/:id` | Converger por pantallas sin reescribir Enterprise de golpe |
+| 23 | Chat Enterprise con estado operativo de solo conteos (sin nombres ni listas) | Respuestas conscientes del trabajo sin inflar el prompt ni invitar a inventar proyectos o campañas |

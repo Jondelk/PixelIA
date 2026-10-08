@@ -1,3 +1,4 @@
+import { DEFAULT_TIMEZONE, isValidTimezone } from '@pixel/contracts';
 import { z } from 'zod';
 
 export const SERVICE_NAME = 'pixel-api';
@@ -34,6 +35,11 @@ const EnvSchema = z
     ANTHROPIC_API_KEY: z.string().optional(),
     /** Mensajes previos que entran al contexto del chat. */
     CHAT_HISTORY_LIMIT: z.coerce.number().int().min(0).max(100).default(20),
+    /** "Hoy" de los workspaces sin zona horaria propia (Daily Director). IANA. */
+    DEFAULT_TIMEZONE: z
+      .string()
+      .refine(isValidTimezone, 'Usa una zona horaria IANA, p. ej. America/Bogota')
+      .default(DEFAULT_TIMEZONE),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV === 'production' && !env.JWT_SECRET) {

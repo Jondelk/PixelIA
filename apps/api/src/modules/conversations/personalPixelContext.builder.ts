@@ -6,6 +6,7 @@ import {
   type PersonalDna,
 } from '@pixel/contracts';
 import { renderPersonalBrief, type CreativeLever, type PersonalBrief } from '../../ai/brief.js';
+import { renderDailyBriefContext, type DailyBriefContext } from '../../ai/dailyBriefContext.js';
 import {
   DEFAULT_LIMITS,
   detectFocus,
@@ -28,6 +29,8 @@ export interface PersonalPixelContextInput {
   avatar: AvatarProfile | null;
   /** Memorias creativas activas del workspace (más recientes primero). */
   memories?: string[];
+  /** Dirección del día vigente (solo la de hoy, acotada). */
+  dailyBrief?: DailyBriefContext | null;
   history: HistoryMessage[];
   userMessage: string;
   limits?: Partial<ContextLimits>;
@@ -170,6 +173,16 @@ function personalFocus(message: string): string[] {
 const list = (items: string[], limits: ContextLimits) =>
   items.slice(0, limits.listItems).map((item) => truncate(item, limits.itemChars));
 
+/** Sección de la dirección del día: para "¿qué hago ahora?", "¿qué es urgente?"… */
+function renderDailySection(daily: DailyBriefContext): string {
+  const priorities = daily.priorities
+    .map((priority, index) => `${index + 1}. ${priority.title}: ${priority.rationale}`)
+    .join('\n');
+  return `Dirección de hoy (${daily.localDate}, Daily Director)${daily.stale ? ' — ATENCIÓN: su trabajo cambió desde entonces; puede estar desactualizada, dilo si es relevante y sugiere «Actualizar dirección» en Inicio' : ''}:
+${daily.summary}${priorities ? `\nPrioridades:\n${priorities}` : ''}${daily.warnings.length ? `\nRequiere atención:\n${daily.warnings.map((warning) => `- ${warning}`).join('\n')}` : ''}${daily.content ? `\nContenido sugerido: ${daily.content}` : ''}
+Si pregunta qué hacer ahora, qué es urgente o qué está dejando atrás, responde desde esta dirección. No puedes marcar tareas como hechas ni modificar nada: si te lo pide, dile que lo haga desde Tareas.`;
+}
+
 export function buildPersonalPixelContext(
   input: PersonalPixelContextInput,
 ): PixelContext<PersonalBrief> {
@@ -293,8 +306,9 @@ Ejemplo de criterio (persona ficticia, solo para ilustrar la diferencia):
 Palancas creativas para ${name} (puntos de partida; elige, combina o descarta según la petición):
 ${levers || '- Aún no hay suficiente información: propone desde sus objetivos y pregunta lo imprescindible.'}
 ${brief.avatar ? `\nSu personaje, ${brief.avatar.name}: ${brief.avatar.concept} Úsalo si ayuda a la idea.\n` : ''}${memories.length ? `\nLo que ya decidieron juntos (memoria creativa; respétalo):\n${memories.map((memory) => `- ${memory}`).join('\n')}\n` : ''}
+${input.dailyBrief ? `${renderDailySection(input.dailyBrief)}\n` : ''}
 Contexto personal (referencia para razonar; no lo cites literalmente):
-${renderPersonalBrief(brief)}`;
+${renderPersonalBrief(brief)}${input.dailyBrief ? `\n${renderDailyBriefContext(input.dailyBrief)}` : ''}`;
 
   const history = trimHistory(input.history, limits);
   return {

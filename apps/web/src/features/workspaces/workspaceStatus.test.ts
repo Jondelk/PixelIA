@@ -10,6 +10,7 @@ const workspace = (overrides: Partial<Workspace> = {}): Workspace => ({
   name: 'TINTO',
   slug: 'tinto',
   status: 'active',
+  timezone: null,
   createdAt: now,
   updatedAt: now,
   ...overrides,

@@ -9,10 +9,11 @@ Pixel es un **Director Creativo asistido por IA**. Tiene dos modos sobre un mism
 - **Pixel Enterprise** (MVP funcional): el director creativo de una marca. Cada empresa tiene **su
   propio Pixel**: el sistema estudia el ADN de la marca y lo convierte en conocimiento estructurado,
   personalidad, estilo de comunicación, criterio creativo, dirección visual, comportamiento y un
-  **avatar 3D único**.
+  **avatar 3D único**. Organiza el trabajo de la marca con las Operations compartidas
+  (`docs/ENTERPRISE-OPERATIONS.md`); Campaign Manager llegará encima (no construirlo sin pedirlo).
 - **Pixel Personal** (MVP funcional): el Director Creativo Personal de una persona. Onboarding de 8
   pasos → `PersonalProfile` → `PersonalDNA` → avatar personal → chat con ese ADN
-  (`docs/PERSONAL.md`). Tareas, proyectos y contenido llegarán después (no construirlos sin pedirlo).
+  (`docs/PERSONAL.md`), más Operations, Content Planner y Daily Director.
 
 Cada Pixel vive en un **Workspace** (`docs/WORKSPACES.md`).
 
@@ -29,6 +30,10 @@ Documentación de referencia (leer antes de trabajar):
 - `docs/WORKSPACES.md` — Workspace como frontera contextual, Enterprise vs Personal, rutas y convergencia.
 - `docs/WORKSPACE-MIGRATION.md` — migración Company → Workspace, script, verificación y rollback.
 - `docs/PERSONAL.md` — Pixel Personal: modelos, onboarding, PersonalDNA, avatar personal, contexto, rutas.
+- `docs/OPERATIONS.md` — Shared Workspace Operations: Projects, Tasks y ContentItems de cualquier workspace.
+- `docs/ENTERPRISE-OPERATIONS.md` — Operations en Enterprise: feature gating, aislamiento, Inicio, chat y preparación para Campaign Manager.
+- `docs/CONTENT-PLANNER.md` — ContentPlan, ContentPlanItem, ContentPlanningEngine y conversión a ContentItem.
+- `docs/DAILY-DIRECTOR.md` — DailyBrief, PriorityScorer, salud de proyectos y contenido, fallback, stale y zona horaria.
 
 ## Objetivo del MVP 0.1
 
@@ -73,8 +78,21 @@ Modelo estructural:
 ```
 User → Workspace ─┬─ enterprise → Company → BrandDNA
                   ├─ personal   → PersonalProfile → PersonalDNA
-                  └─ recursos compartidos: AvatarProfile · Conversation (→ Message) · CreativeMemory
+                  ├─ recursos compartidos: AvatarProfile · Conversation (→ Message) · CreativeMemory
+                  ├─ operations: Project (→ Task, ContentItem) · Task · ContentItem
+                  ├─ content planner: ContentPlan → ContentPlanItem (→ ContentItem al aceptar)
+                  └─ daily director: DailyBrief (versión del día; solo lee Operations, nunca modifica)
 ```
+
+Operations (Project, Task, ContentItem) son recursos del **workspace**, de cualquier tipo: aislados
+por `workspaceId` (nunca por `personalProfileId` ni `companyId`). Un `projectId` siempre apunta a un
+Project del mismo workspace. Personal y Enterprise usan los mismos modelos, endpoints y pantallas
+(Shared Workspace Operations, `docs/OPERATIONS.md`); nunca crear `Enterprise*` duplicados.
+
+Qué funcionalidad existe en cada tipo se decide **solo** con las capacidades de contracts
+(`workspaceSupportsFeature(type, feature)`, `capabilities.ts`): API con `assertWorkspaceFeature`
+(400 `feature_not_available`), web con `FeatureOnly` y la navegación. No dispersar
+`if (workspace.type === …)` para gating; no persistir capacidades.
 
 ## Principios arquitectónicos (no negociables)
 
@@ -101,7 +119,8 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
      `workspace_type_mismatch`; tipo correcto pero sin configurar (sin ADN, sin empresa) → **409**.
 2. **Never mix information between workspaces.** El contexto que se envía a la IA se construye
    exclusivamente con datos del workspace activo, con una estrategia por tipo:
-   `EnterpriseContextBuilder` (Company → BrandDNA → AvatarProfile → CreativeMemory) y
+   `EnterpriseContextBuilder` (Company → BrandDNA → AvatarProfile → CreativeMemory → estado
+   operativo con solo conteos, nunca nombres ni listas) y
    `PersonalContextBuilder` (PersonalProfile → PersonalDNA → AvatarProfile → CreativeMemory; sin
    PersonalDNA → `personal_context_not_configured`, nunca datos inventados).
    Hay tests que verifican que dos workspaces del mismo dueño no se mezclan.
@@ -131,16 +150,19 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
 - ESM en todo el monorepo (`"type": "module"`).
 - Validar en los bordes: env vars, requests HTTP, respuestas de la IA, datos de formularios.
 - Backend organizado por módulos de dominio en `apps/api/src/modules/` (`auth`, `workspaces`, `companies`,
-  `brand-dna`, `personal`, `avatars`, `conversations`, `creative-memory`), cada uno con `*.model`,
-  `*.service` y `*.routes`.
+  `brand-dna`, `personal`, `avatars`, `conversations`, `creative-memory`, `operations`, `content-plans`, `daily-director`), cada uno con
+  `*.model`, `*.service` y `*.routes`.
   Los módulos se registran solo en `modules/index.ts`.
 - Frontend organizado por features (`src/features/<feature>/`); shell y router en `src/app/`.
   El renderer 3D (`src/features/avatar3d/`) solo recibe un `AvatarProfile`: nunca contiene reglas
   de negocio (esas viven en la API). Traducción visual en `profileToScene`, poses en `poseAt`.
-  Entrada de cada Pixel: `/workspace/:workspaceId/...` (Personal vive aquí: Inicio, `personal/onboarding`,
-  `personal/dna`, `pixel`, `chat`). Las pantallas Enterprise siguen en `/company/:companyId/...` (el
-  workspace enterprise redirige allí) hasta converger; ver `docs/WORKSPACES.md`. Pixel Core compartido
-  en la web: `ChatStudio`, `PixelStudio`, `WizardLayout`, `DnaBlocks` (no duplicar por tipo).
+  Entrada de cada Pixel: `/workspace/:workspaceId/...` (Personal vive aquí: Inicio, `projects`,
+  `tasks`, `content`, `content-planner`, `personal/onboarding`, `personal/dna`, `pixel`, `chat`).
+  **Toda funcionalidad nueva es workspace-first**, también en Enterprise: sus Operations viven en
+  `/workspace/:workspaceId/{projects,tasks,content}` (`enterpriseStaysInWorkspace`); las pantallas de
+  marca anteriores siguen en `/company/:companyId/...` (el workspace enterprise redirige allí) hasta
+  converger; ver `docs/WORKSPACES.md`. Pixel Core compartido en la web: `ChatStudio`, `PixelStudio`,
+  `WizardLayout`, `DnaBlocks` y las pantallas de Operations con `operationsCopy` (no duplicar por tipo).
 - Errores HTTP: lanzar `AppError` (o helpers de `lib/errors.ts`); el `errorHandler` central responde
   con la forma `ApiError` de contracts. Logs con `lib/logger.ts`, nunca `console.log`.
 - Nombres de código en inglés; textos de producto/UI y documentación en español.

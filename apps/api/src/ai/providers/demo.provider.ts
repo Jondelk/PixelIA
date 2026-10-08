@@ -11,7 +11,19 @@ import {
   type CreativeLever,
   type PersonalBrief,
 } from '../brief.js';
+import { extractPlanningPayload, PLANNING_SCHEMA_NAME } from '../contentPlanningPayload.js';
+import {
+  DAILY_QUESTION,
+  extractDailyBriefContext,
+  type DailyBriefContext,
+} from '../dailyBriefContext.js';
 import { AIProviderError } from '../errors.js';
+import {
+  extractOperationsStatusContext,
+  OPERATIONS_QUESTION,
+  type OperationsStatusContext,
+} from '../operationsStatusContext.js';
+import { composeDemoContentPlan } from './demoContentPlan.js';
 
 /**
  * Proveedor local sin IA, para desarrollo sin credenciales y para tests deterministas.
@@ -214,6 +226,62 @@ export function composePersonalReply(brief: PersonalBrief, request: string): str
   return lines.join('\n').trim();
 }
 
+/** "¿Qué hago ahora?": responde desde la dirección del día (solo hechos que ya contiene). */
+export function composeDailyReply(daily: DailyBriefContext): string {
+  const lines = [daily.summary];
+  if (daily.priorities.length) {
+    lines.push('', '**Por dónde empezaría**');
+    daily.priorities.forEach((priority, index) =>
+      lines.push(`- ${index + 1}. ${priority.title}: ${lower(priority.rationale)}`),
+    );
+  }
+  if (daily.warnings.length) {
+    lines.push(
+      '',
+      '**Lo que se está quedando atrás**',
+      ...daily.warnings.map((warning) => `- ${warning}`),
+    );
+  }
+  if (daily.content) lines.push('', `**Contenido**: ${daily.content}.`);
+  if (daily.stale) {
+    lines.push(
+      '',
+      'Ojo: tu trabajo cambió desde esta dirección. Actualízala en Inicio para verla al día.',
+    );
+  }
+  lines.push(
+    '',
+    'No puedo marcar tareas como hechas desde aquí: hazlo en Tareas y actualiza la dirección.',
+  );
+  return lines.join('\n');
+}
+
+const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
+
+/**
+ * "¿Cómo vamos?" en Enterprise: responde SOLO con los conteos del estado operativo. No nombra
+ * proyectos, campañas ni tareas (no los conoce) y lo dice en lugar de inventarlos.
+ */
+export function composeOperationsReply(brand: string, ops: OperationsStatusContext): string {
+  const empty = ops.activeProjects + ops.openTasks + ops.activeContentItems === 0;
+  const lines = empty
+    ? [
+        `Todavía no veo trabajo registrado para ${brand}: no hay proyectos activos, tareas pendientes ni contenido en curso.`,
+      ]
+    : [
+        `Así está el trabajo de ${brand} ahora mismo:`,
+        '',
+        `- ${plural(ops.activeProjects, 'proyecto activo', 'proyectos activos')}`,
+        `- ${plural(ops.openTasks, 'tarea pendiente', 'tareas pendientes')}${ops.overdueTasks ? ` (${ops.overdueTasks} vencidas)` : ''}`,
+        `- ${plural(ops.activeContentItems, 'pieza de contenido en curso', 'piezas de contenido en curso')}`,
+      ];
+  lines.push(
+    '',
+    'Desde el chat solo veo estos conteos, no el detalle de cada proyecto o tarea: para eso, abre Proyectos, Tareas o Contenido.',
+  );
+  return lines.join('\n');
+}
+
 export class DemoProvider implements AIProvider {
   readonly name = 'demo';
   readonly model = 'pixel-demo-1';
@@ -234,17 +302,37 @@ export class DemoProvider implements AIProvider {
       [...input.messages].reverse().find((turn) => turn.role === 'user')?.content ?? '';
     const personal = extractPersonalBrief(input.system);
     const brief = personal ? null : extractBrief(input.system);
-    const text = personal
-      ? composePersonalReply(personal, request)
-      : brief
-        ? composeCreativeReply(brief, request)
-        : 'Estoy en modo demo y no tengo contexto para responder a eso.';
+    const daily =
+      personal && DAILY_QUESTION.test(request) ? extractDailyBriefContext(input.system) : null;
+    const operations =
+      brief && OPERATIONS_QUESTION.test(request)
+        ? extractOperationsStatusContext(input.system)
+        : null;
+    const text = daily
+      ? composeDailyReply(daily)
+      : brief && operations
+        ? composeOperationsReply(brief.brand, operations)
+        : personal
+          ? composePersonalReply(personal, request)
+          : brief
+            ? composeCreativeReply(brief, request)
+            : 'Estoy en modo demo y no tengo contexto para responder a eso.';
     return { text, ...this.meta(start) };
   }
 
+  /**
+   * Solo el plan de contenido tiene versión demo (compuesta con reglas a partir del contexto real,
+   * marcada `mode: demo`). Cualquier otra salida estructurada exige un modelo real.
+   */
   async generateStructuredOutput<T>(
     input: GenerateStructuredInput<T>,
   ): Promise<{ data: T } & AIResultMeta> {
+    const start = Date.now();
+    const payload =
+      input.schemaName === PLANNING_SCHEMA_NAME ? extractPlanningPayload(input.prompt) : null;
+    if (payload) {
+      return { data: input.schema.parse(composeDemoContentPlan(payload)), ...this.meta(start) };
+    }
     throw new AIProviderError(
       'misconfigured',
       `El proveedor demo no genera salidas estructuradas (${input.schemaName}); configura un proveedor de IA`,

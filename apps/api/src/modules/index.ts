@@ -14,16 +14,27 @@ import { createAvatarsRouter } from './avatars/avatars.routes.js';
 import type { AvatarConceptEngine, PersonalAvatarConceptEngine } from './avatars/engine/index.js';
 import { brandDnaRouter } from './brand-dna/brand-dna.routes.js';
 import { companiesRouter, companyRouter } from './companies/companies.routes.js';
+import { createContentPlansRouter } from './content-plans/contentPlans.routes.js';
+import { createDailyBriefRouter } from './daily-director/dailyBrief.routes.js';
+import type { DailyDirectorEngine } from './daily-director/dailyDirector.engine.js';
+import type { ContentPlanningEngine } from './content-plans/contentPlanning.engine.js';
 import { createConversationsRouter } from './conversations/conversations.routes.js';
 import type { ChatDeps } from './conversations/chat.service.js';
 import { creativeMemoryRouter } from './creative-memory/creative-memory.routes.js';
 import { createHealthRouter } from './health/health.routes.js';
+import {
+  contentRouter,
+  operationsRouter,
+  projectsRouter,
+  tasksRouter,
+} from './operations/operations.routes.js';
 import type { PersonalDnaGenerator } from './personal/personalDna.generator.js';
 import {
   createPersonalDnaRouter,
   createPersonalProfileRouter,
 } from './personal/personal.routes.js';
 import { workspaceRouter, workspacesRouter } from './workspaces/workspaces.routes.js';
+import type { Logger } from '../lib/logger.js';
 
 export interface ApiDependencies {
   getDatabaseStatus: () => DatabaseStatus;
@@ -33,6 +44,10 @@ export interface ApiDependencies {
   personalAvatarEngine: PersonalAvatarConceptEngine;
   chat: ChatDeps;
   personalDnaGenerator: PersonalDnaGenerator;
+  planningEngine: ContentPlanningEngine;
+  dailyDirector: DailyDirectorEngine;
+  defaultTimezone: string;
+  logger: Logger;
 }
 
 /**
@@ -63,6 +78,13 @@ export function createApiRouter(deps: ApiDependencies): Router {
   workspace.use('/conversations', createConversationsRouter(deps.chat));
   workspace.use('/personal-profile', requirePersonalWorkspace, createPersonalProfileRouter(deps));
   workspace.use('/personal-dna', requirePersonalWorkspace, createPersonalDnaRouter(deps));
+  // Operations: recursos compartidos de cualquier tipo de workspace (aislados por workspaceId).
+  workspace.use('/projects', projectsRouter);
+  workspace.use('/tasks', tasksRouter);
+  workspace.use('/content', contentRouter);
+  workspace.use('/operations', operationsRouter);
+  workspace.use('/content-plans', createContentPlansRouter(deps));
+  workspace.use('/', createDailyBriefRouter(deps));
   api.use('/workspaces/:workspaceId', workspace);
 
   api.use('/companies', requireAuth(deps.session));
