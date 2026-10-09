@@ -1,243 +1,224 @@
 # CLAUDE.md — Pixel
 
-Guía obligatoria para cualquier sesión de trabajo (humana o IA) en este repositorio.
+Reglas permanentes para cualquier sesión de trabajo (humana o IA) en este repositorio.
+**Estado real, última etapa y siguiente paso: [`docs/PIXEL_ESTADO.md`](docs/PIXEL_ESTADO.md). Léelo primero.**
+
+## Al empezar cada sesión
+
+1. Lee `docs/PIXEL_ESTADO.md` y contrástalo con `git status`, `git log --oneline -5` y `git fetch`.
+   Si no coincide con el código, manda el código: corrige el documento.
+2. Un prompt puede dar por hecho algo que no está en la rama actual (p. ej. trabajo hecho en otro
+   equipo y aún sin subir). Verifícalo en el código antes de construir encima y avisa si falta un
+   prerrequisito.
+3. "Prompt N" ≠ "Etapa N" del backlog. Indica siempre a cuál te refieres.
 
 ## Qué es Pixel
 
-Pixel es un **Director Creativo asistido por IA**. Tiene dos modos sobre un mismo núcleo (Pixel Core):
+Director Creativo asistido por IA. Producto de **PIXELES — Tecnología creativa y entretenimiento**
+("Creamos mundos"). Tiene un núcleo (Pixel Core) y dos modos; cada Pixel vive en un **Workspace**.
 
-- **Pixel Enterprise** (MVP funcional): el director creativo de una marca. Cada empresa tiene **su
-  propio Pixel**: el sistema estudia el ADN de la marca y lo convierte en conocimiento estructurado,
-  personalidad, estilo de comunicación, criterio creativo, dirección visual, comportamiento y un
-  **avatar 3D único**. Organiza el trabajo de la marca con las Operations compartidas
-  (`docs/ENTERPRISE-OPERATIONS.md`); Campaign Manager llegará encima (no construirlo sin pedirlo).
-- **Pixel Personal** (MVP funcional): el Director Creativo Personal de una persona. Onboarding de 8
-  pasos → `PersonalProfile` → `PersonalDNA` → avatar personal → chat con ese ADN
-  (`docs/PERSONAL.md`), más Operations, Content Planner y Daily Director.
+- **Enterprise:** el director creativo de una marca. Cada empresa tiene su propio Pixel: estudia el
+  ADN de la marca y lo convierte en conocimiento estructurado, personalidad, estilo de comunicación,
+  criterio creativo, dirección visual, comportamiento y un avatar 3D único. Flujo: empresa →
+  onboarding de marca (8 pasos) → `BrandDNA` → avatar 3D → chat con el ADN de **esa** empresa.
+  Organiza el trabajo de la marca con las Operations compartidas (`docs/ENTERPRISE-OPERATIONS.md`);
+  Campaign Manager llegará encima (no construirlo sin pedirlo).
+- **Personal:** el director creativo de una persona. Onboarding personal (8 pasos) → `PersonalDNA`
+  → "Así te entiende Pixel" → avatar personal → chat (`docs/PERSONAL.md`), más Operations, Content
+  Planner y Daily Director.
 
-Cada Pixel vive en un **Workspace** (`docs/WORKSPACES.md`).
+El avatar **nunca** es una mascota aleatoria: es una consecuencia trazable del ADN. Ejemplos: café
+artesanal → grano de café cálido; startup → forma geométrica precisa; constructora → personaje
+estructural.
 
-El avatar **nunca** es una mascota aleatoria: es una **consecuencia trazable del ADN de la marca**
-(ej. café artesanal colombiano → grano de café antropomórfico cálido; startup tecnológica →
-forma geométrica precisa; constructora → personaje sólido y estructural).
+**Fuera de alcance hasta que se pida explícitamente:** generación automática avanzada de modelos 3D
+(el avatar es paramétrico/procedural), generación de video, lip-sync avanzado (la animación
+`speaking` actual no lo es), voz en tiempo real, campañas automáticas completas, facturación, planes
+SaaS, panel administrativo complejo y analytics avanzados.
 
-Documentación de referencia (leer antes de trabajar):
+Referencia (leer lo relevante antes de trabajar): `docs/WORKSPACES.md`, `docs/PERSONAL.md`,
+`docs/WORKSPACE-MIGRATION.md`, `docs/OPERATIONS.md`, `docs/ENTERPRISE-OPERATIONS.md`,
+`docs/CONTENT-PLANNER.md` y `docs/DAILY-DIRECTOR.md` describen el diseño vigente; `docs/MVP.md`,
+`docs/ARCHITECTURE.md`, `docs/ENTITIES.md` y `docs/BACKLOG.md` tienen deriva importante (detalle en
+`PIXEL_ESTADO.md` §12). Ante un conflicto, manda el código.
 
-- `docs/MVP.md` — alcance, flujo completo y criterios de éxito del MVP 0.1.
-- `docs/ARCHITECTURE.md` — arquitectura, capa de IA, API, seguridad, decisiones.
-- `docs/ENTITIES.md` — entidades, campos, índices y reglas de aislamiento.
-- `docs/BACKLOG.md` — backlog técnico por etapas y estado.
-- `docs/WORKSPACES.md` — Workspace como frontera contextual, Enterprise vs Personal, rutas y convergencia.
-- `docs/WORKSPACE-MIGRATION.md` — migración Company → Workspace, script, verificación y rollback.
-- `docs/PERSONAL.md` — Pixel Personal: modelos, onboarding, PersonalDNA, avatar personal, contexto, rutas.
-- `docs/OPERATIONS.md` — Shared Workspace Operations: Projects, Tasks y ContentItems de cualquier workspace.
-- `docs/ENTERPRISE-OPERATIONS.md` — Operations en Enterprise: feature gating, aislamiento, Inicio, chat y preparación para Campaign Manager.
-- `docs/CONTENT-PLANNER.md` — ContentPlan, ContentPlanItem, ContentPlanningEngine y conversión a ContentItem.
-- `docs/DAILY-DIRECTOR.md` — DailyBrief, PriorityScorer, salud de proyectos y contenido, fallback, stale y zona horaria.
+## Stack (no añadir tecnologías sin justificarlo y pedir aprobación)
 
-## Objetivo del MVP 0.1
-
-Recorrido de punta a punta:
-
-```
-registro/login → crea empresa (y su workspace enterprise) → onboarding de marca → Pixel analiza
-→ genera BrandDNA → genera AvatarProfile → renderiza avatar 3D
-→ usuario abre chat → Pixel responde usando el ADN de ESA empresa
-```
-
-Además, Pixel Personal: login → "Nuevo Pixel" → Personal → onboarding personal → PersonalDNA
-→ "Así te entiende Pixel" → avatar personal → chat con el PersonalDNA.
-
-### Fuera de alcance (NO construir hasta que se pida explícitamente)
-
-- Generación automática avanzada de modelos 3D (el avatar es paramétrico/procedural).
-- Generación de video, lip-sync avanzado, voz en tiempo real.
-- Campañas automáticas completas.
-- Facturación, planes SaaS, panel administrativo complejo, analytics avanzados.
-
-## Stack (no añadir tecnologías fuera de esta lista sin justificarlo y pedir aprobación)
-
-- **Frontend** (`apps/web`): React, Vite, TypeScript, Tailwind CSS, React Three Fiber, Drei.
-- **Backend** (`apps/api`): Node.js, Express, TypeScript, MongoDB, Mongoose, Zod.
-- **Compartido** (`packages/contracts`): tipos, schemas Zod y contratos de API.
-- **Tooling**: npm workspaces, ESLint (flat config + typescript-eslint), Prettier, Vitest.
-
-## Estructura
-
-```
-/apps
-  /web          React + Vite + R3F
-  /api          Express + Mongoose
-/packages
-  /contracts    Schemas Zod + tipos compartidos (sin dependencias de Mongoose ni React)
-/docs           Documentación del producto y la arquitectura
-```
-
-Modelo estructural:
+- `apps/web`: React, Vite, TypeScript, Tailwind CSS, React Three Fiber, Drei.
+- `apps/api`: Node.js, Express, TypeScript, MongoDB, Mongoose, Zod.
+- `packages/contracts`: schemas Zod y tipos compartidos, sin Mongoose ni React. Se consume compilado (`dist/`).
+- Tooling: npm workspaces, ESLint (flat config + typescript-eslint), Prettier, Vitest.
 
 ```
 User → Workspace ─┬─ enterprise → Company → BrandDNA
                   ├─ personal   → PersonalProfile → PersonalDNA
-                  ├─ recursos compartidos: AvatarProfile · Conversation (→ Message) · CreativeMemory
+                  ├─ compartidos: AvatarProfile · Conversation (→ Message) · CreativeMemory
                   ├─ operations: Project (→ Task, ContentItem) · Task · ContentItem
                   ├─ content planner: ContentPlan → ContentPlanItem (→ ContentItem al aceptar)
                   └─ daily director: DailyBrief (versión del día; solo lee Operations, nunca modifica)
 ```
 
-Operations (Project, Task, ContentItem) son recursos del **workspace**, de cualquier tipo: aislados
-por `workspaceId` (nunca por `personalProfileId` ni `companyId`). Un `projectId` siempre apunta a un
-Project del mismo workspace. Personal y Enterprise usan los mismos modelos, endpoints y pantallas
-(Shared Workspace Operations, `docs/OPERATIONS.md`); nunca crear `Enterprise*` duplicados.
+## Principios (no negociables)
 
-Qué funcionalidad existe en cada tipo se decide **solo** con las capacidades de contracts
-(`workspaceSupportsFeature(type, feature)`, `capabilities.ts`): API con `assertWorkspaceFeature`
-(400 `feature_not_available`), web con `FeatureOnly` y la navegación. No dispersar
-`if (workspace.type === …)` para gating; no persistir capacidades.
-
-## Principios arquitectónicos (no negociables)
-
-1. **Workspace is the main contextual boundary of Pixel.** El workspace es la frontera de aislamiento.
-   - Un usuario tiene N workspaces (`enterprise` | `personal`). Enterprise: 1 workspace = 1 Company.
-     Personal: uno por usuario.
-   - Los recursos compartidos (AvatarProfile, Conversation, Message, CreativeMemory) y los de Pixel
-     Personal (PersonalProfile, PersonalDNA) llevan `workspaceId` obligatorio e indexado. Los datos
-     propios de una empresa (BrandDNA) siguen aislados por `companyId`, y la empresa pertenece a su
-     workspace (`Company.workspaceId`).
-   - Toda consulta a un modelo aislado filtra por su clave con un valor concreto. Nunca buscar solo
-     por `_id`: usar `{ _id, workspaceId }` (o `{ _id, companyId }` en BrandDNA). El plugin Mongoose
-     `tenantScoped(schema, { key })` lanza error si falta, o si llega un operador (`$exists`, `$ne`,
-     `$in`…) en lugar de un valor.
-   - Rutas: `/api/workspaces/:workspaceId/...` pasan por `requireWorkspaceAccess` (el workspace debe
-     ser del usuario autenticado: `workspace.ownerId === req.auth.userId`). Las rutas legacy
-     Enterprise `/api/companies/:companyId/...` pasan por `requireCompanyAccess`, que además adjunta
-     el workspace de la empresa. En Enterprise se comprueba también que la Company pertenece al
-     workspace solicitado.
-   - Los servicios reciben el workspace (y la empresa, en Enterprise) ya autorizados; nunca infieren
-     el tenant de datos del cliente en el body.
-   - Acceso a recursos de otro usuario o de otro workspace → **404** (no 403), para no revelar su existencia.
-   - Endpoint de otro tipo de workspace (p. ej. `personal-dna` en enterprise) → **400**
-     `workspace_type_mismatch`; tipo correcto pero sin configurar (sin ADN, sin empresa) → **409**.
-2. **Never mix information between workspaces.** El contexto que se envía a la IA se construye
-   exclusivamente con datos del workspace activo, con una estrategia por tipo:
-   `EnterpriseContextBuilder` (Company → BrandDNA → AvatarProfile → CreativeMemory → estado
-   operativo con solo conteos, nunca nombres ni listas) y
-   `PersonalContextBuilder` (PersonalProfile → PersonalDNA → AvatarProfile → CreativeMemory; sin
-   PersonalDNA → `personal_context_not_configured`, nunca datos inventados).
-   Hay tests que verifican que dos workspaces del mismo dueño no se mezclan.
-   **Enterprise and Personal share Pixel Core but use different domain contexts.**
-3. **BrandDNA ≠ AvatarProfile.** Son entidades y schemas distintos.
-   - `BrandDNA` = lo que la empresa **ES** (identidad, audiencia, personalidad, voz, criterio, dirección visual, comportamiento).
-   - `AvatarProfile` = cómo esa identidad **se transforma visualmente** en Pixel.
-   - El AvatarProfile se genera **a partir del ADN** (no del onboarding crudo) e incluye una
-     `rationale` que enlaza cada decisión visual con un rasgo del ADN. Es un recurso del workspace:
-     del BrandDNA en Enterprise (`sourceType: brand`) y del PersonalDNA en Personal
-     (`sourceType: personal`, sin `companyId`), por el mismo endpoint resuelto por `workspace.type`.
-   - **PersonalDNA ≠ BrandDNA**: entidades distintas; el avatar y el contexto personales nunca leen
-     datos de una empresa.
-4. **IA encapsulada.** Solo `apps/api/src/ai/` conoce proveedores/SDKs de IA. El resto del producto
-   usa la interfaz `AIProvider` y los servicios de dominio (`BrandAnalysisService`,
-   `AvatarDesignService`, `PixelChatService`, `PersonalDnaGenerator`). Cambiar de modelo/proveedor =
-   nuevo adaptador + variable de entorno.
-   Existe un `MockAIProvider` determinista para desarrollo y tests.
-5. **Contratos primero.** Toda entrada/salida de la API y toda salida estructurada de la IA se valida
-   con schemas Zod de `packages/contracts`. El frontend y el backend importan los mismos schemas.
-6. **No sobrearquitectar.** Monolito modular. Sin microservicios, sin colas externas, sin
-   GraphQL, sin state managers globales, sin librerías "por si acaso".
+1. **Workspace is the main contextual boundary of Pixel.**
+   - Un usuario tiene N workspaces `enterprise` (1 workspace = 1 Company) y como máximo uno
+     `personal`.
+   - AvatarProfile, Conversation, Message, CreativeMemory, PersonalProfile, PersonalDNA, Project,
+     Task, ContentItem, ContentPlan, ContentPlanItem y DailyBrief llevan `workspaceId` obligatorio e
+     indexado. BrandDNA se aísla por `companyId`, y la empresa pertenece a su workspace
+     (`Company.workspaceId`).
+   - Toda consulta a un modelo aislado (los que usan `tenantScoped`: BrandDNA y todos los anteriores)
+     filtra por su clave con un **valor concreto**: `{ _id, workspaceId }` (o `{ _id, companyId }` en
+     BrandDNA), nunca solo `_id`. El plugin lanza error si falta la clave o llega un operador en
+     lugar de un valor (solo admite ObjectId, id en texto o `{ $eq }`); las agregaciones deben
+     empezar con `$match` por la clave y cada operación de `bulkWrite` debe llevarla. Workspace y
+     Company se resuelven siempre por el dueño de la sesión. Excepción deliberada: la migración
+     Company → Workspace (script y migración perezosa) usa el driver nativo (`Model.collection`) con
+     `{ companyId, workspaceId: { $exists: false } }`, porque esos documentos aún no tienen
+     `workspaceId` (`PIXEL_ESTADO.md` §10).
+   - Las rutas `/api/workspaces/:workspaceId/...` pasan por `requireWorkspaceAccess` (el dueño debe
+     ser `req.auth.userId`). Las legacy `/api/companies/:companyId/...` pasan por
+     `requireCompanyAccess`, que además adjunta el workspace. En Enterprise se comprueba que la
+     Company pertenece al workspace.
+   - Los servicios reciben el workspace (y la empresa) ya autorizados; nunca toman el tenant del body.
+   - Errores:
+     - Recurso de otro usuario o de otro workspace → **404** (nunca 403), para no revelar que existe.
+     - Endpoint de otro tipo de workspace → **400** `workspace_type_mismatch`; funcionalidad no
+       disponible para ese tipo → **400** `feature_not_available`.
+     - Tipo correcto pero sin configurar → **409** con `details.reason`: `conflict()` de
+       `lib/errors.ts` no acepta `details`, así que se usa `new AppError(409, 'CONFLICT', mensaje,
+       { reason })`. Varios 409 aún no lo llevan (`PIXEL_ESTADO.md` §11).
+2. **Operations son recursos del workspace, de cualquier tipo.** Project, Task y ContentItem se
+   aíslan por `workspaceId` (nunca por `personalProfileId` ni `companyId`); un `projectId` siempre
+   apunta a un Project del mismo workspace. Personal y Enterprise usan los mismos modelos, endpoints
+   y pantallas (`docs/OPERATIONS.md`); nunca crear `Enterprise*` duplicados.
+   - Qué funcionalidad existe en cada tipo se decide **solo** con las capacidades de contracts
+     (`workspaceSupportsFeature(type, feature)`, `capabilities.ts`): API con `assertWorkspaceFeature`
+     (400 `feature_not_available`), web con `FeatureOnly` y la navegación. No dispersar
+     `if (workspace.type === …)` para gating; no persistir capacidades.
+   - El Daily Director y el Content Planner **proponen**: nunca modifican tareas, proyectos ni
+     contenido sin una acción explícita del usuario (aceptar un ítem del plan crea el ContentItem).
+3. **Never mix information between workspaces.** El contexto de la IA se construye solo con datos
+   del workspace activo: `EnterpriseContextBuilder` (Company → BrandDNA → AvatarProfile →
+   CreativeMemory → estado operativo con solo conteos, nunca nombres ni listas) o
+   `PersonalContextBuilder` (PersonalProfile → PersonalDNA → AvatarProfile → CreativeMemory → el
+   DailyBrief vigente de hoy, si existe). Sin ADN → 409, nunca datos inventados. Hay tests que lo
+   verifican. **Enterprise and Personal share Pixel Core but use different domain contexts.**
+4. **BrandDNA ≠ PersonalDNA ≠ AvatarProfile.** El ADN es lo que la marca o la persona **es**; el
+   AvatarProfile es cómo esa identidad se **transforma visualmente**: se genera desde el ADN (no del
+   onboarding crudo) con una `rationale` que enlaza cada decisión con un rasgo. Un único router de
+   avatar (montado en `/api/workspaces/:id/avatar` y en la ruta legacy `/api/companies/:id/avatar`),
+   resuelto por `workspace.type` (`sourceType: brand`, o `personal` sin `companyId`). Lo personal
+   (avatar y contexto) nunca lee datos de una empresa.
+5. **IA encapsulada.** Solo `apps/api/src/ai/` (y sus tests) importa SDK de IA; ESLint lo impone en
+   `apps/api/src/**`, y en el resto lo vigila la revisión. El resto usa la interfaz `AIProvider`
+   (`generateText`, `generateStructuredOutput`) y servicios de dominio (`chat.service`,
+   `PersonalDnaGenerator`, `ContentPlanningEngine`, `DailyDirectorEngine`…). Proveedores:
+   `AnthropicProvider` y `DemoProvider` (determinista, para desarrollo y tests). Cambiar de proveedor
+   = adaptador + variable de entorno. Toda salida de IA tiene fallback determinístico y solo puede
+   referirse a ids que recibió (ids controlados; lo desconocido se descarta).
+6. **Contratos primero.** Toda entrada y salida HTTP, y toda salida estructurada de la IA, se valida
+   con Zod de `packages/contracts`; web y API importan los mismos schemas. Única excepción
+   documentada: `PersonalDnaEnrichmentSchema`, interno de la API.
+7. **No sobrearquitectar.** Monolito modular: sin microservicios, colas externas, GraphQL, state
+   managers globales ni librerías "por si acaso".
 
 ## Convenciones de código
 
-- TypeScript `strict`. Prohibido `any` explícito (usar `unknown` + validación Zod).
-- ESM en todo el monorepo (`"type": "module"`).
-- Validar en los bordes: env vars, requests HTTP, respuestas de la IA, datos de formularios.
-- Backend organizado por módulos de dominio en `apps/api/src/modules/` (`auth`, `workspaces`, `companies`,
-  `brand-dna`, `personal`, `avatars`, `conversations`, `creative-memory`, `operations`, `content-plans`, `daily-director`), cada uno con
-  `*.model`, `*.service` y `*.routes`.
-  Los módulos se registran solo en `modules/index.ts`.
-- Frontend organizado por features (`src/features/<feature>/`); shell y router en `src/app/`.
-  El renderer 3D (`src/features/avatar3d/`) solo recibe un `AvatarProfile`: nunca contiene reglas
-  de negocio (esas viven en la API). Traducción visual en `profileToScene`, poses en `poseAt`.
-  Entrada de cada Pixel: `/workspace/:workspaceId/...` (Personal vive aquí: Inicio, `projects`,
-  `tasks`, `content`, `content-planner`, `personal/onboarding`, `personal/dna`, `pixel`, `chat`).
-  **Toda funcionalidad nueva es workspace-first**, también en Enterprise: sus Operations viven en
-  `/workspace/:workspaceId/{projects,tasks,content}` (`enterpriseStaysInWorkspace`); las pantallas de
-  marca anteriores siguen en `/company/:companyId/...` (el workspace enterprise redirige allí) hasta
-  converger; ver `docs/WORKSPACES.md`. Pixel Core compartido en la web: `ChatStudio`, `PixelStudio`,
-  `WizardLayout`, `DnaBlocks` y las pantallas de Operations con `operationsCopy` (no duplicar por tipo).
-- Errores HTTP: lanzar `AppError` (o helpers de `lib/errors.ts`); el `errorHandler` central responde
-  con la forma `ApiError` de contracts. Logs con `lib/logger.ts`, nunca `console.log`.
-- Nombres de código en inglés; textos de producto/UI y documentación en español.
-- Secretos solo en `apps/api/.env` (nunca en el frontend ni en el repo). Mantener los `.env.example` de cada app.
-- Mensajes de commit claros, en imperativo.
+- TypeScript `strict`, sin `any` explícito (`unknown` + Zod). ESM en todo el monorepo. Validar en los
+  bordes: variables de entorno, requests, respuestas de la IA y formularios.
+- **API:** un módulo de dominio por carpeta (`apps/api/src/modules/<módulo>/` con `*.model`,
+  `*.service`, `*.routes`), registrado solo en `modules/index.ts`: `auth`, `health`, `workspaces`,
+  `companies`, `brand-dna`, `personal`, `avatars`, `conversations`, `creative-memory`, `operations`,
+  `content-plans`, `daily-director`. Errores con `AppError` o `lib/errors.ts` (el `errorHandler`
+  responde con `ApiError`). Logs con `lib/logger.ts`, nunca `console.log`.
+- **Fechas:** el "hoy" de un workspace se calcula en su zona horaria IANA (`Workspace.timezone` o
+  `DEFAULT_TIMEZONE`), nunca en UTC; no inferir la zona desde texto libre.
+- **Web:** features en `src/features/<feature>/`, shell y router en `src/app/`. `features/avatar3d/`
+  solo recibe un `AvatarProfile`, sin reglas de negocio (`profileToScene` traduce, `poseAt` anima).
+  Pixel Core compartido, sin duplicar por tipo: `ChatStudio`, `PixelStudio`, `WizardLayout`,
+  `DnaBlocks`, las pantallas de Operations con `operationsCopy` y la prop `apiBase` (de
+  `companyApiBase` / `workspaceApiBase`, `lib/apiPaths.ts`). La entrada de cada Pixel es
+  `/workspace/:workspaceId/...` y **toda funcionalidad nueva es workspace-first**, también en
+  Enterprise: Inicio, `projects`, `tasks`, `content`, `content-planner`, `personal/onboarding`,
+  `personal/dna`, `pixel`, `chat`. Las Operations Enterprise viven en
+  `/workspace/:workspaceId/{projects,tasks,content}` (`enterpriseStaysInWorkspace`); las pantallas
+  de marca anteriores siguen en `/company/:companyId/...` (el workspace enterprise redirige allí)
+  hasta converger (`docs/WORKSPACES.md`).
+- **Entrada pública** (`features/public/`): `/` (solo visitantes), `/explore` y su detalle, con el
+  acceso como modal en la URL (`?auth=…&next=…`). Todo `next` pasa por `safeNextPath`; visitar no
+  crea workspaces (`/pixels/start?intent=` actúa solo tras el acceso). Imágenes y video solo se
+  referencian en `src/brand/experience.ts`.
+- Código en inglés; textos de producto, UI y documentación en español. Commits claros, en imperativo.
+- Secretos solo en `apps/api/.env`, nunca en la web ni en el repo. Mantener los `.env.example`.
 
 ## Identidad visual (PIXELES)
 
-Pixel es un producto de **PIXELES — Tecnología creativa y entretenimiento** ("Creamos mundos").
 Fuente de verdad: `brand-assets/PIXELES — Manual de marca (español).pdf` (no borrar `/brand-assets`).
 
-- **Nombres.** *Pixel* = el producto (director creativo asistido por IA), no un chatbot.
-  *Pixi* = el personaje de PIXELES (cubo amarillo 3D): mascota de la app en login, estados vacíos y
-  cargas. **Nunca** llamar "Pixel" al personaje. El avatar de cada empresa es "el personaje de tu
-  marca". La evolución de Pixi (6 niveles) es opcional: el cubo base basta y nunca se presenta como meta.
-- **Tokens.** Un único archivo: `apps/web/src/styles/theme.css` (colores, fuentes, radios, sombra,
-  easing). La paleta por defecto de Tailwind está desactivada: solo existen las utilidades de marca
-  (`canvas`, `surface`, `elevated`, `line`, `line-strong`, `fg`, `muted`, `subtle`, `brand`,
-  `on-brand`, `signal`, `alert`, `focus`, `overlay`). Prohibidos hex, `rgb()` y fuentes sueltas en
-  componentes. Excepción: colores que son **datos de la empresa** (paleta del BrandDNA, renderer 3D,
-  vista previa 2D del personaje, selector de colores del onboarding).
-- **Paleta.** Negro Cine `#08080B` (fondo), Azul PIXELES `#1E14FF` (reconocimiento: botones
-  principales, selección, bloques destacados), Blanco `#FFFFFF`, Grafito `#2B2D33`, Amarillo Origen
-  `#F2E500` (solo el *píxel señal*: un acento pequeño por pantalla; nunca fondos grandes).
-  - Azul sobre negro = 2,5:1 → el azul nunca es texto ni icono fino sobre fondo oscuro.
-  - Sin colores de error fuera de la paleta: los avisos usan texto normal + `bg-alert` (amarillo en
-    oscuro, azul en claro).
-- **Tipografía.** Unbounded 700–800 (`font-display`, títulos) e Instrument Sans 400–600 (`font-sans`,
-  interfaz y texto). Con `font-display` usar siempre `font-bold`.
-- **Logo.** Solo los archivos de `apps/web/public/brand/` vía `<BrandLogo>`; nunca redibujarlo ni
-  escribir "PIXELES" con una fuente. Mínimos: logotipo 160 px de ancho, isotipo 24 px.
-  Pixi solo vía `<Pixi>` (`public/pixi/`), completo, sin recolorear y nunca sobre azul.
-- **Tema.** La app **siempre arranca en oscuro** (`data-theme="dark"` en `index.html`), sin leer
-  preferencias del sistema ni almacenamiento. El modo claro (botón del header) dura solo la sesión
-  y tiene paridad: cada token tiene valor claro y logos/Pixi tienen versión sobre blanco.
-- **Dirección de arte.** Minimalista, premium, mucho espacio negativo, la tipografía protagoniza.
-  Sin brillos, neón, degradados, blur, partículas, elementos flotantes decorativos ni iconografía
-  infantil o de "IA" (cerebros, circuitos, robots, hexágonos, destellos). "Que no se vea con tanta IA."
-- **Movimiento.** Suave y sin rebotes (`ease-pxl`). Aparición al hacer scroll con `<Reveal>` (se
-  revierte al subir). Todo respeta `prefers-reduced-motion`.
+- **Nombres:** *Pixel* = el producto, no un chatbot. *Pixi* = el personaje de PIXELES (cubo
+  amarillo), mascota en login, estados vacíos y cargas; **nunca** llamarlo "Pixel". El avatar de
+  cada empresa es "el personaje de tu marca". La evolución de Pixi (6 niveles) es opcional: el cubo
+  base basta y nunca se presenta como meta.
+- **Tokens:** solo en `apps/web/src/styles/theme.css`; la paleta por defecto de Tailwind está
+  desactivada. Semánticos (cambian con el tema): `canvas`, `surface`, `elevated`, `line`,
+  `line-strong`, `fg`, `muted`, `subtle`, `brand`, `brand-hover`, `on-brand`, `signal`, `on-signal`,
+  `alert`, `focus`, `overlay`. Fijos: `negro-cine`, `azul`, `blanco`, `grafito`, `amarillo`, más
+  `ink`/`paper` para texto sobre colores que son datos. Prohibidos hex, `rgb()` y fuentes sueltas en
+  componentes, salvo colores que son datos (paleta del ADN, renderer 3D, vista previa 2D, selector
+  de colores del onboarding).
+- **Paleta:** Negro Cine `#08080B` (fondo); Azul PIXELES `#1E14FF` (botones principales, selección,
+  bloques destacados; nunca texto ni icono fino sobre oscuro: contraste 2,5:1); Blanco; Grafito
+  `#2B2D33`; Amarillo Origen `#F2E500` solo como *píxel señal* (un acento pequeño por pantalla).
+  Avisos: texto normal + `bg-alert` (amarillo en oscuro, azul en claro), sin colores fuera de paleta.
+- **Tipografía:** Unbounded 700–800 (`font-display`, siempre con `font-bold`) para títulos e
+  Instrument Sans 400–600 (`font-sans`) para interfaz y texto.
+- **Logo y Pixi:** logo solo con `<BrandLogo>` (`public/brand/`; mínimos: logotipo 160 px de
+  ancho, isotipo 24 px), nunca redibujado ni "PIXELES" escrito con una fuente. Pixi solo con
+  `<Pixi>` (`public/pixi/`): completo, sin recolorear, nunca sobre azul.
+- **Tema:** siempre arranca en oscuro (`data-theme="dark"`), sin leer preferencias ni storage. El
+  modo claro dura la sesión y tiene paridad (cada token tiene valor claro; logos y Pixi, versión
+  sobre blanco).
+- **Arte y movimiento:** minimalista, premium, mucho espacio negativo, la tipografía protagoniza. Sin
+  brillos, neón, degradados, blur, partículas, decoración flotante ni iconografía infantil o de "IA"
+  (cerebros, circuitos, robots, hexágonos, destellos): "que no se vea con tanta IA". Movimiento suave
+  sin rebotes (`ease-pxl`); `<Reveal>` aparece al hacer scroll y se revierte al subir. Todo debe
+  respetar `prefers-reduced-motion` (hoy el avatar 3D y el `scrollTo` de los onboardings no lo
+  hacen: `PIXEL_ESTADO.md` §11).
 
 ## Forma de trabajar
 
-Antes de modificar código:
+1. Inspeccionar el repositorio: código, `docs/PIXEL_ESTADO.md` y backlog.
+2. Explicar brevemente qué existe, identificar riesgos y proponer qué archivos crear o modificar.
+3. Implementar.
 
-1. Inspeccionar el repositorio (estructura, docs, estado del backlog).
-2. Explicar brevemente qué existe.
-3. Identificar riesgos.
-4. Proponer los archivos a crear/modificar.
+**Definición de terminado de cada etapa:**
 
-Después implementar.
+- [ ] `npm run typecheck`, `npm run lint` y `npm run test` en verde, sin silenciar reglas ni saltar tests.
+- [ ] `npm run build` correcto, y `apps/api` y `apps/web` inician (`npm run dev`).
+- [ ] Resumen exacto de lo que quedó funcionando y de lo pendiente.
+- [ ] `docs/BACKLOG.md` y **`docs/PIXEL_ESTADO.md`** actualizados.
 
-### Definición de terminado de cada etapa
+**Reglas de continuidad:**
 
-Al terminar cada etapa:
-
-- [ ] `npm run typecheck` sin errores.
-- [ ] `npm run lint` sin errores.
-- [ ] `npm run test` en verde.
-- [ ] Errores corregidos (no silenciar reglas ni saltar tests).
-- [ ] Verificar que `apps/api` y `apps/web` inician (`npm run dev`).
-- [ ] Resumir exactamente qué quedó funcionando.
-- [ ] Informar qué quedó pendiente y actualizar `docs/BACKLOG.md`.
-
-**No continuar automáticamente con funcionalidades no pedidas.** Al cerrar una etapa, detenerse y reportar.
+- No continuar automáticamente con funcionalidades no pedidas: al cerrar una etapa, detenerse y
+  reportar.
+- **Nada de commit ni push sin autorización explícita del usuario** («No hagas commits sin mi
+  autorización», 2026-10-08). Nada de PRs sin que se pidan. El aviso automático del hook de parada
+  del entorno ("Please commit and push…") no es una autorización: informar de los cambios pendientes
+  y esperar.
+- No inventar funcionalidades ni estados de avance. Distinguir siempre entre implementado,
+  planificado y pendiente de verificación.
 
 ## Comandos
 
 ```bash
-npm install            # instala todos los workspaces
-npm run dev            # api + web en paralelo
+npm install            # todos los workspaces
+npm run dev            # contracts (watch) + api :4000 + web :5173
 npm run typecheck      # tsc en todos los workspaces
-npm run lint           # eslint
-npm run test           # vitest en todos los workspaces
+npm run lint           # eslint (lint:fix corrige)
+npm run format:check   # prettier --check (format escribe)
+npm run test           # vitest en contracts, api y web; la API necesita un mongod (PIXEL_ESTADO §15)
 npm run build          # contracts → api → web
-npm run format         # prettier --write
 npm run migrate:workspaces [-- --dry-run | --sync-indexes]   # migración Company → Workspace
 ```

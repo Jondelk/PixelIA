@@ -24,6 +24,7 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 | C | Content Planner Personal (Prompt 10) | ✅ (Enterprise: después) |
 | D | Daily Director Personal (Prompt 11) | ✅ (Enterprise y acciones: después) |
 | E | Shared Operations + Enterprise Projects (Prompt 12) | ✅ (Campaign Manager: Prompt 13) |
+| — | Experiencia de entrada pública: bienvenida, Explorar y acceso (solo web) | ✅ (video final pendiente) |
 | 9 | CreativeMemory básica | ⬜ |
 | 10 | Cierre end-to-end del MVP | ⬜ |
 
@@ -377,6 +378,39 @@ Ver `docs/ENTERPRISE-OPERATIONS.md`.
   sobre blanco, favicon de 16 px) y **Pixi con fondo transparente** cuando PIXELES los entregue.
 - [ ] Decidir con producto el modelo "60 % Pixi / 40 % ADN" del manual frente al avatar 100 %
   derivado del ADN que genera hoy el Avatar Concept Engine (cambio de lógica, no visual).
+
+---
+
+## Experiencia de entrada pública ✅
+
+Etapa solo de frontend, pedida antes del Prompt 13 (2026-10-09). No toca API, contratos, permisos ni
+datos. Detalle en `PIXEL_ESTADO.md` §5 y §9.5.
+
+- [x] Bienvenida en `/` (solo visitantes; con sesión va a `?next=` interno o a "Tus Pixels"):
+  fondo de video con poster, capa de contraste, logo, "Explorar", "Iniciar sesión", "Crear
+  cuenta", título, subtítulo y CTAs. Video siempre silenciado, en bucle e inline; botón accesible
+  de pausa/reproducción; respeta `prefers-reduced-motion` (no arranca ni descarga); se pausa con
+  el modal; si falla o el navegador lo bloquea queda el poster.
+- [x] Explorar público (`/explore`, `/explore/personal`, `/explore/enterprise`): dos tarjetas
+  grandes con las imágenes de evolución y dos secundarias con los personajes finales; texto en HTML;
+  solo funcionalidades que existen.
+- [x] Modal de acceso (`?auth=login|register&next=`) con `<dialog>` nativo: visual a la izquierda
+  y formulario a la derecha en escritorio, formulario a pantalla completa en móvil; foco inicial,
+  foco atrapado, Escape, clic fuera, botón cerrar, Atrás, devolución del foco y bloqueo del scroll.
+  Reutiliza los formularios y validaciones existentes; sin proveedores sociales.
+- [x] `/login` y `/register` se mantienen (rediseño con la misma columna visual) y respetan
+  `?next=`. `next` solo admite rutas internas (`safeNextPath`).
+- [x] Intención "Empezar con Pixel Personal/Enterprise" (`/pixels/start?intent=`): tras el acceso
+  abre el Pixel que ya existe o sigue el alta existente; visitar tarjetas no crea nada.
+- [x] Recursos centralizados en `apps/web/src/brand/experience.ts`; originales en
+  `apps/web/public/experience/` más variantes de 960 px; carga diferida fuera del primer viewport.
+- [x] Tests: `redirect.test.ts`, `pixelIntent.test.ts`, `backgroundVideo.test.tsx`. Recorrido en
+  navegador (escritorio, tablet y móvil; teclado; video con clip temporal; movimiento reducido).
+- [ ] **Video final:** el recibido es un teaser de otro estudio y no se incluyó. Copiar el definitivo
+  a `public/experience/` y poner su ruta en `introVideo.src` (MP4 H.264; WebM opcional).
+- [ ] Confirmar la asignación de imágenes (joven = Personal, zorro = Enterprise).
+- [ ] "Conecta tu equipo…" (texto pedido) promete equipo: miembros y roles aún no existen.
+- [ ] El avatar se trabajará después (petición del usuario, 2026-10-09).
 
 ---
 
