@@ -10,13 +10,14 @@ import {
 } from './index.js';
 
 describe('Capacidades del workspace', () => {
-  it('Operations es compartido; Content Planner y Daily Director solo Personal', () => {
+  it('Operations es compartido; Content Planner y Daily Director solo Personal; Campaigns solo Enterprise', () => {
     expect(workspaceCapabilities('personal')).toEqual({
       projects: true,
       tasks: true,
       content: true,
       contentPlanner: true,
       dailyDirector: true,
+      campaigns: false,
     });
     expect(workspaceCapabilities('enterprise')).toEqual({
       projects: true,
@@ -24,6 +25,7 @@ describe('Capacidades del workspace', () => {
       content: true,
       contentPlanner: false,
       dailyDirector: false,
+      campaigns: true,
     });
   });
 

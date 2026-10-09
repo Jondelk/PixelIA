@@ -265,6 +265,7 @@ describe('Inicio Enterprise', () => {
               overdueTasks: 1,
               contentInProduction: 4,
               activeContentItems: 6,
+              activeCampaigns: 0,
             },
             upcomingTasks: [],
             recentProjects: [],

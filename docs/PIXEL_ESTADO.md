@@ -4,9 +4,9 @@
 > en el repositorio**, no lo que dicen los prompts ni el resto de `docs/`, que tienen deriva (§12).
 > Si el código y este documento no coinciden, **manda el código**: corrige este documento.
 >
-> - Última revisión: **2026-10-09**, rama `feat/prompts-9-11`: `e59757d` (contiene
->   `feat/etapa-0-foundation` en `c846956`) más dos commits del 2026-10-09 con la etapa
->   "Experiencia de entrada pública" y esta documentación (§0, §1).
+> - Última revisión: **2026-10-09**, rama `feat/prompts-9-11` en `e243c23` (contiene
+>   `feat/etapa-0-foundation` en `c846956`) más el commit del Prompt 13 (Campaign Manager), hecho con autorización del
+>   usuario el 2026-10-09 en su equipo (Windows, Claude Code en VS Code), sin push (§0, §1).
 > - Leyenda: ✅ implementado y verificado (tests automáticos; si solo hubo revisión manual, se dice) ·
 >   🟨 parcial · 📝 solo planificado (docs o prompts, sin código) · ❓ pendiente de verificación ·
 >   ⛔ bloqueado.
@@ -15,13 +15,13 @@
 
 | Tema | Estado |
 |---|---|
-| Última etapa verificada | **Etapas O, C, D y E** de `BACKLOG.md`: Operations, Content Planner, Daily Director y Shared Operations + Enterprise Projects. Llegaron en un solo commit, `e59757d` ("Add Prompts 9-11…"), subido por el usuario el 2026-10-08 19:27 UTC desde su equipo (Claude Code en VS Code). Verificadas en esta sesión el mismo día (§13). |
-| Prompts | Según `BACKLOG.md` de la rama: Prompt 9 = Operations, 10 = Content Planner, 11 = Daily Director, **12** = Shared Operations + Enterprise Projects; 13 = Campaign Manager (📝, no iniciado). ❓ El commit dice "Prompts 9-11" y el usuario habló de 9, 10 y 11: falta confirmar que la Etapa E corresponde a un Prompt 12. |
+| Última etapa verificada | **Etapa M — Enterprise Campaign Manager (Prompt 13)**, implementada y verificada el 2026-10-09 (§13) en el equipo del usuario y confirmada en un commit (autorizado; sin push). Antes: Etapas O, C, D y E (`e59757d`) y la entrada pública (`24e300a`). |
+| Prompts | Prompt 9 = Operations, 10 = Content Planner, 11 = Daily Director, **12** = Shared Operations + Enterprise Projects (Etapa E; confirmado: el texto del Prompt 12 se recibió e implementó en la sesión del equipo del usuario el 2026-10-08), **13 = Enterprise Campaign Manager** (Etapa M; el usuario envió el texto "PROMPT 13 — ENTERPRISE CAMPAIGN MANAGER" el 2026-10-09). La entrada pública no tiene número. |
 | Ramas | `feat/prompts-9-11` (nueva, en `origin`) = `feat/etapa-0-foundation` + este trabajo. `feat/etapa-0-foundation` sigue en `c846956`: **todavía no se ha fusionado**. |
-| Última etapa | **Experiencia de entrada pública** (solo web): bienvenida con video, Explorar, modal de acceso y retomar la intención tras el acceso. Implementada y verificada el 2026-10-09 (§13); commit y push autorizados por el usuario el mismo día. Pedida "antes de continuar con el prompt 13"; el 2026-10-09 el usuario la llamó "prompt 13" al pedir que se completara: se interpretó como esta etapa, porque el Prompt 13 del backlog (Campaign Manager) no tiene ningún cambio. ❓ Confirmar la numeración. |
-| Siguiente paso | Decisiones del usuario (§14): aportar el video final, decidir cómo fusionar las ramas y qué hallazgos de la revisión (§11) se corrigen antes del Campaign Manager. El avatar se trabajará después (petición del usuario). |
+| Última etapa | **Campaign Manager** (Prompt 13, Etapa M): Campaign, CampaignStrategy versionada, CampaignDeliverable, `CampaignStrategyEngine` con validación de fundamento, conversión de piezas a Projects y ContentItems, interfaz Enterprise y estado del chat (`docs/CAMPAIGNS.md`). Anterior: experiencia de entrada pública (solo web, `24e300a`, 2026-10-09). |
+| Siguiente paso | Decisión del usuario: push y siguiente prompt (§14). No empezar el Prompt 14 ni el Enterprise Content Planner sin pedirlo. |
 | Problema a conocer ya | Copiar `apps/api/.env.example` tal cual **impide arrancar la API** (`JWT_SECRET=` y `AI_PROVIDER=` vacíos no validan). Sigue igual en `e59757d`. Ver §11 y §15. |
-| Cambios sin commit | Ninguno. El 2026-10-09 se confirmaron y subieron a `origin/feat/prompts-9-11`, con autorización del usuario, la etapa de entrada pública (solo `apps/web`; la API, los contratos y los datos no cambian) y la documentación (`CLAUDE.md`, `README.md`, `docs/BACKLOG.md` y `docs/PIXEL_ESTADO.md`, nuevo). |
+| Cambios sin commit | Ninguno. El Prompt 13 se confirmó en un único commit sobre `e243c23` ("Add Prompt 13: Enterprise Campaign Manager"), autorizado por el usuario el 2026-10-09. **Sin push** (no se pidió). |
 
 ## 1. Rama, commits y git
 
@@ -84,9 +84,9 @@ en este repositorio.
 | 9 | Operations: Projects, Tasks y ContentItems | O | `e59757d` | ✅ |
 | 10 | Content Planner Personal | C | `e59757d` | ✅ (Enterprise: después) |
 | 11 | Daily Director Personal | D | `e59757d` | ✅ (Enterprise y acciones: después) |
-| 12 ❓ | Shared Operations + Enterprise Projects | E | `e59757d` | ✅ (número de prompt por confirmar) |
-| sin número ❓ | Experiencia de entrada pública (bienvenida, Explorar, acceso) | "Experiencia de entrada pública" | 2026-10-09 (tras `e59757d`) | ✅ verificada el 2026-10-09; pendiente el video final. Pedida "antes del prompt 13"; el usuario la llamó luego "prompt 13" |
-| 13 | Campaign Manager | — | — | 📝 planificado en `BACKLOG.md` y `ENTERPRISE-OPERATIONS.md` §10; no iniciado |
+| 12 | Shared Operations + Enterprise Projects | E | `e59757d` | ✅ |
+| sin número | Experiencia de entrada pública (bienvenida, Explorar, acceso) | "Experiencia de entrada pública" | `24e300a` | ✅ verificada el 2026-10-09; pendiente el video final |
+| 13 | Enterprise Campaign Manager | M | "Add Prompt 13: Enterprise Campaign Manager" (2026-10-09, sin push) | ✅ verificado el 2026-10-09 (§13); sin prueba con Claude real |
 
 En la sesión remota del 2026-10-08, el Prompt 11 se recibió antes de que existieran sus
 prerrequisitos en `origin`; aquí solo se comprobó que faltaban. Lo implementado es lo que llegó en
@@ -111,13 +111,14 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
                   ├─ personal   → PersonalProfile → PersonalDNA
                   ├─ compartidos: AvatarProfile · Conversation → Message · CreativeMemory (solo modelo)
                   ├─ operations: Project (→ Task, ContentItem) · Task · ContentItem   (Personal y Enterprise)
+                  ├─ campaigns: Campaign → CampaignStrategy (versiones) · CampaignDeliverable (→ Project | ContentItem)   (solo Enterprise)
                   ├─ content planner: ContentPlan → ContentPlanItem (→ ContentItem al aceptar)   (solo Personal)
                   └─ daily director: DailyBrief (versión por día local; solo lee)   (solo Personal)
 ```
 
 Qué funcionalidad tiene cada tipo lo decide `packages/contracts/src/capabilities.ts`
 (`workspaceSupportsFeature`): Personal tiene `projects`, `tasks`, `content`, `contentPlanner` y
-`dailyDirector`; Enterprise solo `projects`, `tasks` y `content`.
+`dailyDirector`; Enterprise, `projects`, `tasks`, `content` y `campaigns`.
 
 - **Cadena de una petición:**
   - Global: `requestLogger` → `cors` → `originGuard` (403 si un método no seguro llega con un
@@ -132,15 +133,17 @@ Qué funcionalidad tiene cada tipo lo decide `packages/contracts/src/capabilitie
   - Legacy: `requireAuth` → `requireCompanyAccess` (adjunta el workspace y lo migra si falta) →
     service.
 - **Chat:** `chat.service.sendMessage` → `resolveContextBuilder(workspace.type)` →
-  `EnterpriseContextBuilder` (añade el estado operativo: solo conteos) o `PersonalContextBuilder`
+  `EnterpriseContextBuilder` (añade el estado operativo: conteos y hasta 3 campañas activas con
+  nombre, objetivo y estado) o `PersonalContextBuilder`
   (añade el DailyBrief vigente de hoy, marcado si está desactualizado) → brief (`<brand_context>` o
   `<personal_context>`) → `AIProvider.generateText` → solo si la IA respondió, guarda los dos
   mensajes (el de Pixel con `meta`: proveedor, modelo, modo, latencia y versiones de ADN/avatar). Un
   fallo de la IA responde 422/503 sin guardar nada; sin contexto, 409 antes de llamarla.
-- **Dónde se usa IA hoy:** el chat (`generateText`) y tres salidas estructuradas
+- **Dónde se usa IA hoy:** el chat (`generateText`) y cuatro salidas estructuradas
   (`generateStructuredOutput`): el enriquecimiento opcional del PersonalDNA, el
-  `ContentPlanningEngine` y el `DailyDirectorEngine`. Las dos últimas usan ids controlados y caen a
-  un resultado determinístico si la IA falla o está en modo demo. BrandDNA y avatares son **reglas
+  `ContentPlanningEngine`, el `DailyDirectorEngine` y el `CampaignStrategyEngine`. El director cae a
+  un resultado determinístico si la IA falla; el planner y el Campaign Manager responden 503 sin
+  resultado falso con un proveedor real caído y tienen versión determinista solo en modo demo. BrandDNA y avatares son **reglas
   deterministas versionadas**.
 - **Arranque de la API (`server.ts`):** `dotenv/config` → `loadEnv()` (falla rápido si el entorno
   no valida) → `startDatabase()` **sin bloquear** (si Mongo no responde, `/api/health` da 503
@@ -164,12 +167,12 @@ apps/api/src
   config/env.ts  db/{connection,tenantScoped.plugin}.ts  lib/{errors,logger,mongo}.ts
   middleware/    requireAuth, requireWorkspaceAccess, requireCompanyAccess, originGuard, errorHandler…
   modules/       auth · health · workspaces · companies · brand-dna · personal · avatars · conversations · creative-memory
-                 · operations · content-plans · daily-director
+                 · operations · content-plans · daily-director · campaigns
 apps/api/scripts/migrate-companies-to-workspaces.ts      apps/api/test/  (34 archivos + support/ + fixtures/)
 apps/web/src
   app/           router, AppShell, Sidebar, Header, navigation, theme
   features/      auth · dashboard · workspaces · companies · onboarding · brand · personal · pixel · chat · avatar3d · system
-                 · operations · content-planner · daily-director
+                 · operations · content-planner · daily-director · campaigns
   components/    Button, Field, Alert, EmptyState, DnaBlocks, Reveal, BrandLogo, Pixi, rise…
   lib/           api.ts (fetch + validación Zod), apiPaths.ts, forms.ts, useResource.ts
   styles/theme.css  ← único archivo de tokens
@@ -193,6 +196,7 @@ packages/contracts/src   24 módulos reexportados por index.ts (se consume solo 
 | `creative-memory` | Modelo y contrato; los context builders leen memorias activas | 🟨 router vacío: sin endpoints ni forma de crearlas |
 | `operations` | Project, Task y ContentItem por workspace (Personal y Enterprise); `DELETE` de proyecto **archiva**; `DELETE` de tarea o contenido borra; resumen `/operations/summary` | ✅ |
 | `content-plans` | ContentPlan + ContentPlanItem; `ContentPlanningEngine` (IA con ids controlados + fallback); aceptar un ítem crea su ContentItem (idempotente); `DELETE` archiva | ✅ solo Personal; la prueba con Claude real está pendiente (`CONTENT-PLANNER.md` §10) |
+| `campaigns` | Campaign, CampaignStrategy (versionada) y CampaignDeliverable; `CampaignStrategyEngine` (IA con contexto controlado + validación de fundamento de marca; 503 sin IA; demo determinista); aceptar una pieza crea su ContentItem o Project con `campaignId` (idempotente); `DELETE` archiva | ✅ solo Enterprise (2026-10-09); sin prueba con Claude real |
 | `daily-director` | DailyBrief por día local y versión; `DailyDataCollector`, `PriorityScorer`, `ProjectHealth`, `ContentHealth`, `DailyDirectorEngine` (IA + fallback determinístico), detección de "desactualizado" | ✅ solo Personal; sin prueba con Claude real |
 
 ### Web (`apps/web/src/features`)
@@ -205,6 +209,7 @@ packages/contracts/src   24 módulos reexportados por index.ts (se consume solo 
 | `personal` (Inicio, onboarding, "Así te entiende Pixel", Mi Pixel, Chat) | ✅ (sin edición directa del ADN: `updatePersonalDna` existe sin pantalla) |
 | `pixel` (`PixelPage` + `PixelStudio`) · `chat` (`ChatPage` + `ChatStudio`) · `avatar3d` (renderer) · `system` (estado API, 404) | ✅ |
 | `operations` (Proyectos, detalle, Tareas, Contenido; compartidas por Personal y Enterprise con `operationsCopy`) · `content-planner` (planes e ítems) · `daily-director` ("Tu día" en el Inicio Personal) | ✅ |
+| `campaigns` (Campañas, "Crear con Pixel" / "Nueva campaña", detalle con Estrategia · Piezas · Proyectos · Contenido, versiones e hipótesis) | ✅ (2026-10-09; sin recorrido en navegador) |
 
 Tests web: entorno `node`, sin DOM. Además de funciones puras, los de Operations, Content Planner y
 Daily Director renderizan vistas con `renderToStaticMarkup`; no hay tests de interacción.
@@ -238,8 +243,9 @@ estados (`idle`, `thinking`, `listening`, `speaking`, `happy`) y respaldo SVG ·
 (Anthropic o demo) · identidad PIXELES (tema oscuro, modo claro de sesión, Pixi; revisada a mano,
 sin tests automáticos) · Workspaces y migración Company → Workspace · Pixel Personal (onboarding,
 PersonalDNA, avatar, chat) · Operations para Personal y Enterprise (Etapas O y E) · Content Planner
-Personal (Etapa C) · Daily Director Personal (Etapa D). Las tres últimas, verificadas con tests y en
-modo demo; con Claude real, sin probar (❓). Experiencia de entrada pública (solo web,
+Personal (Etapa C) · Daily Director Personal (Etapa D) · Campaign Manager Enterprise (Etapa M,
+Prompt 13). Las cuatro últimas, verificadas con tests y en modo demo; con Claude real,
+sin probar (❓). Experiencia de entrada pública (solo web,
 verificada en navegador el 2026-10-09; falta el video final).
 
 ### Parciales o abiertas 🟨
@@ -266,17 +272,17 @@ verificada en navegador el 2026-10-09; falta el video final).
   retirar las rutas legacy; retirar `companyId` legacy y `Company.ownerId`; miembros y roles por
   workspace (hoy solo el dueño).
 - Etapa 7: cejas y expresiones adicionales del avatar.
-- **Campaign Manager (Prompt 13):** se apoyará en las Operations Enterprise
-  (`ENTERPRISE-OPERATIONS.md` §10). No iniciado.
 - Content Planner y Daily Director para Enterprise, y acciones del Daily Director sobre tareas
   ("después", según `BACKLOG.md`).
 
 ### Pendiente de verificación ❓
 
-- Si la Etapa E corresponde a un "Prompt 12" (el commit dice "Prompts 9-11").
 - `contentPlanning.live.test.ts` con Claude real, y ajuste del prompt del planner
   (`CONTENT-PLANNER.md` §10). El `DailyDirectorEngine` tampoco se ha probado con Claude real.
 - `chat.live.test.ts` con Claude real (se salta sin `ANTHROPIC_API_KEY`).
+- El `CampaignStrategyEngine` (`CAMPAIGN_SYSTEM`) con Claude real: no tiene prueba en vivo; solo
+  se probó con el demo y con salidas fijas.
+- La interfaz de Campañas en un navegador (solo render estático en tests y módulos servidos por Vite).
 - El enriquecimiento IA del PersonalDNA (`personal-rules-1+ai`) con Claude real:
   `AnthropicProvider.generateStructuredOutput` no tiene ningún test (`anthropicProvider.test.ts`
   solo cubre `generateText`) y el generador solo se probó con un proveedor falso. "Verificada" en §5
@@ -313,6 +319,11 @@ verificada en navegador el 2026-10-09; falta el video final).
 | D24 | DailyBrief versionado por `{workspaceId, localDate, version}` (único) y marcado "desactualizado" cuando cambian los datos | Historial del día sin sobrescribir; concurrencia segura | `DAILY-DIRECTOR.md` §10 |
 | D25 | IA del planner y del director: payload controlado con ids propios, salida validada con contracts, lo no respaldado se descarta y cualquier fallo cae a un resultado determinístico | No inventar tareas, fechas ni métricas | `CONTENT-PLANNER.md` §2, `DAILY-DIRECTOR.md` §8-§9 |
 | D26 | El planner y el director solo proponen; aceptar un ítem del plan crea su ContentItem (idempotente) | Nada cambia sin una acción del usuario | `CONTENT-PLANNER.md` §3 |
+| D27 | Campaign (estratégica) separada de Project (operacional); CampaignStrategy versionada aparte; `campaignId` opcional solo en Project y ContentItem (no en Task) | No mezclar estrategia y ejecución; historial sin sobrescribir; sin duplicar Operations | `CAMPAIGNS.md` §1 |
+| D28 | Validación de fundamento de marca: cifras, nombres propios, claims de mercado y afirmaciones sobre clientes se recortan o descartan; vocabulario sin las fechas del periodo; insight sin base → `strategic_hypothesis` | No inventar datos de la marca; evita el R2 del planner | `CAMPAIGNS.md` §2 |
+| D29 | Campaign Manager sin estrategia de respaldo: 503 con un proveedor real caído; demo determinista desde el ADN solo con `AI_PROVIDER=demo` | Mejor nada que una estrategia falsa | `CAMPAIGNS.md` §2 |
+| D30 | Aceptar una pieza: reserva atómica (content → ContentItem; resto → Project); editar y rechazar condicionados a "no convertida" | Nunca duplicados ni estados incoherentes (evita el R7 del planner) | `CAMPAIGNS.md` §4 |
+| D31 | El chat Enterprise conoce hasta 3 campañas activas (nombre, objetivo, estado), nunca su estrategia | Consciencia básica sin inflar el prompt ni inventar campañas | `CAMPAIGNS.md` §6 |
 
 ## 9. Contratos que no deben romperse
 
@@ -335,6 +346,9 @@ verificada en navegador el 2026-10-09; falta el video final).
 | `/workspaces/:id/operations/summary` | GET | conteos y próximos vencimientos |
 | `/workspaces/:id/content-plans` · `/generate` · `/:planId` | GET, POST (201) · POST (201) · GET, PATCH, DELETE (archiva) | solo Personal; sin ADN → 409 `personal_context_not_configured` |
 | `/workspaces/:id/content-plans/:planId/items/:itemId` · `/accept` · `/reject` | PATCH · POST (201 al crear, 200 si ya existía) · POST | solo Personal |
+| `/workspaces/:id/campaigns` · `/generate` · `/:campaignId` | GET, POST (201) · POST (201) · GET, PATCH, DELETE (archiva) | solo Enterprise (Personal → 400 `feature_not_available`); generar sin ADN → 409 `brand_dna_missing`; sin IA → 503 `campaign_generation_unavailable` |
+| `/workspaces/:id/campaigns/:campaignId/strategy[?version=]` · `/strategy/generate` | GET · POST (201) | versiones conservadas; dos regeneraciones simultáneas → 409 `campaign_strategy_generation_in_progress` |
+| `/workspaces/:id/campaigns/:campaignId/deliverables` · `/:deliverableId` · `/accept` · `/reject` | GET · PATCH · POST (201 al crear, 200 si ya existía) · POST | convertida → 409 `campaign_deliverable_converted` al editar o rechazar |
 | `/workspaces/:id/daily-brief` · `/daily-brief/generate` | GET (404 `daily_brief_not_generated` si no hay) · POST (201) | solo Personal; respuesta `{ brief, stale }` |
 | `/workspaces/:id/daily-briefs` · `/:briefId` | GET (paginado) · GET | solo Personal |
 | `/companies` · `/companies/:id` | GET, POST (201) · GET, PATCH | legacy Enterprise; `POST` crea también su workspace. `/companies/:id/memories` está montado pero vacío (404) |
@@ -358,7 +372,9 @@ con `INVALID_RESPONSE`.
   `enterprise_company_missing`, `brand_dna_missing`, `daily_brief_not_generated`,
   `daily_brief_not_found`, `daily_brief_generation_failed`, `content_platforms_missing`,
   `content_plan_item_converted`, `content_plan_generation_unavailable`,
-  `content_plan_generation_failed`. No tienen schema en contracts. `ChatStudio` reacciona a
+  `content_plan_generation_failed`, `campaign_generation_unavailable`, `campaign_generation_failed`,
+  `campaign_strategy_generation_in_progress`, `campaign_deliverable_converted`. No tienen schema en
+  contracts. `ChatStudio` reacciona a
   `personal_context_not_configured`, `brand_dna_missing` y `enterprise_company_missing`.
 
 ### 9.3 Valores persistidos (cambiarlos rompe documentos guardados)
@@ -377,14 +393,17 @@ ambos casos: **no estrechar enums**.
 
 `users`, `workspaces`, `companies`, `brand_dnas`, `personal_profiles`, `personal_dnas`,
 `avatar_profiles`, `conversations`, `messages`, `creative_memories`, `projects`, `tasks`,
-`content_items`, `content_plans`, `content_plan_items`, `daily_briefs`. Índices con nombre:
+`content_items`, `content_plans`, `content_plan_items`, `daily_briefs`, `campaigns`,
+`campaign_strategies`, `campaign_deliverables`. Índices con nombre:
 `one_personal_per_owner` (workspaces), `brand_company_version` y `brand_company_dna_version`
 (avatar_profiles, parciales). Únicos relevantes: `users.email`, `{ownerId, slug}` en workspaces y
 companies, `workspaces.migratedFromCompanyId` (parcial; mantiene idempotente la migración),
 `companies.workspaceId` (parcial), `{companyId, version}` en brand_dnas, `{workspaceId, version}` en
 personal_dnas y avatar_profiles (parcial), `personal_profiles.workspaceId`,
-`{workspaceId, localDate, version}` en daily_briefs. Las colecciones de Operations y del planner
-solo tienen índices no únicos que empiezan por `workspaceId`.
+`{workspaceId, localDate, version}` en daily_briefs, `{workspaceId, campaignId, version}` en
+campaign_strategies. Las colecciones de Operations, del planner, `campaigns` y
+`campaign_deliverables` solo tienen índices no únicos que empiezan por `workspaceId` (Project y
+ContentItem ganan `{workspaceId, campaignId}`).
 
 ### 9.5 Otros
 
@@ -410,12 +429,13 @@ solo tienen índices no únicos que empiezan por `workspaceId`.
   0 empresas → `/companies/new`, 1 → su workspace, varias → `/dashboard`).
 - **Rutas web:** `/login`, `/register`, `/dashboard`, `/pixels/new`, `/companies`, `/companies/new`
   (`?workspace=`), `/company/:companyId/{,onboarding,brand,pixel,chat}`,
-  `/workspace/:workspaceId/{,chat,pixel,personal/onboarding,personal/dna,projects,projects/:projectId,tasks,content,content-planner,content-planner/:planId}`.
+  `/workspace/:workspaceId/{,chat,pixel,personal/onboarding,personal/dna,campaigns,campaigns/:campaignId,projects,projects/:projectId,tasks,content,content-planner,content-planner/:planId}`.
 - **Tests guardianes de invariantes:** `tenantScoped`, `contextBuilders`, `enterpriseWorkspace`,
   `workspaces`, `migration`, `avatarIndexes`, `personal*`, `chat`, el aislamiento por empresa de
   `companies`, `brandDna` y `avatar` (recurso ajeno → 404), `auth` (cookie, 401),
   `operationsIsolation`, `enterpriseOperations`, `projects`, `tasks`, `content`, `contentPlans`,
-  `dailyBrief`, `dailyDirector.unit` y `contentPlanning.engine`, en `apps/api/test/`.
+  `dailyBrief`, `dailyDirector.unit`, `contentPlanning.engine`, `campaigns` y
+  `campaignStrategy.engine`, en `apps/api/test/`.
 
 ## 10. Decisiones que no estaban documentadas (se registran aquí)
 
@@ -476,7 +496,8 @@ workspaces.** Ninguno está corregido.
 
 ### 11.2 Encontrado el 2026-10-09
 
-- **Test dependiente de la hora:** `enterpriseOperations.test.ts` › "solo conteos del workspace
+- ~~**Test dependiente de la hora**~~ — **corregido** en el Prompt 13 (la tarea vence hace 2 días,
+  no 1). Se reprodujo a las 03:02 UTC antes de corregirlo. Texto original: `enterpriseOperations.test.ts` › "solo conteos del workspace
   activo" falla entre las 00:00 y las 05:00 UTC. `daysFromNow(-1)` (`test/support/operations.ts`)
   fija la fecha a mediodía UTC del día anterior **en UTC**, pero el workspace usa
   `America/Bogota`: a esas horas, en Bogotá todavía es ese día, así que la tarea no está vencida y
@@ -533,6 +554,25 @@ workspaces.** Ninguno está corregido.
 
 ## 13. Última verificación
 
+### 2026-10-09: Prompt 13 (Campaign Manager), equipo del usuario
+
+| Comprobación | Resultado |
+|---|---|
+| `npm run typecheck` | 0 errores |
+| `npm run lint` | sin errores ni avisos |
+| Prettier | OK en todos los archivos tocados. `npm run format:check` del repo completo marca 262 archivos **solo por CRLF** (`core.autocrlf=true` en Windows): ninguno es de esta etapa y todos pasan con LF (comprobado uno a uno) |
+| `npm run test` | contracts 61/61 · API 330 + 2 omitidos (`chat.live`, `contentPlanning.live`) · web 180/180 |
+| `npm run build` | OK (mismo aviso de chunk grande) |
+| Arranque | API compilada en :4100 con MongoDB local y web (Vite) en :5180 sirviendo las rutas y módulos nuevos (los servidores del usuario en :4000 y :5173 no se tocaron) |
+| Smoke HTTP (modo demo, BD temporal `pixel_smoke_p13`, borrada después) | 39/39: TINTO genera "Del origen a la mesa" (paleta Tostado/Caramelo/Crema/Hueso con roles, evita Neón, tono cálido, canales del brief, 7 piezas); aceptar el Reel → 1 ContentItem (idea, instagram/reel, `campaignId`), dos veces sin duplicar; pieza gráfica → Project planificado + tarea; regenerar → v2 "Trazabilidad lote a lote, a la vista" y v1 conservada; Inicio con 1 campaña activa; chat la nombra y no inventa "Campaña Navidad". INVENTIA ("Prototipo funcional en pocos días, a la vista"): tono claro y técnico, Azul acero/Cobalto con el naranja solo de acento, ritmo ágil y retícula, sin rastro de TINTO; campaña de TINTO desde INVENTIA → 404, sin convertir piezas ni vincular proyectos (400). Personal: avatar, Operations, Content Planner, Daily Director y chat funcionan; `/campaigns` → 400 |
+
+Encontrado y corregido durante el smoke: la validación descartaba como duplicadas piezas del mismo
+concepto en canales distintos (TINTO perdía 2, INVENTIA la de LinkedIn); ahora solo se descarta la
+copia exacta dentro de una estrategia (test de regresión). No probado: Claude real y la interfaz en
+un navegador.
+
+Entorno: Windows 11, Node 24.11.1 / npm 11.6.2, MongoDB local en :27017.
+
 ### 2026-10-09: `e59757d` + etapa de entrada pública
 
 | Comprobación | Resultado |
@@ -573,6 +613,9 @@ Verificación anterior: `c846956` (2026-10-08): contracts 27 · API 185 + 1 · w
 
 ## 14. Siguiente paso (no implementado)
 
+0. **Usuario: decidir el push** del commit del Prompt 13 y el siguiente prompt. No empezar el Enterprise Content Planner sin
+   pedirlo. Probar `CAMPAIGN_SYSTEM` con Claude real cuando haya `ANTHROPIC_API_KEY`.
+
 1. **Usuario: aportar el video final de la bienvenida** (el recibido es un teaser de otro estudio y
    no se usó) y confirmar la asignación de imágenes (joven = Personal, zorro = Enterprise). Activarlo
    es solo copiar el archivo a `apps/web/public/experience/` y poner su ruta en `introVideo.src`
@@ -581,12 +624,10 @@ Verificación anterior: `c846956` (2026-10-08): contracts 27 · API 185 + 1 · w
    `feat/etapa-0-foundation`, así que fusionarla sería un avance rápido (sin conflictos). Elegir
    en qué rama sigue el trabajo.
 3. **Corregir los hallazgos de la revisión (§11)** que el usuario priorice, empezando por los de
-   severidad media, el arranque con `.env.example` y el test dependiente de la hora (§11.2).
+   severidad media y el arranque con `.env.example` (el test dependiente de la hora ya está corregido).
 4. Probar con Claude real el Content Planner y el Daily Director (`CONTENT-PLANNER.md` §10).
-5. Confirmar el número del prompt de la Etapa E y el de la etapa de entrada (el usuario la llamó
-   "prompt 13"; en el backlog, el 13 es el Campaign Manager), y resolver la colisión "Prompt
-   9/10" ↔ "Etapa 9/10" en `BACKLOG.md`.
-6. Solo después, y si el usuario lo pide: **Prompt 13 — Campaign Manager** (📝). No iniciarlo antes.
+5. Resolver la colisión "Prompt 9/10" ↔ "Etapa 9/10" en `BACKLOG.md`.
+6. ~~Prompt 13 — Campaign Manager~~: hecho (Etapa M, §13).
 7. Opcional, previa petición: corregir la deriva de §12.
 
 ## 15. Comandos reales

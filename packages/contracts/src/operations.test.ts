@@ -23,6 +23,7 @@ describe('Project', () => {
       goals: [],
       startDate: null,
       dueDate: null,
+      campaignId: null,
     });
   });
 

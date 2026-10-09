@@ -15,6 +15,8 @@ import { PersonalOnboardingPage } from '../features/personal/PersonalOnboardingP
 import { PersonalOnly } from '../features/personal/PersonalOnly';
 import { ContentPlannerPage } from '../features/content-planner/ContentPlannerPage';
 import { ContentPlanPage } from '../features/content-planner/ContentPlanPage';
+import { CampaignDetailPage } from '../features/campaigns/CampaignDetailPage';
+import { CampaignsPage } from '../features/campaigns/CampaignsPage';
 import { ContentPage } from '../features/operations/ContentPage';
 import { ProjectDetailPage } from '../features/operations/ProjectDetailPage';
 import { ProjectsPage } from '../features/operations/ProjectsPage';
@@ -123,6 +125,25 @@ export const router = createBrowserRouter([
               </PersonalOnly>
             ),
             handle: handle('Mi ADN', 'Pixel'),
+          },
+          // Campaign Manager: solo Enterprise (capacidad campaigns).
+          {
+            path: 'campaigns',
+            element: (
+              <FeatureOnly feature="campaigns">
+                <CampaignsPage />
+              </FeatureOnly>
+            ),
+            handle: handle('Campañas', 'Trabajo'),
+          },
+          {
+            path: 'campaigns/:campaignId',
+            element: (
+              <FeatureOnly feature="campaigns">
+                <CampaignDetailPage />
+              </FeatureOnly>
+            ),
+            handle: handle('Campaña', 'Trabajo'),
           },
           // Operations: compartidas por Personal y Enterprise (capacidades de contracts).
           {

@@ -58,6 +58,7 @@ const task = (overrides: Partial<Task> = {}): Task => ({
 const project = (overrides: Partial<Project> = {}): Project => ({
   id: oid(),
   workspaceId: WS,
+  campaignId: null,
   name: 'Proyecto',
   description: null,
   type: 'general',
@@ -76,6 +77,7 @@ const project = (overrides: Partial<Project> = {}): Project => ({
 const content = (overrides: Partial<ContentItem> = {}): ContentItem => ({
   id: oid(),
   workspaceId: WS,
+  campaignId: null,
   projectId: null,
   title: 'Pieza',
   concept: null,

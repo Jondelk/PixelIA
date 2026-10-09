@@ -7,6 +7,7 @@ import type { WorkspaceType } from './workspace.js';
  *
  * - Operations (projects, tasks, content): compartidas por ambos tipos (Shared Workspace Operations).
  * - Content Planner y Daily Director: solo Personal por ahora (dependen del PersonalDNA).
+ * - Campaign Manager: solo Enterprise (depende del BrandDNA).
  */
 
 export const WORKSPACE_FEATURES = [
@@ -15,6 +16,7 @@ export const WORKSPACE_FEATURES = [
   'content',
   'contentPlanner',
   'dailyDirector',
+  'campaigns',
 ] as const;
 export type WorkspaceFeature = (typeof WORKSPACE_FEATURES)[number];
 
@@ -27,6 +29,7 @@ const CAPABILITIES: Record<WorkspaceType, WorkspaceCapabilities> = {
     content: true,
     contentPlanner: true,
     dailyDirector: true,
+    campaigns: false,
   },
   enterprise: {
     projects: true,
@@ -34,6 +37,7 @@ const CAPABILITIES: Record<WorkspaceType, WorkspaceCapabilities> = {
     content: true,
     contentPlanner: false,
     dailyDirector: false,
+    campaigns: true,
   },
 };
 

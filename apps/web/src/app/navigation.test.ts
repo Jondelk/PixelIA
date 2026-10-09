@@ -119,7 +119,7 @@ describe('rutas de workspace', () => {
     }
   });
 
-  it('un Pixel de empresa: Inicio · Trabajo (sin Plan de contenido ni Campañas) · Marca', () => {
+  it('un Pixel de empresa: Inicio · Trabajo (Campañas primero, sin Plan de contenido) · Marca', () => {
     const groups = (companyId: string, workspaceId: string | null) =>
       enterpriseNav(companyId, workspaceId).map((group) => [
         group.label ?? null,
@@ -130,6 +130,7 @@ describe('rutas de workspace', () => {
       [
         'Trabajo',
         [
+          ['Campañas', '/workspace/w1/campaigns'],
           ['Proyectos', '/workspace/w1/projects'],
           ['Tareas', '/workspace/w1/tasks'],
           ['Contenido', '/workspace/w1/content'],
@@ -148,7 +149,6 @@ describe('rutas de workspace', () => {
     expect(groups('c1', null).map(([label]) => label)).toEqual([null, 'Marca']);
     const labels = enterpriseNav('c1', 'w1').flatMap((g) => g.items.map((item) => item.label));
     expect(labels).not.toContain('Plan de contenido');
-    expect(labels).not.toContain('Campañas');
   });
 
   it('workspaceNav de una empresa con empresa usa la navegación Enterprise', () => {

@@ -15,12 +15,13 @@ import { tenantScoped } from '../../db/tenantScoped.plugin.js';
 
 /*
  * ContentItem: una pieza de contenido en proceso (no un post publicado en una red). Recurso del
- * Workspace; `projectId` apunta siempre a un Project del mismo workspace. Toda consulta filtra por
- * workspaceId.
+ * Workspace; `projectId` y `campaignId` (opcional, Enterprise) apuntan siempre a recursos del
+ * mismo workspace. Toda consulta filtra por workspaceId.
  */
 export interface ContentItemAttrs {
   workspaceId: Types.ObjectId;
   projectId: Types.ObjectId | null;
+  campaignId: Types.ObjectId | null;
   title: string;
   concept: string | null;
   objective: string | null;
@@ -46,6 +47,7 @@ const contentItemSchema = new Schema<ContentItemAttrs>(
   {
     workspaceId: { type: Schema.Types.ObjectId, ref: 'Workspace', required: true },
     projectId: { type: Schema.Types.ObjectId, ref: 'Project', default: null },
+    campaignId: { type: Schema.Types.ObjectId, ref: 'Campaign', default: null },
     title: { type: String, required: true, trim: true, minlength: 1, maxlength: 160 },
     concept: { type: String, default: null, maxlength: 2000 },
     objective: { type: String, default: null, maxlength: 500 },
@@ -73,6 +75,7 @@ const contentItemSchema = new Schema<ContentItemAttrs>(
 contentItemSchema.index({ workspaceId: 1, status: 1, updatedAt: -1 });
 contentItemSchema.index({ workspaceId: 1, scheduledFor: 1 });
 contentItemSchema.index({ workspaceId: 1, projectId: 1, status: 1 });
+contentItemSchema.index({ workspaceId: 1, campaignId: 1 });
 contentItemSchema.plugin(tenantScoped, { key: 'workspaceId' });
 
 export const ContentItemModel = model<ContentItemAttrs>(
@@ -86,6 +89,7 @@ export function toContentItemDTO(doc: ContentItemDocument): ContentItem {
     id: doc._id.toString(),
     workspaceId: doc.workspaceId.toString(),
     projectId: doc.projectId?.toString() ?? null,
+    campaignId: doc.campaignId?.toString() ?? null,
     title: doc.title,
     concept: doc.concept ?? null,
     objective: doc.objective ?? null,

@@ -22,3 +22,6 @@ export * from './contentPlan.js';
 export * from './timezone.js';
 export * from './dailyBrief.js';
 export * from './capabilities.js';
+export * from './campaign.js';
+export * from './campaignDeliverable.js';
+export * from './campaignStrategy.js';

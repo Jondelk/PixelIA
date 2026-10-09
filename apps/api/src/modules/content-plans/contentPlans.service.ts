@@ -458,6 +458,7 @@ export async function acceptContentPlanItem(
           .join('\n')
           .slice(0, 5000),
         projectId: claimed.projectId?.toString() ?? null,
+        campaignId: null,
         scheduledFor: claimed.scheduledFor?.toISOString() ?? null,
         publishedAt: null,
         tags: claimed.pillar ? [claimed.pillar.slice(0, 40)] : [],

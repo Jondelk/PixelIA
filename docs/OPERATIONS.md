@@ -52,6 +52,7 @@ Todos con `timestamps`, `tenantScoped({ key: 'workspaceId' })` y fechas en **UTC
 | `priority` | `low` · `medium` · `high` | Por defecto `medium` |
 | `goals` | string[] | ≤ 10 |
 | `startDate`, `dueDate` | Date \| null | `dueDate ≥ startDate` (validado también contra lo guardado al editar) |
+| `campaignId` | ObjectId \| null | Prompt 13: campaña del **mismo** workspace (solo Enterprise) o ninguna; `null` en los documentos anteriores. Ver `CAMPAIGNS.md` |
 
 `progress` y `stats` **no se guardan**: se calculan en cada respuesta (ver §5).
 
@@ -79,6 +80,7 @@ Una pieza **en proceso**, no un post publicado en una red: no hay integración c
 |---|---|---|
 | `workspaceId` | ObjectId | Requerido |
 | `projectId` | ObjectId \| null | Proyecto del mismo workspace o ninguno |
+| `campaignId` | ObjectId \| null | Prompt 13: campaña del mismo workspace (solo Enterprise) o ninguna |
 | `title` | string (1–160) | Único campo obligatorio |
 | `concept`, `objective`, `hook`, `caption`, `script`, `notes` | string \| null | Desarrollo creativo |
 | `platform` | `instagram` · `tiktok` · `youtube` · `facebook` · `linkedin` · `x` · `blog` · `newsletter` · `other` \| null | |

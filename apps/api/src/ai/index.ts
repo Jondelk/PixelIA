@@ -31,3 +31,10 @@ export {
   planningPrompt,
   type PlanningPayload,
 } from './contentPlanningPayload.js';
+export {
+  CAMPAIGN_SCHEMA_NAME,
+  CampaignPayloadSchema,
+  campaignPrompt,
+  extractCampaignPayload,
+  type CampaignPayload,
+} from './campaignStrategyPayload.js';

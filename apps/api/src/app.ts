@@ -13,6 +13,7 @@ import {
   createPersonalAvatarConceptEngine,
 } from './modules/avatars/engine/index.js';
 import { createApiRouter } from './modules/index.js';
+import { createCampaignStrategyEngine } from './modules/campaigns/campaignStrategy.engine.js';
 import { createContentPlanningEngine } from './modules/content-plans/contentPlanning.engine.js';
 import { createDailyDirectorEngine } from './modules/daily-director/dailyDirector.engine.js';
 import { createPersonalDnaGenerator } from './modules/personal/personalDna.generator.js';
@@ -72,6 +73,7 @@ export function createApp({ env, logger, getDatabaseStatus, ai }: AppOptions): E
       personalDnaGenerator: createPersonalDnaGenerator({ ai, logger }),
       planningEngine: createContentPlanningEngine({ ai, logger }),
       dailyDirector: createDailyDirectorEngine({ ai, logger }),
+      campaignEngine: createCampaignStrategyEngine({ ai, logger }),
       defaultTimezone: env.DEFAULT_TIMEZONE,
       logger,
       session: {

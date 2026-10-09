@@ -25,6 +25,8 @@ export const OperationsSummarySchema = z.object({
     contentInProduction: z.number().int().min(0),
     /** Contenido en curso: de idea a listo (sin publicados ni archivados). */
     activeContentItems: z.number().int().min(0),
+    /** Campañas activas (solo Enterprise; 0 en Personal). */
+    activeCampaigns: z.number().int().min(0),
   }),
   /** Pendientes con fecha límite desde hoy, la más cercana primero. */
   upcomingTasks: z.array(TaskSchema),

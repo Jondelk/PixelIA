@@ -21,6 +21,7 @@ export interface ContentFilters {
   platform?: ContentPlatform;
   format?: ContentFormat;
   projectId?: string;
+  campaignId?: string;
   search?: string;
   limit?: number;
   offset?: number;

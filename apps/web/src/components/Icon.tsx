@@ -58,6 +58,8 @@ const paths = {
       <path d="M3.5 15.5h17M7.5 9.5h5" />
     </>
   ),
+  /** Campañas: un banderín sobre su mástil. */
+  campaigns: <path d="M5.5 21V3.5M5.5 4.5h12l-2.5 4 2.5 4h-12" />,
   /** Plan de contenido: una rejilla de días con un píxel marcado. */
   planner: (
     <>

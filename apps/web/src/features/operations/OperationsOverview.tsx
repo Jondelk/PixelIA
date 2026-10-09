@@ -23,15 +23,26 @@ export function OperationsOverview({
   workspaceId,
   base,
   copy,
+  showCampaigns = false,
 }: {
   workspaceId: string;
   base: string;
   copy?: OverviewCopy;
+  /** Enterprise: añade el contador de campañas activas. */
+  showCampaigns?: boolean;
 }) {
   const { state, reload } = useResource(`operations-summary:${workspaceId}`, (signal) =>
     getOperationsSummary(workspaceId, signal),
   );
-  return <OperationsOverviewView state={state} base={base} onRetry={reload} copy={copy} />;
+  return (
+    <OperationsOverviewView
+      state={state}
+      base={base}
+      onRetry={reload}
+      copy={copy}
+      showCampaigns={showCampaigns}
+    />
+  );
 }
 
 export function OperationsOverviewView({
@@ -39,11 +50,13 @@ export function OperationsOverviewView({
   base,
   onRetry,
   copy = PERSONAL_OPERATIONS_COPY.overview,
+  showCampaigns = false,
 }: {
   state: ResourceState<OperationsSummary>;
   base: string;
   onRetry: () => void;
   copy?: OverviewCopy;
+  showCampaigns?: boolean;
 }) {
   if (state.status === 'error') {
     return <ErrorState error={state.error} onRetry={onRetry} title={copy.errorTitle} />;
@@ -53,7 +66,19 @@ export function OperationsOverviewView({
 
   return (
     <section aria-label={copy.label} aria-busy={state.status === 'loading'} className="mb-12">
-      <div className="grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-3">
+      <div
+        className={[
+          'grid gap-px overflow-hidden rounded-2xl border border-line bg-line',
+          showCampaigns ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3',
+        ].join(' ')}
+      >
+        {showCampaigns && (
+          <Counter
+            to={`${base}/campaigns?filter=active`}
+            label="Campañas activas"
+            value={counts?.activeCampaigns}
+          />
+        )}
         <Counter
           to={`${base}/projects?filter=active`}
           label="Proyectos activos"

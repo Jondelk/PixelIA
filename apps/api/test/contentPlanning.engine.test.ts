@@ -35,6 +35,7 @@ const NOW = '2026-10-07T15:00:00.000Z';
 const project = (overrides: Partial<Project>): Project => ({
   id: '64b7f0c2a1b2c3d4e5f60010',
   workspaceId: '64b7f0c2a1b2c3d4e5f60001',
+  campaignId: null,
   name: 'Videoclip musical',
   description: 'Dirección y edición de un videoclip para una banda local',
   type: 'creative',

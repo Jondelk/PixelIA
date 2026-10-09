@@ -11,6 +11,7 @@ import {
   type CreativeLever,
   type PersonalBrief,
 } from '../brief.js';
+import { CAMPAIGN_SCHEMA_NAME, extractCampaignPayload } from '../campaignStrategyPayload.js';
 import { extractPlanningPayload, PLANNING_SCHEMA_NAME } from '../contentPlanningPayload.js';
 import {
   DAILY_QUESTION,
@@ -23,6 +24,7 @@ import {
   OPERATIONS_QUESTION,
   type OperationsStatusContext,
 } from '../operationsStatusContext.js';
+import { composeDemoCampaignStrategy } from './demoCampaignStrategy.js';
 import { composeDemoContentPlan } from './demoContentPlan.js';
 
 /**
@@ -263,7 +265,8 @@ const plural = (count: number, one: string, many: string) => `${count} ${count =
  * proyectos, campañas ni tareas (no los conoce) y lo dice en lugar de inventarlos.
  */
 export function composeOperationsReply(brand: string, ops: OperationsStatusContext): string {
-  const empty = ops.activeProjects + ops.openTasks + ops.activeContentItems === 0;
+  const empty =
+    ops.activeProjects + ops.openTasks + ops.activeContentItems + ops.activeCampaigns === 0;
   const lines = empty
     ? [
         `Todavía no veo trabajo registrado para ${brand}: no hay proyectos activos, tareas pendientes ni contenido en curso.`,
@@ -271,13 +274,14 @@ export function composeOperationsReply(brand: string, ops: OperationsStatusConte
     : [
         `Así está el trabajo de ${brand} ahora mismo:`,
         '',
+        `- ${plural(ops.activeCampaigns, 'campaña activa', 'campañas activas')}${ops.campaigns.length ? `: ${ops.campaigns.map((campaign) => `«${campaign.name}»`).join(', ')}` : ''}`,
         `- ${plural(ops.activeProjects, 'proyecto activo', 'proyectos activos')}`,
         `- ${plural(ops.openTasks, 'tarea pendiente', 'tareas pendientes')}${ops.overdueTasks ? ` (${ops.overdueTasks} vencidas)` : ''}`,
         `- ${plural(ops.activeContentItems, 'pieza de contenido en curso', 'piezas de contenido en curso')}`,
       ];
   lines.push(
     '',
-    'Desde el chat solo veo estos conteos, no el detalle de cada proyecto o tarea: para eso, abre Proyectos, Tareas o Contenido.',
+    'Desde el chat solo veo estos conteos, no el detalle de cada campaña, proyecto o tarea: para eso, abre Campañas, Proyectos, Tareas o Contenido.',
   );
   return lines.join('\n');
 }
@@ -321,7 +325,7 @@ export class DemoProvider implements AIProvider {
   }
 
   /**
-   * Solo el plan de contenido tiene versión demo (compuesta con reglas a partir del contexto real,
+   * Solo el plan de contenido y la estrategia de campaña tienen versión demo (compuesta con reglas a partir del contexto real,
    * marcada `mode: demo`). Cualquier otra salida estructurada exige un modelo real.
    */
   async generateStructuredOutput<T>(
@@ -332,6 +336,14 @@ export class DemoProvider implements AIProvider {
       input.schemaName === PLANNING_SCHEMA_NAME ? extractPlanningPayload(input.prompt) : null;
     if (payload) {
       return { data: input.schema.parse(composeDemoContentPlan(payload)), ...this.meta(start) };
+    }
+    const campaign =
+      input.schemaName === CAMPAIGN_SCHEMA_NAME ? extractCampaignPayload(input.prompt) : null;
+    if (campaign) {
+      return {
+        data: input.schema.parse(composeDemoCampaignStrategy(campaign)),
+        ...this.meta(start),
+      };
     }
     throw new AIProviderError(
       'misconfigured',

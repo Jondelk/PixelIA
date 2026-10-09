@@ -14,6 +14,8 @@ import { createAvatarsRouter } from './avatars/avatars.routes.js';
 import type { AvatarConceptEngine, PersonalAvatarConceptEngine } from './avatars/engine/index.js';
 import { brandDnaRouter } from './brand-dna/brand-dna.routes.js';
 import { companiesRouter, companyRouter } from './companies/companies.routes.js';
+import { createCampaignsRouter } from './campaigns/campaigns.routes.js';
+import type { CampaignStrategyEngine } from './campaigns/campaignStrategy.engine.js';
 import { createContentPlansRouter } from './content-plans/contentPlans.routes.js';
 import { createDailyBriefRouter } from './daily-director/dailyBrief.routes.js';
 import type { DailyDirectorEngine } from './daily-director/dailyDirector.engine.js';
@@ -46,6 +48,7 @@ export interface ApiDependencies {
   personalDnaGenerator: PersonalDnaGenerator;
   planningEngine: ContentPlanningEngine;
   dailyDirector: DailyDirectorEngine;
+  campaignEngine: CampaignStrategyEngine;
   defaultTimezone: string;
   logger: Logger;
 }
@@ -84,6 +87,8 @@ export function createApiRouter(deps: ApiDependencies): Router {
   workspace.use('/content', contentRouter);
   workspace.use('/operations', operationsRouter);
   workspace.use('/content-plans', createContentPlansRouter(deps));
+  // Campaign Manager: solo Enterprise (capacidad `campaigns`, la comprueba el servicio).
+  workspace.use('/campaigns', createCampaignsRouter(deps));
   workspace.use('/', createDailyBriefRouter(deps));
   api.use('/workspaces/:workspaceId', workspace);
 

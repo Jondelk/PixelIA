@@ -12,6 +12,7 @@ import { notFound } from '../../lib/errors.js';
 import type { WorkspaceDocument } from '../workspaces/workspace.model.js';
 import { ContentItemModel } from './contentItem.model.js';
 import {
+  assertCampaignInWorkspace,
   fieldError,
   PROJECT_NOT_FOUND,
   resourceId,
@@ -117,9 +118,16 @@ async function findProject(workspace: WorkspaceDocument, rawId: unknown): Promis
 export async function createProject(
   workspace: WorkspaceDocument,
   input: CreateProjectData,
+  /** `id`: id ya reservado (conversión atómica desde una pieza de campaña). */
+  options: { id?: Types.ObjectId } = {},
 ): Promise<Project> {
+  const campaignId = input.campaignId
+    ? await assertCampaignInWorkspace(workspace, input.campaignId)
+    : null;
   const project = await ProjectModel.create({
+    ...(options.id ? { _id: options.id } : {}),
     ...input,
+    campaignId,
     startDate: toDate(input.startDate),
     dueDate: toDate(input.dueDate),
     workspaceId: workspace._id,
@@ -135,6 +143,7 @@ export async function listProjects(
     workspaceId: workspace._id,
     status: query.status ? { $in: query.status } : { $ne: 'archived' },
     ...(query.priority ? { priority: query.priority } : {}),
+    ...(query.campaignId ? { campaignId: query.campaignId } : {}),
     ...searchFilter(['name', 'description'], query.search),
   };
   const [docs, total] = await Promise.all([
@@ -157,6 +166,7 @@ export async function updateProject(
   input: UpdateProjectData,
 ): Promise<Project> {
   const project = await findProject(workspace, rawId);
+  const { campaignId, ...fields } = input;
   const startDate = toDate(input.startDate);
   const dueDate = toDate(input.dueDate);
   // El orden de fechas se valida contra lo que quedará guardado, no solo contra el cuerpo.
@@ -166,10 +176,13 @@ export async function updateProject(
     throw fieldError('dueDate', DATES_MESSAGE);
   }
   project.set({
-    ...input,
+    ...fields,
     ...(startDate !== undefined ? { startDate } : {}),
     ...(dueDate !== undefined ? { dueDate } : {}),
   });
+  if (campaignId !== undefined) {
+    project.campaignId = campaignId ? await assertCampaignInWorkspace(workspace, campaignId) : null;
+  }
   await project.save();
   return toOneProjectDTO(workspace, project);
 }

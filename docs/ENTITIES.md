@@ -87,10 +87,23 @@ proyecto lo archiva. Campos, estados, índices y reglas en [`OPERATIONS.md`](./O
 **Shared Workspace Operations (Prompt 12):** Enterprise usa los mismos tres modelos, sin
 `companyId` (el workspace ya conoce su empresa) ni modelos `Enterprise*`. `Project.type` admite
 `general · content · client · creative · study · personal · campaign · branding · product_launch ·
-event · internal · other` (por defecto `general`; solo se añadieron valores, sin migración). Sin
-`campaignId` todavía: llegará con Campaign (opcional, no destructivo). Ver
+event · internal · other` (por defecto `general`; solo se añadieron valores, sin migración). Desde el
+Prompt 13, Project y ContentItem tienen `campaignId` opcional (`null` por defecto, índice
+`{workspaceId, campaignId}`, campaña del mismo workspace; Task no lo tiene). Ver
 [`ENTERPRISE-OPERATIONS.md`](./ENTERPRISE-OPERATIONS.md). Las capacidades por tipo
 (`WorkspaceCapabilities`) se derivan de `workspace.type`: no son una entidad ni un campo.
+
+## 1g. Campaign, CampaignStrategy y CampaignDeliverable (Campaign Manager) ✅
+
+Solo Enterprise (capacidad `campaigns`). Las tres llevan `workspaceId` obligatorio y `tenantScoped`.
+`Campaign` (`campaigns`) es la entidad estratégica: objetivo, brief, estado (`draft` · `planned` ·
+`active` · `paused` · `completed` · `archived`), `generatedBy`, `brandDnaVersion` y el puntero
+`currentStrategyVersion`; DELETE la archiva. `CampaignStrategy` (`campaign_strategies`) es una
+versión de su estrategia (único `{workspaceId, campaignId, version}`; nunca se sobrescribe).
+`CampaignDeliverable` (`campaign_deliverables`) es una pieza que la campaña necesita
+(`proposed` · `accepted` · `rejected` · `converted`): al aceptarla se crea un ContentItem
+(`type content`) o un Project (el resto) con `campaignId`, una sola vez (`convertedContentItemId` /
+`convertedProjectId`). Detalle en [`CAMPAIGNS.md`](./CAMPAIGNS.md).
 
 ## 1e. ContentPlan y ContentPlanItem (Content Planner) ✅
 

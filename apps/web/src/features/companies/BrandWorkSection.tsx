@@ -8,8 +8,8 @@ import { enterpriseOperationsCopy } from '../operations/operationsCopy';
 
 /**
  * "Trabajo de la marca" en el Inicio Enterprise: los mismos contadores y próximos elementos que el
- * Inicio Personal (OperationsOverview), sobre el workspace de la empresa. Solo datos reales: sin
- * recomendaciones de Pixel (no hay Daily Director Enterprise).
+ * Inicio Personal (OperationsOverview) más las campañas activas, sobre el workspace de la empresa.
+ * Solo datos reales: sin recomendaciones de Pixel (no hay Daily Director Enterprise).
  */
 export function BrandWorkSection({ company }: { company: Company }) {
   const base = workspaceBasePath(company.workspaceId);
@@ -20,6 +20,7 @@ export function BrandWorkSection({ company }: { company: Company }) {
         workspaceId={company.workspaceId}
         base={base}
         copy={enterpriseOperationsCopy(company.name).overview}
+        showCampaigns
       />
     </section>
   );

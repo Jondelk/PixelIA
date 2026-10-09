@@ -82,6 +82,8 @@ export type ProjectStats = z.infer<typeof ProjectStatsSchema>;
 export const ProjectSchema = z.object({
   id: ObjectIdSchema,
   workspaceId: ObjectIdSchema,
+  /** Campaña del mismo workspace que lo origina (Enterprise; null = ninguna). Opcional. */
+  campaignId: ObjectIdSchema.nullable().default(null),
   name: z.string(),
   description: z.string().nullable(),
   type: ProjectTypeSchema,
@@ -113,6 +115,7 @@ const projectFields = {
   goals: projectGoals,
   startDate: OptionalDateInputSchema,
   dueDate: OptionalDateInputSchema,
+  campaignId: ObjectIdSchema.nullable(),
 };
 
 const projectDatesInOrder = (value: { startDate?: string | null; dueDate?: string | null }) =>
@@ -136,6 +139,7 @@ export const CreateProjectSchema = z
     goals: projectFields.goals.default([]),
     startDate: projectFields.startDate.default(null),
     dueDate: projectFields.dueDate.default(null),
+    campaignId: projectFields.campaignId.default(null),
   })
   .strict()
   .refine(projectDatesInOrder, DATES_MESSAGE);
@@ -159,6 +163,7 @@ export type UpdateProjectData = z.output<typeof UpdateProjectSchema>;
 export const ProjectListQuerySchema = z.object({
   status: queryEnumList(ProjectStatusSchema),
   priority: queryEnum(PrioritySchema),
+  campaignId: ObjectIdSchema.optional(),
   search: querySearch,
   limit: queryLimit,
   offset: queryOffset,

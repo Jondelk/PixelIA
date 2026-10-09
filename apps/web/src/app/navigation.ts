@@ -42,6 +42,7 @@ export interface NavGroup {
 function workNav(workspaceId: string, type: WorkspaceType): NavGroup {
   const base = workspaceBasePath(workspaceId);
   const items: [WorkspaceFeature, NavItem][] = [
+    ['campaigns', { to: `${base}/campaigns`, label: 'Campañas', icon: 'campaigns' }],
     ['projects', { to: `${base}/projects`, label: 'Proyectos', icon: 'projects' }],
     ['tasks', { to: `${base}/tasks`, label: 'Tareas', icon: 'tasks' }],
     ['content', { to: `${base}/content`, label: 'Contenido', icon: 'content' }],
@@ -92,6 +93,7 @@ export function workspaceNav(
 /** Subrutas de /workspace/:workspaceId que no existen bajo /company/:companyId. */
 const WORKSPACE_ONLY_SEGMENTS = new Set([
   'personal',
+  'campaigns',
   'projects',
   'tasks',
   'content',
@@ -100,6 +102,7 @@ const WORKSPACE_ONLY_SEGMENTS = new Set([
 
 /** Primer segmento de /workspace/:workspaceId/<segmento> → funcionalidad que lo sirve. */
 const SEGMENT_FEATURES: Record<string, WorkspaceFeature> = {
+  campaigns: 'campaigns',
   projects: 'projects',
   tasks: 'tasks',
   content: 'content',
@@ -145,9 +148,9 @@ export function companyNav(companyId: string): NavItem[] {
 }
 
 /**
- * Navegación de un Pixel de empresa: Inicio · Trabajo (Operations, bajo /workspace/:workspaceId) ·
- * Marca (ADN, personaje y chat, todavía bajo /company/:companyId). Sin workspaceId (aún cargando)
- * se omite Trabajo. Sin Campañas: llegarán con Campaign Manager.
+ * Navegación de un Pixel de empresa: Inicio · Trabajo (Campañas y Operations, bajo
+ * /workspace/:workspaceId) · Marca (ADN, personaje y chat, todavía bajo /company/:companyId). Sin
+ * workspaceId (aún cargando) se omite Trabajo.
  */
 export function enterpriseNav(companyId: string, workspaceId: string | null): NavGroup[] {
   const [summary, ...brand] = companyNav(companyId);

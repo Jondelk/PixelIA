@@ -26,6 +26,7 @@ describe.skipIf(!live)('Claude real: plan de un director creativo', () => {
       const project: Project = {
         id: '64b7f0c2a1b2c3d4e5f60010',
         workspaceId: '64b7f0c2a1b2c3d4e5f60001',
+        campaignId: null,
         name: 'Pixel Personal MVP',
         description: 'Director creativo con IA que aprende el ADN personal de cada persona',
         type: 'creative',

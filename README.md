@@ -80,7 +80,7 @@ La API arranca aunque MongoDB no esté disponible: `/api/health` responde `503` 
 
 ```
 apps/web            React + Vite + Tailwind (shell y pantallas)
-apps/api            Express + Mongoose (módulos: health, auth, workspaces, companies, brand-dna, personal, avatars, conversations, creative-memory, operations, content-plans, daily-director)
+apps/api            Express + Mongoose (módulos: health, auth, workspaces, companies, brand-dna, personal, avatars, conversations, creative-memory, operations, content-plans, daily-director, campaigns)
 packages/contracts  Schemas Zod y tipos compartidos
 docs/               Estado real (PIXEL_ESTADO), MVP, arquitectura, entidades, backlog, workspaces, migración, Pixel Personal, Operations, Content Planner y Daily Director
 ```
@@ -97,6 +97,7 @@ docs/               Estado real (PIXEL_ESTADO), MVP, arquitectura, entidades, ba
 - [`docs/PERSONAL.md`](./docs/PERSONAL.md) — Pixel Personal: perfil, ADN personal, avatar y chat.
 - [`docs/OPERATIONS.md`](./docs/OPERATIONS.md) — Shared Operations: proyectos, tareas y contenido de cualquier Pixel.
 - [`docs/ENTERPRISE-OPERATIONS.md`](./docs/ENTERPRISE-OPERATIONS.md) — Operations en un Pixel de empresa: gating, aislamiento, Inicio y chat.
+- [`docs/CAMPAIGNS.md`](./docs/CAMPAIGNS.md) — Campaign Manager: estrategia de campaña desde el BrandDNA, piezas y conversión a Operations.
 - [`docs/CONTENT-PLANNER.md`](./docs/CONTENT-PLANNER.md) — Content Planner: estrategia de contenido con PersonalDNA y proyectos.
 - [`docs/DAILY-DIRECTOR.md`](./docs/DAILY-DIRECTOR.md) — Daily Director: la dirección del día en Inicio.
 - [`docs/WORKSPACE-MIGRATION.md`](./docs/WORKSPACE-MIGRATION.md) — migración Company → Workspace.

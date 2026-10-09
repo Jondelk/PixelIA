@@ -10,6 +10,7 @@ export function projectFixture(overrides: Partial<Project> = {}): Project {
   return {
     id: '64b7f0c2a1b2c3d4e5f60010',
     workspaceId: WORKSPACE_ID,
+    campaignId: null,
     name: 'Marca personal',
     description: 'Construir mi marca como fotógrafo',
     type: 'personal',
@@ -51,6 +52,7 @@ export function contentFixture(overrides: Partial<ContentItem> = {}): ContentIte
     id: '64b7f0c2a1b2c3d4e5f60030',
     workspaceId: WORKSPACE_ID,
     projectId: null,
+    campaignId: null,
     title: 'Cómo construí Pixel Personal',
     concept: null,
     objective: null,

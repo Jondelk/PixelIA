@@ -187,6 +187,7 @@ describe('Operations: resumen del Inicio', () => {
         overdueTasks: 0,
         contentInProduction: 0,
         activeContentItems: 0,
+        activeCampaigns: 0,
       },
       upcomingTasks: [],
       recentProjects: [],
@@ -220,6 +221,7 @@ describe('Operations: resumen del Inicio', () => {
       contentInProduction: 1,
       // En producción + Programado (idea); el publicado no cuenta.
       activeContentItems: 2,
+      activeCampaigns: 0,
     });
     expect(summary.upcomingTasks.map((task) => task.title)).toEqual(['Próxima']);
     expect(summary.recentProjects.map((project) => project.name)).toEqual([
@@ -283,6 +285,7 @@ describe('Operations: tenantScoped e índices', () => {
       { _id: 1 },
       { workspaceId: 1, status: 1, updatedAt: -1 },
       { workspaceId: 1, dueDate: 1 },
+      { workspaceId: 1, campaignId: 1 },
     ]);
     expect(await keys(TaskModel as unknown as Model<Record<string, unknown>>)).toEqual([
       { _id: 1 },
@@ -295,6 +298,7 @@ describe('Operations: tenantScoped e índices', () => {
       { workspaceId: 1, status: 1, updatedAt: -1 },
       { workspaceId: 1, scheduledFor: 1 },
       { workspaceId: 1, projectId: 1, status: 1 },
+      { workspaceId: 1, campaignId: 1 },
     ]);
   });
 });

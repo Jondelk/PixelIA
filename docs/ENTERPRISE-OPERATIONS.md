@@ -71,8 +71,8 @@ Sin responsables, aprobaciones, equipo ni flujos por departamento (llegarán des
 ## 4. ContentItem
 
 Sin cambios. Pipeline Idea → Planificado → Producción → Revisión → Listo → Publicado (+ Archivado).
-**No hay `campaignId`**: no se referencia una entidad que todavía no existe. Prompt 13 lo añadirá
-como campo opcional (no destructivo).
+Desde el Prompt 13 tiene `campaignId` opcional (igual que Project; ver `docs/CAMPAIGNS.md`):
+`null` por defecto, sin migración, validado contra el mismo workspace.
 
 ## 5. Feature gating
 
@@ -85,10 +85,12 @@ Capacidades **derivadas** del tipo (no se guardan): `packages/contracts/src/capa
 | `content` | ✅ | ✅ |
 | `contentPlanner` (generar con IA) | ✅ | ❌ |
 | `dailyDirector` | ✅ | ❌ |
+| `campaigns` (Campaign Manager, Prompt 13) | ❌ | ✅ |
 
 - API: `assertWorkspaceFeature(workspace, feature, message)` (`modules/workspaces/workspaceFeatures.ts`)
-  → **400** `{ reason: 'feature_not_available', feature, expected: 'personal' }`. Lo usan
-  `generateContentPlan`, el Daily Director y su lectura para el chat (`hasWorkspaceFeature`).
+  → **400** `{ reason: 'feature_not_available', feature, expected }` (`expected` = el tipo que sí
+  la tiene). Lo usan `generateContentPlan`, el Daily Director y su lectura para el chat, el Campaign
+  Manager y la validación de `campaignId` (`hasWorkspaceFeature`).
 - Web: `workspaceNav`/`enterpriseNav` filtran los enlaces y `<FeatureOnly feature>` protege las
   rutas (sin capacidad → vuelve al inicio del workspace).
 
@@ -110,13 +112,15 @@ valida contra el mismo workspace (`assertProjectInWorkspace`). Cubierto por
 ## 7. Inicio Enterprise y chat
 
 **Inicio** (`/company/:companyId`): bajo los datos de la marca, la sección **"Trabajo de la marca"**
-(`BrandWorkSection`) con los mismos contadores y listas que el Inicio Personal (proyectos activos,
+(`BrandWorkSection`) con los mismos contadores y listas que el Inicio Personal más **Campañas
+activas** (Prompt 13) (proyectos activos,
 tareas pendientes con vencidas, contenido en producción; próximas tareas, proyectos recientes,
 contenido próximo) y el CTA **Nuevo proyecto** → `/workspace/:workspaceId/projects?new`. Solo datos
 reales: sin "Pixel recomienda" (no hay Daily Director Enterprise).
 
 **Chat**: `EnterpriseContextBuilder` añade un estado operativo compacto
-(`getOperationsStatus`, zona horaria del workspace) con **solo conteos**:
+(`getOperationsStatus`, zona horaria del workspace) con conteos y, desde el Prompt 13, hasta 3
+campañas activas (nombre, objetivo y estado; nunca su estrategia):
 
 ```
 Estado del trabajo de TINTO (solo conteos …):
@@ -127,7 +131,8 @@ No ves nombres, fechas ni el detalle … no lo inventes … el detalle está en 
 <operations_status>{"activeProjects":3,…}</operations_status>
 ```
 
-- Nunca entran nombres, títulos ni listas (ni de este workspace ni de otro).
+- Nunca entran nombres, títulos ni listas de proyectos, tareas o contenido (ni de este workspace
+  ni de otro). La única excepción son las campañas activas resumidas.
 - "¿Cómo vamos con el lanzamiento?" → responde con los conteos reales. "¿Cómo va la campaña
   Navidad?" o "dime todas las tareas" → no inventa: dice que desde el chat solo ve conteos y que el
   detalle está en las secciones. Sin tools ni retrieval todavía.
@@ -140,13 +145,14 @@ No ves nombres, fechas ni el detalle … no lo inventes … el detalle está en 
 |---|---|
 | `/company/:companyId` | Inicio de la empresa (+ Trabajo de la marca) |
 | `/company/:companyId/{brand,pixel,chat,onboarding}` | ADN, personaje, chat y onboarding (sin cambios) |
+| `/workspace/:workspaceId/campaigns[/:campaignId]` | Campañas (Prompt 13, `docs/CAMPAIGNS.md`) |
 | `/workspace/:workspaceId/projects[/:projectId]` | Proyectos de la marca (pantalla compartida) |
 | `/workspace/:workspaceId/tasks` | Tareas |
 | `/workspace/:workspaceId/content` | Contenido |
 | `/workspace/:workspaceId/content-planner` | No existe en Enterprise: redirige al Inicio de la empresa |
 
-Navegación Enterprise (en ambas familias de rutas): **Inicio · Trabajo** (Proyectos, Tareas,
-Contenido) **· Marca** (ADN de marca, Personaje, Chat). Sin Campañas hasta el Prompt 13.
+Navegación Enterprise (en ambas familias de rutas): **Inicio · Trabajo** (Campañas, Proyectos,
+Tareas, Contenido) **· Marca** (ADN de marca, Personaje, Chat).
 
 Estrategia (`docs/WORKSPACES.md`): **toda funcionalidad nueva es workspace-first**. `WorkspaceLayout`
 deja en `/workspace/:workspaceId` las rutas cuya funcionalidad Enterprise admite
@@ -156,13 +162,16 @@ moverán después, una a una; no se crearon rutas `/company/:companyId/projects`
 
 ## 9. Limitaciones
 
-- Sin Campaign, aprobaciones, equipo, roles, responsables ni Brand Guardian.
+- Sin aprobaciones, equipo, roles, responsables ni Brand Guardian (Campaign Manager existe desde
+  el Prompt 13).
 - Sin Content Planner IA ni Daily Director para Enterprise.
-- El chat solo conoce conteos: no lista ni busca proyectos o tareas.
+- El chat solo conoce conteos y las campañas activas resumidas: no lista ni busca proyectos o tareas.
 - Sin integraciones externas ni acciones automáticas.
 - Las pantallas de marca siguen en `/company/:companyId` (dos familias de rutas conviven).
 
-## 10. Preparación para Campaign Manager (Prompt 13)
+## 10. Campaign Manager (Prompt 13) ✅
+
+Hecho tal como se preparó aquí: ver `docs/CAMPAIGNS.md`. Lo que se planificó:
 
 ```
 BrandDNA → Campaign → Projects → Tasks

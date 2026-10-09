@@ -172,6 +172,7 @@ describe('contentApi y resumen', () => {
             overdueTasks: 0,
             contentInProduction: 1,
             activeContentItems: 2,
+            activeCampaigns: 0,
           },
           upcomingTasks: [],
           recentProjects: [projectFixture()],

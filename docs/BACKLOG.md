@@ -23,7 +23,8 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 | O | Operations: Projects, Tasks y ContentItems (Prompt 09) | ✅ |
 | C | Content Planner Personal (Prompt 10) | ✅ (Enterprise: después) |
 | D | Daily Director Personal (Prompt 11) | ✅ (Enterprise y acciones: después) |
-| E | Shared Operations + Enterprise Projects (Prompt 12) | ✅ (Campaign Manager: Prompt 13) |
+| E | Shared Operations + Enterprise Projects (Prompt 12) | ✅ |
+| M | Enterprise Campaign Manager (Prompt 13) | ✅ (prueba con Claude real pendiente) |
 | — | Experiencia de entrada pública: bienvenida, Explorar y acceso (solo web) | ✅ (video final pendiente) |
 | 9 | CreativeMemory básica | ⬜ |
 | 10 | Cierre end-to-end del MVP | ⬜ |
@@ -337,8 +338,34 @@ Ver `docs/ENTERPRISE-OPERATIONS.md`.
 - [ ] Recorrido visual en navegador (sin herramienta de navegador en esta sesión).
 - [ ] Probar el estado operativo del chat Enterprise con Claude real (requiere `ANTHROPIC_API_KEY`).
 - [ ] Mover las pantallas de marca a `/workspace/:workspaceId` (convergencia, `docs/WORKSPACES.md`).
-- [ ] Campaign Manager (Prompt 13): `Campaign` + `campaignId` opcional en Project y ContentItem.
+- [x] Campaign Manager (Prompt 13): ver Etapa M.
 - [ ] Responsables, aprobaciones, equipo y roles; Content Planner y Daily Director Enterprise.
+
+## Etapa M — Enterprise Campaign Manager ✅
+
+Ver `docs/CAMPAIGNS.md`.
+
+- [x] Contratos `campaign.ts`, `campaignStrategy.ts` (incl. `GeneratedCampaignStrategySchema`) y
+  `campaignDeliverable.ts`; capacidad `campaigns` (solo Enterprise); `campaignId` opcional en
+  Project y ContentItem; `activeCampaigns` en el resumen.
+- [x] Modelos Campaign, CampaignStrategy (versionada, única por versión) y CampaignDeliverable, con
+  `tenantScoped` e índices.
+- [x] CampaignStrategyEngine: contexto controlado y acotado, salida estructurada validada con Zod y
+  validación de fundamento (cifras, nombres, claims de mercado, afirmaciones sobre clientes,
+  restricciones visuales, paleta, canales del brief, insight → hipótesis, sin duplicar campañas);
+  503 sin IA (sin respaldo); demo determinista desde el ADN.
+- [x] API: CRUD (DELETE archiva), generar, estrategia por versión, regenerar, piezas (editar,
+  aceptar idempotente con reserva atómica, rechazar).
+- [x] Web: Campañas (lista, filtros, "Crear con Pixel" / "Nueva campaña", pensando), detalle con
+  Estrategia · Piezas · Proyectos · Contenido, versiones e hipótesis; navegación Enterprise; Inicio
+  con "Campañas activas"; proyecto → "Ver su campaña".
+- [x] Chat Enterprise: campañas activas resumidas (máx. 3) en el estado operativo.
+- [x] Tests (contracts, motor, API, web) y smoke HTTP (TINTO, INVENTIA, Personal).
+- [x] Corregido de paso el test dependiente de la hora (`PIXEL_ESTADO.md` §11.2).
+- [ ] Probar `CAMPAIGN_SYSTEM` con Claude real (requiere `ANTHROPIC_API_KEY`).
+- [ ] Recorrido visual en navegador.
+- [ ] Vincular proyectos o contenidos existentes a una campaña desde la UI.
+- [ ] Creative Workflow (aprobaciones), Brand Guardian, Enterprise Content Planner y Daily Director.
 
 ## Etapa 9 — CreativeMemory básica
 

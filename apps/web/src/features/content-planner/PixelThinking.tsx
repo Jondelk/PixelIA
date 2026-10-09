@@ -4,22 +4,39 @@ import { useResource } from '../../lib/useResource';
 import { AvatarStage } from '../avatar3d/AvatarStage';
 import { getAvatar } from '../pixel/avatarApi';
 
+const PLANNER_COPY = {
+  title: 'Pixel está construyendo tu estrategia…',
+  description:
+    'Está leyendo tu ADN personal, tus proyectos activos y tu contenido reciente para proponerte piezas con un porqué. Puede tardar un poco.',
+};
+
+type ThinkingCopy = typeof PLANNER_COPY;
+
 /**
  * Mientras Pixel genera: su personaje en estado "thinking" y una frase. Sin barras de progreso
- * falsas: no sabemos cuánto falta.
+ * falsas: no sabemos cuánto falta. Compartido (Content Planner y Campaign Manager): `copy` cambia
+ * el texto.
  */
-export function PixelThinking({ workspaceId }: { workspaceId: string }) {
+export function PixelThinking({
+  workspaceId,
+  copy = PLANNER_COPY,
+}: {
+  workspaceId: string;
+  copy?: ThinkingCopy;
+}) {
   const { state } = useResource(`avatar:workspace:${workspaceId}`, (signal) =>
     getAvatar(workspaceApiBase(workspaceId), signal),
   );
   const avatar = state.status === 'success' ? state.data.avatar : null;
-  return <PixelThinkingView avatar={avatar} />;
+  return <PixelThinkingView avatar={avatar} copy={copy} />;
 }
 
 export function PixelThinkingView({
   avatar,
+  copy = PLANNER_COPY,
 }: {
   avatar: Parameters<typeof AvatarStage>[0]['avatar'] | null;
+  copy?: ThinkingCopy;
 }) {
   return (
     <section
@@ -37,13 +54,8 @@ export function PixelThinkingView({
         )}
       </div>
       <div>
-        <h2 className="font-display text-xl font-bold tracking-tight">
-          Pixel está construyendo tu estrategia…
-        </h2>
-        <p className="mt-3 max-w-md text-sm leading-relaxed text-muted">
-          Está leyendo tu ADN personal, tus proyectos activos y tu contenido reciente para
-          proponerte piezas con un porqué. Puede tardar un poco.
-        </p>
+        <h2 className="font-display text-xl font-bold tracking-tight">{copy.title}</h2>
+        <p className="mt-3 max-w-md text-sm leading-relaxed text-muted">{copy.description}</p>
       </div>
     </section>
   );

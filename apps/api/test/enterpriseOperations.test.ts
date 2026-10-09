@@ -242,6 +242,7 @@ describe('Aislamiento entre workspaces del MISMO usuario (prueba crítica)', () 
       overdueTasks: 1,
       contentInProduction: 1,
       activeContentItems: 2,
+      activeCampaigns: 0,
     });
     expect((await summary(inventia)).counts).toEqual({
       activeProjects: 0,
@@ -249,6 +250,7 @@ describe('Aislamiento entre workspaces del MISMO usuario (prueba crítica)', () 
       overdueTasks: 0,
       contentInProduction: 0,
       activeContentItems: 0,
+      activeCampaigns: 0,
     });
   });
 });
@@ -348,7 +350,8 @@ describe('Chat Enterprise: estado operativo compacto', () => {
     await createProject(jhon, tinto.workspaceId, { name: 'Presentación 500 g' });
     await createTask(jhon, tinto.workspaceId, {
       title: 'Aprobar fotografía',
-      dueDate: daysFromNow(-1),
+      // -2 y no -1: con -1, entre las 00:00 y las 05:00 UTC en Bogotá aún es ese día (no vence).
+      dueDate: daysFromNow(-2),
     });
     await createProject(jhon, inventia.workspaceId, { name: 'Presentación laboratorio' });
 

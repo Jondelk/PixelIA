@@ -18,6 +18,7 @@ export interface ProjectFilters {
   /** Sin estado: todos menos los archivados. */
   status?: readonly ProjectStatus[];
   priority?: Priority;
+  campaignId?: string;
   search?: string;
   limit?: number;
   offset?: number;

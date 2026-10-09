@@ -18,6 +18,8 @@ import { tenantScoped } from '../../db/tenantScoped.plugin.js';
  */
 export interface ProjectAttrs {
   workspaceId: Types.ObjectId;
+  /** Campaña del mismo workspace que lo origina (opcional; solo Enterprise). */
+  campaignId: Types.ObjectId | null;
   name: string;
   description: string | null;
   type: ProjectType;
@@ -35,6 +37,7 @@ export type ProjectDocument = HydratedDocument<ProjectAttrs>;
 const projectSchema = new Schema<ProjectAttrs>(
   {
     workspaceId: { type: Schema.Types.ObjectId, ref: 'Workspace', required: true },
+    campaignId: { type: Schema.Types.ObjectId, ref: 'Campaign', default: null },
     name: { type: String, required: true, trim: true, minlength: 1, maxlength: 120 },
     description: { type: String, default: null, maxlength: 2000 },
     type: { type: String, enum: ProjectTypeSchema.options, required: true, default: 'general' },
@@ -50,6 +53,7 @@ const projectSchema = new Schema<ProjectAttrs>(
 // Sin índice suelto por workspaceId: lo cubre el prefijo de los compuestos.
 projectSchema.index({ workspaceId: 1, status: 1, updatedAt: -1 });
 projectSchema.index({ workspaceId: 1, dueDate: 1 });
+projectSchema.index({ workspaceId: 1, campaignId: 1 });
 projectSchema.plugin(tenantScoped, { key: 'workspaceId' });
 
 export const ProjectModel = model<ProjectAttrs>('Project', projectSchema, 'projects');
@@ -68,6 +72,7 @@ export function toProjectDTO(
   return ProjectSchema.parse({
     id: doc._id.toString(),
     workspaceId: doc.workspaceId.toString(),
+    campaignId: doc.campaignId?.toString() ?? null,
     name: doc.name,
     description: doc.description ?? null,
     type: doc.type,

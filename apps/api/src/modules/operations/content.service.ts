@@ -17,6 +17,7 @@ import {
   type ContentItemDocument,
 } from './contentItem.model.js';
 import {
+  assertCampaignInWorkspace,
   assertProjectInWorkspace,
   CONTENT_NOT_FOUND,
   resourceId,
@@ -67,11 +68,15 @@ export async function createContentItem(
   const projectId = input.projectId
     ? await assertProjectInWorkspace(workspace, input.projectId)
     : null;
+  const campaignId = input.campaignId
+    ? await assertCampaignInWorkspace(workspace, input.campaignId)
+    : null;
   const item = await ContentItemModel.create({
     ...(options.id ? { _id: options.id } : {}),
     ...input,
     workspaceId: workspace._id,
     projectId,
+    campaignId,
     scheduledFor: toDate(input.scheduledFor),
     publishedAt: publishedAtFor(input.status, toDate(input.publishedAt), null, now),
     source: options.source ?? 'manual',
@@ -89,6 +94,7 @@ export async function listContentItems(
     ...(query.platform ? { platform: query.platform } : {}),
     ...(query.format ? { format: query.format } : {}),
     ...(query.projectId ? { projectId: query.projectId } : {}),
+    ...(query.campaignId ? { campaignId: query.campaignId } : {}),
     ...searchFilter(['title', 'concept', 'hook'], query.search),
   };
   const [docs, total] = await Promise.all([
@@ -115,10 +121,13 @@ export async function updateContentItem(
   now = new Date(),
 ): Promise<ContentItem> {
   const item = await findContentItem(workspace, rawId);
-  const { projectId, scheduledFor, publishedAt, status, ...rest } = input;
+  const { projectId, campaignId, scheduledFor, publishedAt, status, ...rest } = input;
   item.set(rest);
   if (projectId !== undefined) {
     item.projectId = projectId ? await assertProjectInWorkspace(workspace, projectId) : null;
+  }
+  if (campaignId !== undefined) {
+    item.campaignId = campaignId ? await assertCampaignInWorkspace(workspace, campaignId) : null;
   }
   if (scheduledFor !== undefined) item.scheduledFor = toDate(scheduledFor) ?? null;
   const nextStatus = status ?? item.status;

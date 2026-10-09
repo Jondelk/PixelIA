@@ -172,6 +172,62 @@ export const constructoraNorte: OnboardingInput = {
   },
 };
 
+/** Laboratorio de prototipado 3D: tecnológica, práctica, rigurosa e iterativa; naranja solo de acento. */
+export const inventia: OnboardingInput = {
+  company: {
+    name: 'INVENTIA',
+    industry: 'Tecnología e impresión 3D',
+    description: 'Laboratorio de prototipado e impresión 3D para equipos de producto.',
+    history: 'Nació como un taller de prototipos para estudiantes de ingeniería.',
+    origin: null,
+  },
+  purpose: {
+    mission: 'Convertir ideas en prototipos funcionales en pocos días.',
+    vision: 'Que cualquier equipo pueda probar una idea física antes de invertir en ella.',
+    purpose: 'Acortar la distancia entre una idea y un objeto que funciona.',
+    values: ['Rigor', 'Iteración', 'Precisión'],
+  },
+  audience: {
+    targetAudience: 'Equipos de producto y emprendedores de hardware que validan prototipos.',
+    needs: ['Prototipos funcionales rápidos', 'Iterar sin moldes costosos'],
+    problems: ['Proveedores lentos', 'Prototipos que no se parecen al producto final'],
+    characteristics: ['Técnicos', 'Prácticos', 'Exigentes con la precisión'],
+  },
+  personality: { attributes: ['tecnológica', 'práctica', 'rigurosa', 'iterativa'] },
+  communication: {
+    tone: ['claro', 'técnico'],
+    formality: 3,
+    energy: 4,
+    language: 'es',
+    wordsToUse: ['prototipo', 'iterar', 'tolerancia'],
+    wordsToAvoid: ['mágico', 'revolucionario'],
+  },
+  visual: {
+    colors: [
+      { hex: '#2E4A62', name: 'Azul acero' },
+      { hex: '#3C6E9F', name: 'Cobalto' },
+      { hex: '#FF6A13', name: 'Naranja filamento' },
+      { hex: '#F4F4F2', name: 'Blanco técnico' },
+    ],
+    styles: ['técnico', 'limpio', 'industrial'],
+    materials: ['filamento', 'aluminio', 'acrílico'],
+    shapes: ['geométricas', 'precisas'],
+    references: ['Planos técnicos'],
+    recurringElements: ['Capas de impresión'],
+    avoid: ['Texturas rústicas', 'Ilustraciones infantiles'],
+  },
+  competition: {
+    competitors: ['Talleres de mecanizado'],
+    differentiators: ['Prototipo funcional en pocos días', 'Iteraciones documentadas capa a capa'],
+  },
+  creative: {
+    likes: ['Fotografía de proceso real', 'Macro de piezas impresas'],
+    dislikes: ['Renders irreales', 'Estética de ciencia ficción'],
+    visualReferences: [],
+    restrictions: ['No prometer producción en serie'],
+  },
+};
+
 export const STEP_ORDER: OnboardingStep[] = [
   'company',
   'purpose',

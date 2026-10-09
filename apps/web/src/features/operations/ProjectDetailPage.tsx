@@ -239,6 +239,14 @@ export function ProjectDetailView({
             <span>{PROJECT_STATUS_LABELS[data.status]}</span>
             <span aria-hidden="true">·</span>
             <span>{PROJECT_TYPE_LABELS[data.type]}</span>
+            {data.campaignId && (
+              <>
+                <span aria-hidden="true">·</span>
+                <Link to={`${base}/campaigns/${data.campaignId}`} className="hover:text-fg">
+                  Ver su campaña
+                </Link>
+              </>
+            )}
           </p>
           <div className="flex flex-wrap items-start justify-between gap-6">
             <h1 className="max-w-3xl font-display text-3xl font-bold tracking-tight sm:text-[2.5rem] sm:leading-[1.1]">

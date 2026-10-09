@@ -342,12 +342,16 @@ ${renderBrief(brief)}`;
  * tareas concretos (sin retrieval ni tools), así que lo dice en lugar de suponer.
  */
 function renderOperations(brand: string, ops: OperationsStatusContext): string {
+  const campaigns = ops.campaigns.length
+    ? `\nCampañas activas que conoces (solo estas; nombre, objetivo y estado):\n${ops.campaigns.map((campaign) => `- «${campaign.name}»: ${campaign.objective}`).join('\n')}`
+    : '';
   return `
-Estado del trabajo de ${brand} (solo conteos de las secciones Proyectos, Tareas y Contenido de este Pixel):
+Estado del trabajo de ${brand} (conteos de las secciones Campañas, Proyectos, Tareas y Contenido de este Pixel):
+- Campañas activas: ${ops.activeCampaigns}
 - Proyectos activos: ${ops.activeProjects}
 - Tareas pendientes: ${ops.openTasks} (vencidas: ${ops.overdueTasks})
-- Contenido en curso: ${ops.activeContentItems}
-No ves nombres, fechas ni el detalle de ningún proyecto, campaña, tarea o pieza. Si te preguntan por uno concreto o por la lista completa, no lo inventes ni supongas que existe: di que desde el chat solo ves estos conteos y que el detalle está en Proyectos, Tareas o Contenido. No puedes crear ni modificar tareas desde el chat.
+- Contenido en curso: ${ops.activeContentItems}${campaigns}
+No ves la estrategia de las campañas ni nombres, fechas o detalle de ningún proyecto, tarea o pieza. Si te preguntan por uno concreto que no está arriba, o por la lista completa, no lo inventes ni supongas que existe: di que desde el chat solo ves este resumen y que el detalle está en Campañas, Proyectos, Tareas o Contenido. No puedes crear ni modificar nada desde el chat.
 ${renderOperationsStatusContext(ops)}
 `;
 }

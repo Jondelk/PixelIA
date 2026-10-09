@@ -1,7 +1,9 @@
 import { Types, type QueryFilter } from 'mongoose';
 import { AppError, notFound } from '../../lib/errors.js';
 import { escapeRegex, isObjectIdString } from '../../lib/mongo.js';
+import { CampaignModel } from '../campaigns/campaign.model.js';
 import type { WorkspaceDocument } from '../workspaces/workspace.model.js';
+import { hasWorkspaceFeature } from '../workspaces/workspaceFeatures.js';
 import { ProjectModel } from './project.model.js';
 
 /*
@@ -12,6 +14,7 @@ import { ProjectModel } from './project.model.js';
 export const PROJECT_NOT_FOUND = 'Proyecto no encontrado';
 export const TASK_NOT_FOUND = 'Tarea no encontrada';
 export const CONTENT_NOT_FOUND = 'Contenido no encontrado';
+export const CAMPAIGN_NOT_FOUND = 'Campaña no encontrada';
 
 /**
  * Id de un recurso de la URL. Un id malformado responde 404 como uno inexistente o ajeno, para no
@@ -38,6 +41,24 @@ export async function assertProjectInWorkspace(
   const id = isObjectIdString(projectId) ? new Types.ObjectId(projectId) : null;
   const exists = id ? await ProjectModel.exists({ _id: id, workspaceId: workspace._id }) : null;
   if (!id || !exists) throw fieldError('projectId', PROJECT_NOT_FOUND);
+  return id;
+}
+
+/**
+ * Verifica que un campaignId del cuerpo es una campaña del MISMO workspace (y que el tipo admite
+ * campañas: Personal nunca las tiene). Inexistente, de otro workspace o de otro tipo → 400 en
+ * `campaignId`, sin revelar nada.
+ */
+export async function assertCampaignInWorkspace(
+  workspace: WorkspaceDocument,
+  campaignId: string,
+): Promise<Types.ObjectId> {
+  const id = isObjectIdString(campaignId) ? new Types.ObjectId(campaignId) : null;
+  const exists =
+    id && hasWorkspaceFeature(workspace, 'campaigns')
+      ? await CampaignModel.exists({ _id: id, workspaceId: workspace._id })
+      : null;
+  if (!id || !exists) throw fieldError('campaignId', CAMPAIGN_NOT_FOUND);
   return id;
 }
 
