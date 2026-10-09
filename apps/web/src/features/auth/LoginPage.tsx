@@ -1,84 +1,28 @@
-import { LoginInputSchema } from '@pixel/contracts';
-import { useState, type FormEvent } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router';
-import { Alert } from '../../components/Alert';
-import { Button } from '../../components/Button';
-import { TextField } from '../../components/Field';
-import { errorMessage } from '../../lib/api';
-import { apiFieldErrors, zodFieldErrors, type FieldErrors } from '../../lib/forms';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
+import { AuthPanel } from './AuthForms';
 import { AuthLayout } from './AuthLayout';
-import { useAuth } from './authContext';
+import { visualKindForNext } from './visualKind';
+import { authPagePath, nextAfterAuth } from './redirect';
 
+/** Acceso directo a /login (alternativa al modal de la portada). Conserva el destino pedido. */
 export function LoginPage() {
-  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: string } | null)?.from ?? '/dashboard';
-
-  const [values, setValues] = useState({ email: '', password: '' });
-  const [errors, setErrors] = useState<FieldErrors>({});
-  const [formError, setFormError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setFormError(null);
-    const parsed = LoginInputSchema.safeParse(values);
-    if (!parsed.success) {
-      setErrors(zodFieldErrors(parsed.error));
-      return;
-    }
-    setErrors({});
-    setSubmitting(true);
-    try {
-      await login(parsed.data);
-      navigate(from, { replace: true });
-    } catch (err) {
-      setErrors(apiFieldErrors(err));
-      setFormError(errorMessage(err));
-      setSubmitting(false);
-    }
-  }
+  const [params] = useSearchParams();
+  const from = (location.state as { from?: string } | null)?.from;
+  const next = nextAfterAuth(params.get('next'), from);
 
   return (
-    <AuthLayout>
-      <h2 className="font-display text-2xl font-bold tracking-tight">Iniciar sesión</h2>
-      <p className="mt-2 text-sm text-muted">Entra para seguir creando con Pixel.</p>
-
-      <form className="mt-8 space-y-5" onSubmit={onSubmit} noValidate>
-        {formError && <Alert>{formError}</Alert>}
-        <TextField
-          label="Email"
-          type="email"
-          name="email"
-          autoComplete="email"
-          value={values.email}
-          error={errors.email}
-          onChange={(event) => setValues({ ...values, email: event.target.value })}
-        />
-        <TextField
-          label="Contraseña"
-          type="password"
-          name="password"
-          autoComplete="current-password"
-          value={values.password}
-          error={errors.password}
-          onChange={(event) => setValues({ ...values, password: event.target.value })}
-        />
-        <Button type="submit" className="w-full" loading={submitting}>
-          Entrar
-        </Button>
-      </form>
-
-      <p className="mt-8 text-center text-sm text-muted">
-        ¿Aún no tienes cuenta?{' '}
-        <Link
-          to="/register"
-          className="font-medium text-fg underline decoration-line-strong underline-offset-4 hover:decoration-fg"
-        >
-          Crear cuenta
-        </Link>
-      </p>
+    <AuthLayout kind={visualKindForNext(next)}>
+      <AuthPanel
+        mode="login"
+        onSuccess={() => navigate(next, { replace: true })}
+        renderSwitch={(label, className) => (
+          <Link to={authPagePath('register', next)} className={className}>
+            {label}
+          </Link>
+        )}
+      />
     </AuthLayout>
   );
 }

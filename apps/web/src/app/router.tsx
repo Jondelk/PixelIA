@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router';
+import { createBrowserRouter } from 'react-router';
 import { LoginPage } from '../features/auth/LoginPage';
 import { RegisterPage } from '../features/auth/RegisterPage';
 import { PublicOnly, RequireAuth } from '../features/auth/RouteGuards';
@@ -22,6 +22,11 @@ import { TasksPage } from '../features/operations/TasksPage';
 import { PixelPage } from '../features/pixel/PixelPage';
 import { FeatureOnly } from '../features/workspaces/FeatureOnly';
 import { NewPixelPage } from '../features/workspaces/NewPixelPage';
+import { PixelStartPage } from '../features/workspaces/PixelStartPage';
+import { ExploreDetailPage } from '../features/public/ExploreDetailPage';
+import { ExplorePage } from '../features/public/ExplorePage';
+import { PublicLayout } from '../features/public/PublicLayout';
+import { WelcomePage } from '../features/public/WelcomePage';
 import { WorkspaceHomePage } from '../features/workspaces/WorkspaceHomePage';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { NotFoundPage } from '../features/system/NotFoundPage';
@@ -34,7 +39,24 @@ const handle = (title: string, section: RouteHandle['section'] = 'General'): Rou
 });
 
 export const router = createBrowserRouter([
-  { path: '/', element: <Navigate to="/dashboard" replace /> },
+  // Entrada pública: bienvenida (solo visitantes) y Explorar (cualquiera). El acceso se abre como
+  // modal desde aquí; /login y /register siguen funcionando como alternativa directa.
+  {
+    element: <PublicLayout />,
+    children: [
+      {
+        path: '/',
+        element: (
+          <PublicOnly>
+            <WelcomePage />
+          </PublicOnly>
+        ),
+      },
+      { path: '/explore', element: <ExplorePage /> },
+      { path: '/explore/personal', element: <ExploreDetailPage kind="personal" /> },
+      { path: '/explore/enterprise', element: <ExploreDetailPage kind="enterprise" /> },
+    ],
+  },
   {
     path: '/login',
     element: (
@@ -60,6 +82,12 @@ export const router = createBrowserRouter([
     children: [
       { path: '/dashboard', element: <DashboardPage />, handle: handle('Tus Pixels') },
       { path: '/pixels/new', element: <NewPixelPage />, handle: handle('Nuevo Pixel') },
+      {
+        // Retoma la intención elegida en Explorar tras iniciar sesión o crear la cuenta.
+        path: '/pixels/start',
+        element: <PixelStartPage />,
+        handle: handle('Tu Pixel'),
+      },
       {
         // Entrada única de cada Pixel. Personal vive aquí entero. Enterprise con empresa vive aquí
         // solo en Operations (Proyectos, Tareas, Contenido); el resto redirige a /company/:companyId.

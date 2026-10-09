@@ -6,10 +6,11 @@ import { buttonClasses } from '../../components/buttonClasses';
 import { Icon } from '../../components/Icon';
 import { PageHeader } from '../../components/PageHeader';
 import { workspaceBasePath } from '../../app/navigation';
-import { ApiRequestError, errorMessage } from '../../lib/api';
+import { errorMessage } from '../../lib/api';
 import { useResource } from '../../lib/useResource';
 import { useCurrentUser } from '../auth/authContext';
-import { createWorkspace, listWorkspaces } from './workspacesApi';
+import { openOrCreatePersonalPixel } from './personalPixel';
+import { listWorkspaces } from './workspacesApi';
 
 /** "¿Cómo quieres usar Pixel?": elige entre Pixel Personal y Pixel Enterprise. */
 export function NewPixelPage() {
@@ -28,27 +29,11 @@ export function NewPixelPage() {
     setCreating(true);
     setError(null);
     try {
-      const name = user.name.trim().length >= 2 ? user.name.trim() : 'Mi Pixel Personal';
-      const { workspace } = await createWorkspace({ type: 'personal', name });
-      navigate(workspaceBasePath(workspace.id));
+      // Si ya existía (p. ej. creado en otra pestaña) se abre el que hay.
+      navigate(workspaceBasePath(await openOrCreatePersonalPixel(user)));
     } catch (err) {
-      let failure: unknown = err;
-      // Ya existía (p. ej. creado en otra pestaña): se abre el que hay.
-      if (err instanceof ApiRequestError && err.status === 409) {
-        try {
-          const existing = (await listWorkspaces()).find(
-            (item) => item.workspace.type === 'personal',
-          );
-          if (existing) {
-            navigate(workspaceBasePath(existing.workspace.id));
-            return;
-          }
-        } catch (lookupError) {
-          failure = lookupError;
-        }
-      }
       // Pase lo que pase, el botón vuelve a estar disponible y se ve el error.
-      setError(errorMessage(failure));
+      setError(errorMessage(err));
       setCreating(false);
     }
   }
