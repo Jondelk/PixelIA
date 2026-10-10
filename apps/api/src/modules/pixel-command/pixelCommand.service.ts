@@ -8,6 +8,7 @@ import {
   type PixelCommand,
   type PixelCommandConfirmResponse,
   type PixelCommandEntities,
+  type PixelCommandIntent,
   type PixelCommandStatus,
 } from '@pixel/contracts';
 import { Types } from 'mongoose';
@@ -15,6 +16,13 @@ import type { AIProvider } from '../../ai/index.js';
 import { AppError, notFound } from '../../lib/errors.js';
 import { CampaignModel } from '../campaigns/campaign.model.js';
 import { workspaceTimezone } from '../daily-director/dailyTime.js';
+import {
+  guardianPreflight,
+  overridePreflight,
+  type GuardianDeps,
+} from '../guardian/guardian.service.js';
+import type { GuardianText } from '../guardian/guardian.types.js';
+import { hasWorkspaceFeature } from '../workspaces/workspaceFeatures.js';
 import { fieldError, resourceId } from '../operations/operations.scope.js';
 import type { WorkspaceDocument } from '../workspaces/workspace.model.js';
 import { executeCommand, type PixelExecutorDeps } from './pixelCommand.executor.js';
@@ -43,6 +51,7 @@ export interface PixelCommandDeps extends PixelExecutorDeps {
   resolver: PixelIntentResolver;
   ai: AIProvider;
   defaultTimezone: string;
+  guardian: GuardianDeps;
 }
 
 const conflict = (message: string, reason: string) =>
@@ -202,6 +211,8 @@ async function interpretAndPlan(
   if (outcome.kind === 'question') {
     return {
       ...base,
+      guardian: null,
+      guardianBlocked: false,
       status: 'needs_information',
       question: outcome.question,
       pendingField: outcome.field,
@@ -212,28 +223,31 @@ async function interpretAndPlan(
     };
   }
   if (outcome.kind === 'proposal') {
+    const reviewed = await reviewProposal(workspace, intent, outcome, state, message, deps);
     return {
       ...base,
+      guardian: reviewed.guardian,
+      guardianBlocked: reviewed.guardian?.status === 'block',
       status: 'proposed',
       question: null,
       pendingField: null,
-      reply: outcome.summary,
+      reply: reviewed.summary,
       campaignId: outcome.campaignId ? new Types.ObjectId(outcome.campaignId) : base.campaignId,
       plan: {
-        summary: outcome.summary,
-        understood: outcome.understood,
-        proposal: outcome.proposal,
+        summary: reviewed.summary,
+        understood: reviewed.understood,
+        proposal: reviewed.proposal,
         creates: outcome.creates,
         requiresConfirmation: true,
         revision: state.revision + 1,
       },
-      steps: outcome.steps.map((step) => ({
+      steps: reviewed.steps.map((step) => ({
         ...step,
         status: 'pending' as const,
         resources: [],
         error: null,
       })),
-      turns: [...state.turns, userTurn, { role: 'pixel', text: outcome.summary, at }],
+      turns: [...state.turns, userTurn, { role: 'pixel', text: reviewed.summary, at }],
     };
   }
   const reply =
@@ -244,6 +258,8 @@ async function interpretAndPlan(
         : unknownReply(workspace.type);
   return {
     ...base,
+    guardian: null,
+    guardianBlocked: false,
     status: 'answered',
     question: null,
     pendingField: null,
@@ -368,6 +384,8 @@ export async function confirmPixelCommand(
       workspaceId: workspace._id,
       status: { $in: CONFIRMABLE },
       'plan.revision': input.revision,
+      // Un BLOCK del Brand Guardian sin override no se ejecuta solo.
+      guardianBlocked: { $ne: true },
     },
     { $set: { status: 'executing', executionId } },
     { new: true },
@@ -376,6 +394,12 @@ export async function confirmPixelCommand(
     const current = await findCommand(workspace, id.toString());
     if (current.status === 'executing' || current.status === 'completed') {
       return { command: toPixelCommandDTO(current), executed: false };
+    }
+    if (CONFIRMABLE.includes(current.status) && current.guardianBlocked) {
+      throw conflict(
+        'Brand Guardian encontró algo que hay que resolver antes de organizar',
+        'guardian_preflight_blocked',
+      );
     }
     if (CONFIRMABLE.includes(current.status)) {
       throw conflict(
@@ -434,4 +458,150 @@ export async function getPixelCommand(
   rawId: unknown,
 ): Promise<PixelCommand> {
   return toPixelCommandDTO(await findCommand(workspace, rawId));
+}
+
+/* ---------- Brand Guardian preflight ---------- */
+
+const PREFLIGHT_INTENTS: PixelCommandIntent[] = [
+  'create_campaign',
+  'plan_content',
+  'create_content',
+];
+
+type ProposalOutcome = Extract<ReturnType<typeof planCommand>, { kind: 'proposal' }>;
+
+/** Textos de lo que se va a crear (lo que Pixel escribió a partir de la solicitud). */
+function proposalTexts(outcome: ProposalOutcome): GuardianText[] {
+  const texts: GuardianText[] = [];
+  const add = (
+    label: string,
+    value: unknown,
+    role: GuardianText['role'],
+    field: string,
+    stepId: string,
+  ) => {
+    if (typeof value !== 'string' || !value.trim()) return;
+    texts.push({
+      ref: `RESOURCE_TEXT_${texts.length + 1}`,
+      label,
+      text: value.trim(),
+      role,
+      field,
+      targetId: stepId,
+    });
+  };
+  for (const step of outcome.steps) {
+    if (step.type === 'generate_campaign') {
+      add('Nombre de la campaña', step.params.name, 'title', 'name', step.id);
+      add('Objetivo de la campaña', step.params.objective, 'objective', 'objective', step.id);
+      add(
+        'Producto o servicio',
+        step.params.productOrService,
+        'other',
+        'productOrService',
+        step.id,
+      );
+    } else if (step.type === 'generate_content_plan') {
+      add('Objetivo del plan', step.params.goal, 'objective', 'goal', step.id);
+    } else if (step.type === 'create_content_item') {
+      add('Pieza', step.params.title, 'title', 'title', step.id);
+    }
+  }
+  return texts;
+}
+
+/**
+ * Pixel se revisa a sí mismo antes de pedir "Organizar" (Enterprise, propuestas que crean
+ * recursos). Si el Guardian corrige, los textos corregidos sustituyen a los originales en los pasos
+ * y en la propuesta visible. Lo que escribió el usuario fundamenta lo que dijo: no es "inventado".
+ */
+async function reviewProposal(
+  workspace: WorkspaceDocument,
+  intent: PixelCommandIntent,
+  outcome: ProposalOutcome,
+  state: CommandState,
+  message: string,
+  deps: PixelCommandDeps,
+) {
+  const unchanged = {
+    guardian: null,
+    summary: outcome.summary,
+    understood: outcome.understood,
+    proposal: outcome.proposal,
+    steps: outcome.steps,
+  };
+  if (!hasWorkspaceFeature(workspace, 'brandGuardian') || !PREFLIGHT_INTENTS.includes(intent)) {
+    return unchanged;
+  }
+  const texts = proposalTexts(outcome);
+  const userSupplied = [
+    state.request,
+    ...state.turns.filter((turn) => turn.role === 'user').map((turn) => turn.text),
+    message,
+  ];
+  const result = await guardianPreflight(
+    workspace,
+    {
+      label: outcome.steps[0]?.title ?? 'Propuesta de Pixel',
+      texts,
+      userSupplied,
+      campaignId: outcome.campaignId,
+    },
+    deps.guardian,
+  );
+  if (!result) return unchanged;
+  const replacements = texts
+    .map((text) => [text.text, result.corrected.get(text.ref)] as const)
+    .filter(
+      (pair): pair is readonly [string, string] => pair[1] !== undefined && pair[1] !== pair[0],
+    );
+  const lower = (value: string) => value.charAt(0).toLocaleLowerCase('es') + value.slice(1);
+  // La propuesta cita los textos tal cual o en minúscula inicial ("Entendí que quieres lanzar…").
+  const swap = (value: string) =>
+    replacements.reduce((acc, [from, to]) => {
+      const clean = to.replace(/.$/, '');
+      return acc.split(from).join(clean).split(lower(from)).join(lower(clean));
+    }, value);
+  const steps = outcome.steps.map((step) => {
+    const params = { ...step.params };
+    for (const text of texts) {
+      const fixed = result.corrected.get(text.ref);
+      if (text.targetId === step.id && text.field && fixed) params[text.field] = fixed;
+    }
+    return { ...step, params, title: swap(step.title) };
+  });
+  return {
+    guardian: result.summary,
+    summary: swap(outcome.summary),
+    understood: outcome.understood.map(swap),
+    proposal: outcome.proposal.map(swap),
+    steps,
+  };
+}
+
+/** "Continuar de todas formas" en el preflight: solo si todo lo que bloquea lo admite. */
+export async function overridePixelCommandGuardian(
+  workspace: WorkspaceDocument,
+  rawId: unknown,
+): Promise<PixelCommand> {
+  const command = await findCommand(workspace, rawId);
+  if (command.status !== 'proposed' || !command.guardian) {
+    throw conflict(
+      'Esta solicitud no tiene una revisión del Guardian pendiente',
+      'pixel_command_not_adjustable',
+    );
+  }
+  const findings = await overridePreflight(workspace, command.guardian.reportId);
+  const updated = await PixelCommandModel.findOneAndUpdate(
+    { _id: command._id, workspaceId: workspace._id, status: 'proposed' },
+    {
+      $set: {
+        guardianBlocked: false,
+        guardian: { ...command.guardian, findings, overridden: true },
+      },
+    },
+    { new: true },
+  );
+  if (!updated) throw conflict('La solicitud cambió mientras decidías', 'pixel_command_changed');
+  return toPixelCommandDTO(updated);
 }

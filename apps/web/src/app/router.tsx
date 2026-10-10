@@ -14,6 +14,8 @@ import { PersonalDnaPage } from '../features/personal/PersonalDnaPage';
 import { PersonalOnboardingPage } from '../features/personal/PersonalOnboardingPage';
 import { PersonalOnly } from '../features/personal/PersonalOnly';
 import { ContentPlannerPage } from '../features/content-planner/ContentPlannerPage';
+import { GuardianPage } from '../features/guardian/GuardianPage';
+import { GuardianReportPage } from '../features/guardian/GuardianReportPage';
 import { ContentPlanPage } from '../features/content-planner/ContentPlanPage';
 import { CampaignDetailPage } from '../features/campaigns/CampaignDetailPage';
 import { CampaignsPage } from '../features/campaigns/CampaignsPage';
@@ -200,6 +202,25 @@ export const router = createBrowserRouter([
               </FeatureOnly>
             ),
             handle: handle('Plan de contenido', 'Trabajo'),
+          },
+          // Brand Guardian: solo Enterprise (capacidad brandGuardian).
+          {
+            path: 'guardian',
+            element: (
+              <FeatureOnly feature="brandGuardian">
+                <GuardianPage />
+              </FeatureOnly>
+            ),
+            handle: handle('Brand Guardian', 'Empresa'),
+          },
+          {
+            path: 'guardian/reports/:reportId',
+            element: (
+              <FeatureOnly feature="brandGuardian">
+                <GuardianReportPage />
+              </FeatureOnly>
+            ),
+            handle: handle('Revisión del Guardian', 'Empresa'),
           },
         ],
       },

@@ -142,6 +142,7 @@ describe('rutas de workspace', () => {
           ['ADN de marca', '/company/c1/brand'],
           ['Personaje', '/company/c1/pixel'],
           ['Chat', '/company/c1/chat'],
+          ['Brand Guardian', '/workspace/w1/guardian'],
         ],
       ],
     ]);

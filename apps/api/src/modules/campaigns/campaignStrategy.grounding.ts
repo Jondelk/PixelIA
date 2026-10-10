@@ -30,7 +30,7 @@ export function campaignVocabulary(payload: CampaignPayload): Vocabulary {
 }
 
 /** Claims de mercado o de producto que la marca tiene que haber dado para poder usarlos. */
-const MARKET_CLAIMS: [RegExp, string][] = [
+export const MARKET_CLAIMS: [RegExp, string][] = [
   [/\blider(es)? (del|en el|de la) (mercado|categoria|sector)\b/, 'lider'],
   [/\bnumero (1|uno)\b/, 'numero'],
   [

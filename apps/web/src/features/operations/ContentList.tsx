@@ -5,7 +5,7 @@ import {
   type CreateContentItemInput,
   type Project,
 } from '@pixel/contracts';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Alert } from '../../components/Alert';
 import { Button } from '../../components/Button';
 import { Icon } from '../../components/Icon';
@@ -32,6 +32,7 @@ export function ContentList({
   showProject = true,
   fixedProjectId,
   actions,
+  itemAction,
 }: {
   items: readonly ContentItem[];
   projects: readonly Project[];
@@ -39,6 +40,8 @@ export function ContentList({
   showProject?: boolean;
   fixedProjectId?: string;
   actions: ContentListActions;
+  /** Acción extra por pieza (p. ej. "Revisar con Guardian" en Enterprise). */
+  itemAction?: (item: ContentItem) => ReactNode;
 }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [moving, setMoving] = useState<string | null>(null);
@@ -143,6 +146,9 @@ export function ContentList({
                     : `Pasar a ${CONTENT_STATUS_LABELS[next]}`}
                   <Icon name="arrowRight" className="size-4" />
                 </Button>
+              )}
+              {itemAction && (
+                <div className="shrink-0 self-start sm:self-center">{itemAction(item)}</div>
               )}
             </li>
           );

@@ -1,4 +1,5 @@
 import {
+  workspaceSupportsFeature,
   CONTENT_PLAN_STATUS_LABELS,
   CONTENT_PLATFORM_LABELS,
   type Campaign,
@@ -32,6 +33,7 @@ import {
 import { GenerationError } from './ContentPlannerPage';
 import { PixelThinking } from './PixelThinking';
 import { PlanItemCard, type PlanItemActions } from './PlanItemCard';
+import { ReviewWithGuardian } from '../guardian/ReviewWithGuardian';
 import {
   periodLabel,
   plannerCopy,
@@ -93,6 +95,16 @@ export function ContentPlanPage() {
     <ContentPlanView
       base={base}
       copy={copy}
+      guardianAction={
+        workspaceSupportsFeature(overview.workspace.type, 'brandGuardian') && planId ? (
+          <ReviewWithGuardian
+            workspaceId={workspaceId}
+            base={base}
+            resourceType="content_plan"
+            resourceId={planId}
+          />
+        ) : null
+      }
       campaign={campaign.state.status === 'success' ? campaign.state.data : null}
       state={state}
       projects={projects.all}
@@ -145,6 +157,7 @@ export function ContentPlanView({
   regenerateSlot,
   onRegenerate,
   onStatus,
+  guardianAction = null,
 }: {
   base: string;
   copy?: PlannerCopy;
@@ -159,6 +172,8 @@ export function ContentPlanView({
   regenerateSlot: ReactNode;
   onRegenerate: (plan: Plan) => void;
   onStatus: (plan: Plan, status: Plan['status']) => Promise<void>;
+  /** "Revisar con Guardian" (solo Enterprise, capacidad brandGuardian). */
+  guardianAction?: ReactNode;
 }) {
   const [changing, setChanging] = useState(false);
   const back = (
@@ -244,6 +259,7 @@ export function ContentPlanView({
           </div>
         </div>
         {plan.objective && <p className="mt-4 text-sm text-muted">Objetivo: {plan.objective}</p>}
+        {guardianAction && <div className="mt-5">{guardianAction}</div>}
       </header>
 
       {regenerateSlot && <div className="mb-10">{regenerateSlot}</div>}

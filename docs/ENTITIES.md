@@ -130,6 +130,15 @@ Personal.
 `Workspace.timezone` (IANA, opcional; fallback `DEFAULT_TIMEZONE`) define el "hoy". Detalle en
 [`DAILY-DIRECTOR.md`](./DAILY-DIRECTOR.md).
 
+## 1g. PixelCommand y GuardianReport ✅
+
+`PixelCommand` (`pixel_commands`, Prompt 14.1) es una solicitud natural con su propuesta, sus pasos
+y lo que creó (`docs/PIXEL-COMMAND.md`); desde el Prompt 15 guarda también el resumen del preflight
+del Guardian (`guardian`, `guardianBlocked`). `GuardianReport` (`guardian_reports`, Prompt 15) es una
+revisión del Brand Guardian: estado, score heurístico, dimensiones, hallazgos explicados, corrección
+propuesta e instantánea de lo revisado; nunca modifica el recurso y se marca `stale` si este cambia.
+Ambos son recursos del workspace (`tenantScoped`). Detalle en [`BRAND-GUARDIAN.md`](./BRAND-GUARDIAN.md).
+
 ## 2. Company
 
 Empresa cuyo Pixel se construye (Pixel Enterprise). Pertenece a un workspace enterprise

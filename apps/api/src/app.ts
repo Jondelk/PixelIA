@@ -14,6 +14,7 @@ import {
 } from './modules/avatars/engine/index.js';
 import { createApiRouter } from './modules/index.js';
 import { createCampaignStrategyEngine } from './modules/campaigns/campaignStrategy.engine.js';
+import { createGuardianEngine } from './modules/guardian/guardian.engine.js';
 import { createPixelIntentResolver } from './modules/pixel-command/pixelIntent.resolver.js';
 import { createContentPlanningEngine } from './modules/content-plans/contentPlanning.engine.js';
 import { createEnterprisePlanningStrategy } from './modules/content-plans/enterprisePlanning.strategy.js';
@@ -78,6 +79,7 @@ export function createApp({ env, logger, getDatabaseStatus, ai }: AppOptions): E
       dailyDirector: createDailyDirectorEngine({ ai, logger }),
       campaignEngine: createCampaignStrategyEngine({ ai, logger }),
       pixelIntentResolver: createPixelIntentResolver({ ai, logger }),
+      guardianEngine: createGuardianEngine({ ai, logger }),
       defaultTimezone: env.DEFAULT_TIMEZONE,
       logger,
       session: {

@@ -190,9 +190,15 @@ Personal no ve la navegación ni las rutas (`FeatureOnly feature="campaigns"`).
   existen esas y que no invente otras ("¿Cómo va la campaña Navidad?" → no la inventa). Sin búsqueda
   de campañas desde el chat ni tools.
 
+## 6 bis. Brand Guardian (Prompt 15)
+
+"Revisar con Guardian" en el detalle evalúa la campaña y su estrategia vigente (incluida la dirección
+visual escrita) contra el BrandDNA y abre el informe (`docs/BRAND-GUARDIAN.md`). Revisar no cambia la
+campaña; una estrategia no se corrige en sitio: se regenera con su mecanismo versionado.
+
 ## 7. Limitaciones (no implementado)
 
-Creative Workflow y aprobaciones formales, equipo, roles y responsables, Brand Guardian y scores,
+Creative Workflow y aprobaciones formales, equipo, roles y responsables, Brand Guardian visual (multimodal),
 Enterprise Daily Director, analytics, publicación o redes externas,
 Gmail/Calendar, presupuestos, media buying, ads, automatizaciones de campaña y memoria creativa
 avanzada. Sin vincular a mano un proyecto existente a una campaña desde la UI (la API lo admite con

@@ -59,6 +59,18 @@ export function confirmPixelCommand(
   );
 }
 
+export async function overrideGuardianPreflight(
+  workspaceId: string,
+  commandId: string,
+): Promise<PixelCommand> {
+  const { command } = await apiRequest(
+    `${commandPath(workspaceId, commandId)}/guardian-override`,
+    PixelCommandResponseSchema,
+    { method: 'POST' },
+  );
+  return command;
+}
+
 export async function cancelPixelCommand(
   workspaceId: string,
   commandId: string,

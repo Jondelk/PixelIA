@@ -24,6 +24,8 @@ import type { EnterprisePlanningStrategy } from './content-plans/enterprisePlann
 import { createConversationsRouter } from './conversations/conversations.routes.js';
 import type { ChatDeps } from './conversations/chat.service.js';
 import { creativeMemoryRouter } from './creative-memory/creative-memory.routes.js';
+import { createGuardianRouter } from './guardian/guardian.routes.js';
+import type { GuardianEngine } from './guardian/guardian.engine.js';
 import { createHealthRouter } from './health/health.routes.js';
 import {
   contentRouter,
@@ -54,6 +56,7 @@ export interface ApiDependencies {
   dailyDirector: DailyDirectorEngine;
   campaignEngine: CampaignStrategyEngine;
   pixelIntentResolver: PixelIntentResolver;
+  guardianEngine: GuardianEngine;
   defaultTimezone: string;
   logger: Logger;
 }
@@ -105,7 +108,13 @@ export function createApiRouter(deps: ApiDependencies): Router {
       logger: deps.logger,
       campaigns: deps,
       contentPlans: deps,
+      guardian: { engine: deps.guardianEngine, ai: deps.chat.ai, logger: deps.logger },
     }),
+  );
+  // Brand Guardian: solo Enterprise (capacidad `brandGuardian`, la comprueba el servicio).
+  workspace.use(
+    '/guardian',
+    createGuardianRouter({ engine: deps.guardianEngine, ai: deps.chat.ai, logger: deps.logger }),
   );
   workspace.use('/', createDailyBriefRouter(deps));
   api.use('/workspaces/:workspaceId', workspace);

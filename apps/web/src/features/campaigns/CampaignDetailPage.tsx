@@ -56,6 +56,7 @@ import {
 } from './campaignsApi';
 import { DeliverableCard, type DeliverableActions } from './DeliverableCard';
 import { StrategyView } from './StrategyView';
+import { ReviewWithGuardian } from '../guardian/ReviewWithGuardian';
 
 const statusOptions = labelOptions(CAMPAIGN_STATUS_LABELS, CampaignStatusSchema.options);
 
@@ -130,6 +131,14 @@ export function CampaignDetailPage() {
   return (
     <CampaignDetailView
       base={base}
+      guardianAction={
+        <ReviewWithGuardian
+          workspaceId={workspaceId}
+          base={base}
+          resourceType="campaign"
+          resourceId={campaignId}
+        />
+      }
       campaign={campaign.state}
       strategy={strategy.state}
       deliverables={deliverables.state}
@@ -194,6 +203,7 @@ export function CampaignDetailView({
   regenerateError,
   thinking,
   onRegenerate,
+  guardianAction = null,
 }: {
   base: string;
   campaign: ResourceState<Campaign>;
@@ -215,6 +225,8 @@ export function CampaignDetailView({
   regenerateError: unknown;
   thinking: ReactNode;
   onRegenerate: () => void;
+  /** "Revisar con Guardian" (Brand Guardian, solo Enterprise). */
+  guardianAction?: ReactNode;
 }) {
   const [statusError, setStatusError] = useState<unknown>(null);
   const backLink = (
@@ -289,6 +301,7 @@ export function CampaignDetailView({
             className="w-44"
           />
         </div>
+        {guardianAction && <div className="mt-5">{guardianAction}</div>}
         {statusError !== null && (
           <div className="mt-4">
             <Alert>{errorMessage(statusError)}</Alert>

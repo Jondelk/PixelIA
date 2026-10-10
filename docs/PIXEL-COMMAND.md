@@ -189,6 +189,16 @@ Modelo `PixelCommand` (`pixel_commands`): `workspaceId` + `tenantScoped`, índic
   `PixelProposalCard` (Lo que entendí · Lo que propongo · Qué voy a crear; Organizar · Ajustar ·
   Cancelar) y `PixelRequestInput`. Mientras interpreta u organiza, el personaje en `thinking`.
 
+## 8 bis. Brand Guardian preflight (Prompt 15)
+
+En Enterprise, antes de mostrar "Organizar", la propuesta de una campaña, un plan o una pieza pasa
+por el Brand Guardian (`docs/BRAND-GUARDIAN.md` §6): si algo se puede corregir sin inventar, Pixel lo
+corrige una vez y lo dice; la propuesta muestra una línea compacta del Guardian con el detalle bajo
+demanda. Un BLOCK (promoción o claim sin fundamento, restricción explícita) desactiva "Organizar"
+(409 `guardian_preflight_blocked`) hasta ajustar o, si es una decisión creativa, "Continuar de todas
+formas" (`POST …/:commandId/guardian-override`, registrado). Personal y las consultas no pasan por el
+Guardian.
+
 ## 9. Voz (futuro)
 
 El texto es la única entrada hoy. `PixelRequestInput` entrega `onSubmit(text, source)` y la API acepta

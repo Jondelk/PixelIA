@@ -27,6 +27,7 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 | M | Enterprise Campaign Manager (Prompt 13) | ✅ (prueba con Claude real pendiente) |
 | EC | Enterprise Content Planner (Prompt 14) | ✅ (prueba con Claude real pendiente) |
 | Z | Zero-entry UX: PixelCommand (Prompt 14.1) | ✅ (prueba con Claude real pendiente) |
+| G | Brand Guardian Core (Prompt 15) | ✅ implementado y confirmado (sin push; prueba con Claude real pendiente) |
 | — | Experiencia de entrada pública: bienvenida, Explorar y acceso (solo web) | ✅ (video final pendiente) |
 | 9 | CreativeMemory básica | ⬜ |
 | 10 | Cierre end-to-end del MVP | ⬜ |
@@ -418,6 +419,26 @@ no reescribe ningún módulo.
 - [ ] Probar `PIXEL_COMMAND_SYSTEM` con Claude real (requiere `ANTHROPIC_API_KEY`).
 - [ ] Voz (STT/TTS) sobre el mismo `source`, historial de solicitudes en la interfaz.
 - [x] Commit (junto con la Etapa EC, autorizado el 2026-10-10; sin push).
+
+## Etapa G — Brand Guardian Core ✅ (implementado y confirmado, sin push)
+
+Ver `docs/BRAND-GUARDIAN.md`.
+
+- [x] Contratos `guardian.ts`: modos, recursos, dimensiones, severidad, hallazgos, informe, preflight,
+  evaluación semántica y corrección estructuradas; capacidad `brandGuardian` (solo Enterprise).
+- [x] GuardianEngine con 8 evaluadores (identidad, comunicación, claims, restricciones, estrategia,
+  campaña, contenido y dirección visual estructurada), referencias controladas y una sola llamada
+  semántica; demo y respaldo por reglas que dependen del ADN.
+- [x] GuardianScoreAggregator (penalizaciones documentadas, pesos simples, solo dimensiones aplicables).
+- [x] GuardianReport persistido, `stale` al leer, override registrado, corrección de una pasada y
+  aplicación con el servicio del recurso.
+- [x] Preflight en PixelCommand (corrección automática + re-evaluación; BLOCK impide organizar).
+- [x] Web: Brand Guardian bajo Marca, informe explicado, "Revisar con Guardian" en campaña, plan y
+  contenido, preflight compacto en la propuesta.
+- [x] Tests (contracts, motor, API, web) y smoke de navegador (TINTO, INVENTIA, Personal).
+- [ ] Probar `GUARDIAN_SYSTEM` y la corrección con Claude real (requiere `ANTHROPIC_API_KEY`).
+- [ ] Visual Guardian multimodal, Memory Guardian, aprobaciones y equipo (no construir sin pedirlo).
+- [x] Commit autorizado por el usuario el 2026-10-10 (sin push).
 
 ## Etapa 9 — CreativeMemory básica
 

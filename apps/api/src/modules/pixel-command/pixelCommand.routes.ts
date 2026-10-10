@@ -13,6 +13,7 @@ import {
   confirmPixelCommand,
   createPixelCommand,
   getPixelCommand,
+  overridePixelCommandGuardian,
   type PixelCommandDeps,
 } from './pixelCommand.service.js';
 
@@ -55,6 +56,13 @@ export function createPixelCommandRouter(deps: PixelCommandDeps): Router {
       input,
       deps,
     );
+    res.json(body);
+  });
+
+  router.post('/:commandId/guardian-override', async (req, res) => {
+    const body: PixelCommandResponse = {
+      command: await overridePixelCommandGuardian(getWorkspace(req), req.params.commandId),
+    };
     res.json(body);
   });
 

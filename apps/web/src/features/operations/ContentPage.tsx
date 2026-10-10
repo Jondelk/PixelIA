@@ -1,7 +1,9 @@
 import {
+  workspaceSupportsFeature,
   CONTENT_STATUS_LABELS,
   type ContentItemListResponse,
   type Project,
+  type ContentItem,
 } from '@pixel/contracts';
 import { useCallback, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router';
@@ -11,6 +13,8 @@ import { ErrorState } from '../../components/ErrorState';
 import { Icon } from '../../components/Icon';
 import { PageHeader } from '../../components/PageHeader';
 import { useResource, type ResourceState } from '../../lib/useResource';
+import { workspaceBasePath } from '../../app/navigation';
+import { ReviewWithGuardian } from '../guardian/ReviewWithGuardian';
 import { useWorkspace } from '../workspaces/workspaceContext';
 import { ContentForm } from './ContentForm';
 import { ContentList, type ContentListActions } from './ContentList';
@@ -89,6 +93,20 @@ export function ContentPage() {
         />
       }
       actions={contentListActions(workspaceId, { onChanged, notify: show })}
+      itemAction={
+        workspaceSupportsFeature(overview.workspace.type, 'brandGuardian')
+          ? (item) => (
+              <ReviewWithGuardian
+                workspaceId={workspaceId}
+                base={workspaceBasePath(workspaceId)}
+                resourceType="content_item"
+                resourceId={item.id}
+                variant="ghost"
+                label="Revisar"
+              />
+            )
+          : undefined
+      }
     />
   );
 }
@@ -105,6 +123,7 @@ export function ContentView({
   onNew,
   form,
   actions,
+  itemAction,
   copy = PERSONAL_OPERATIONS_COPY,
 }: {
   stage: ContentTab;
@@ -118,6 +137,7 @@ export function ContentView({
   onNew: () => void;
   form: ReactNode;
   actions: ContentListActions;
+  itemAction?: (item: ContentItem) => ReactNode;
   copy?: OperationsCopy;
 }) {
   const items = pipeline.status === 'success' ? pipeline.data.contentItems : [];
@@ -175,7 +195,12 @@ export function ContentView({
                   : `Nada en ${CONTENT_STATUS_LABELS[stage].toLowerCase()} por ahora.`}
               </InlineEmpty>
             ) : (
-              <ContentList items={stageItems} projects={projects} actions={actions} />
+              <ContentList
+                items={stageItems}
+                projects={projects}
+                actions={actions}
+                itemAction={itemAction}
+              />
             ))}
           {pipeline.status === 'success' && pipeline.data.total > items.length && (
             <p className="mt-4 text-xs text-subtle">

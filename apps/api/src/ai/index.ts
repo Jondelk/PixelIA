@@ -54,3 +54,32 @@ export {
   type PixelCommandPayload,
 } from './pixelCommandPayload.js';
 export { fold, interpretPixelRequest } from './pixelCommandRules.js';
+export {
+  extractGuardianCorrectionPayload,
+  extractGuardianPayload,
+  GUARDIAN_CORRECTION_SCHEMA_NAME,
+  GUARDIAN_CORRECTION_SYSTEM,
+  GUARDIAN_EVALUATION_SCHEMA_NAME,
+  GUARDIAN_SYSTEM,
+  GuardianCorrectionPayloadSchema,
+  guardianCorrectionPrompt,
+  GuardianPayloadSchema,
+  guardianPrompt,
+  type GuardianCorrectionPayload,
+  type GuardianPayload,
+} from './guardianPayload.js';
+export {
+  brandProfileOf,
+  brandSignalSources,
+  brandSignals,
+  familyClash,
+  familyHits,
+  signalsIn,
+  STYLE_FAMILIES,
+  type GuardianBrandProfile,
+  type StyleFamily,
+} from './guardianLexicon.js';
+export {
+  composeDemoGuardianCorrection,
+  composeDemoGuardianEvaluation,
+} from './providers/demoGuardian.js';

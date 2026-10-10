@@ -13,6 +13,7 @@ import {
   type PixelCommandSource,
   type PixelCommandStatus,
   type PixelCreatedResource,
+  type GuardianPreflightSummary,
 } from '@pixel/contracts';
 import { model, Schema, type HydratedDocument, type Types } from 'mongoose';
 import { tenantScoped } from '../../db/tenantScoped.plugin.js';
@@ -65,6 +66,10 @@ export interface PixelCommandAttrs {
   contextHint: { intent: 'create_campaign' | 'plan_content' | null };
   interpretation: { mode: 'ai' | 'demo' | 'rules'; confidence: number };
   executionId: Types.ObjectId | null;
+  /** Resumen del preflight del Brand Guardian (null si no aplica). */
+  guardian: GuardianPreflightSummary | null;
+  /** BLOCK del preflight sin override: confirmar no ejecuta. */
+  guardianBlocked: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -148,6 +153,8 @@ const pixelCommandSchema = new Schema<PixelCommandAttrs>(
       confidence: { type: Number, required: true },
     },
     executionId: { type: Schema.Types.ObjectId, default: null },
+    guardian: { type: Schema.Types.Mixed, default: null },
+    guardianBlocked: { type: Boolean, default: false },
   },
   { timestamps: true },
 );
@@ -199,6 +206,7 @@ export function toPixelCommandDTO(doc: PixelCommandDocument): PixelCommand {
           })),
         }
       : null,
+    guardian: doc.guardian ?? null,
     interpretation: { mode: doc.interpretation.mode, confidence: doc.interpretation.confidence },
     createdAt: doc.createdAt.toISOString(),
     updatedAt: doc.updatedAt.toISOString(),

@@ -76,6 +76,13 @@ const paths = {
   arrowLeft: <path d="M19 12H5M11 18l-6-6 6-6" />,
   plus: <path d="M12 5v14M5 12h14" />,
   check: <path d="m5 12.5 4.5 4.5L19 7.5" />,
+  /** Brand Guardian: el cuadro de la marca con su verificación. */
+  guardian: (
+    <>
+      <rect x="4" y="4" width="16" height="16" rx="1" />
+      <path d="m8.5 12.2 2.4 2.4 4.6-4.8" />
+    </>
+  ),
   x: <path d="M6 6l12 12M18 6 6 18" />,
   /** Crear / generar: un píxel que aparece en una esquina libre. */
   create: (

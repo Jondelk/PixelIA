@@ -3,6 +3,7 @@ import { CampaignTypeSchema } from './campaign.js';
 import { workspaceSupportsFeature, type WorkspaceFeature } from './capabilities.js';
 import { IsoDateSchema, ObjectIdSchema } from './common.js';
 import { ContentFormatSchema, ContentPlatformSchema } from './contentItem.js';
+import { GuardianPreflightSummarySchema } from './guardian.js';
 import type { WorkspaceType } from './workspace.js';
 
 /*
@@ -184,6 +185,8 @@ export const PixelCommandSchema = z.object({
   /** Mensaje conversacional de Pixel (respuesta, propuesta o resultado). */
   reply: z.string().nullable(),
   plan: PixelActionPlanSchema.nullable(),
+  /** Brand Guardian preflight (solo Enterprise, solo propuestas que crean recursos). */
+  guardian: GuardianPreflightSummarySchema.nullable(),
   interpretation: z.object({
     mode: z.enum(['ai', 'demo', 'rules']),
     confidence: z.number().min(0).max(1),

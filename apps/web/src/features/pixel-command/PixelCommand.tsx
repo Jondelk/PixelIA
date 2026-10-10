@@ -17,8 +17,11 @@ import {
   adjustPixelCommand,
   cancelPixelCommand,
   confirmPixelCommand,
+  overrideGuardianPreflight,
   sendPixelCommand,
 } from './pixelCommandApi';
+import { preflightBlocks, preflightOverridable } from '../guardian/guardianLogic';
+import { GuardianPreflight } from './GuardianPreflight';
 import { PixelProposalCard } from './PixelProposalCard';
 
 type ContextHint = { intent?: 'create_campaign' | 'plan_content'; campaignId?: string };
@@ -85,6 +88,8 @@ export function PixelCommand({
       setError(errorMessage(err));
     }
   };
+  const continueAnyway = () =>
+    command && run('adjust', () => overrideGuardianPreflight(workspaceId, command.id));
   const reset = () => {
     setCommand(null);
     setAdjusting(false);
@@ -107,6 +112,7 @@ export function PixelCommand({
       onConfirm={confirm}
       onCancel={cancel}
       onReset={reset}
+      onGuardianOverride={continueAnyway}
     />
   );
 }
@@ -129,6 +135,7 @@ export function PixelCommandPanel({
   onConfirm,
   onCancel,
   onReset,
+  onGuardianOverride,
 }: {
   phase: CommandPhase;
   command: PixelCommandDTO | null;
@@ -144,6 +151,8 @@ export function PixelCommandPanel({
   onConfirm: () => void;
   onCancel: () => void;
   onReset: () => void;
+  /** "Continuar de todas formas" ante un BLOCK creativo del Guardian. */
+  onGuardianOverride?: () => void;
 }) {
   const showInput = phase === 'idle' || phase === 'cancelled';
   return (
@@ -203,16 +212,35 @@ export function PixelCommandPanel({
                   </Button>
                 </div>
               ) : (
-                <div className="flex flex-wrap items-center gap-3">
-                  <Button onClick={onConfirm}>
-                    <Icon name="check" className="size-4" /> Organizar
-                  </Button>
-                  <Button variant="secondary" onClick={onStartAdjust}>
-                    <Icon name="pencil" className="size-4" /> Ajustar
-                  </Button>
-                  <Button variant="ghost" onClick={onCancel}>
-                    Cancelar
-                  </Button>
+                <div className="space-y-4">
+                  {command.guardian && <GuardianPreflight guardian={command.guardian} />}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Button onClick={onConfirm} disabled={preflightBlocks(command.guardian)}>
+                      <Icon name="check" className="size-4" /> Organizar
+                    </Button>
+                    {command.guardian &&
+                      preflightOverridable(command.guardian) &&
+                      onGuardianOverride && (
+                        <Button variant="secondary" onClick={onGuardianOverride}>
+                          Continuar de todas formas
+                        </Button>
+                      )}
+                    <Button variant="secondary" onClick={onStartAdjust}>
+                      <Icon name="pencil" className="size-4" /> Ajustar
+                    </Button>
+                    <Button variant="ghost" onClick={onCancel}>
+                      Cancelar
+                    </Button>
+                  </div>
+                  {preflightBlocks(command.guardian) && (
+                    <p className="text-xs text-muted">
+                      Resuélvelo con «Ajustar» antes de organizar
+                      {command.guardian && preflightOverridable(command.guardian)
+                        ? ', o continúa de todas formas si es una decisión consciente'
+                        : ''}
+                      .
+                    </p>
+                  )}
                 </div>
               )
             }

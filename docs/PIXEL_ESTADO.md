@@ -4,12 +4,14 @@
 > en el repositorio**, no lo que dicen los prompts ni el resto de `docs/`, que tienen deriva (§12).
 > Si el código y este documento no coinciden, **manda el código**: corrige este documento.
 >
-> - Última revisión: **2026-10-09**, rama `feat/prompts-9-11` en `e243c23` (contiene
->   `feat/etapa-0-foundation` en `c846956`) más el commit del Prompt 13 (Campaign Manager, `a65e28c`),
+> - Última revisión: **2026-10-10**, rama `feat/prompts-9-11` en `1593576` (contiene
+>   `feat/etapa-0-foundation` en `c846956`) y el commit del Prompt 13 (Campaign Manager, `a65e28c`, ya en `origin`),
 >   hecho con autorización del usuario el 2026-10-09 en su equipo (Windows, Claude Code en VS Code),
->   sin push. Encima, el **Prompt 14 (Enterprise Content Planner) y el Prompt 14.1 (Zero-entry UX:
->   PixelCommand), implementados, verificados y confirmados en un único commit** ("Add Prompt 14: Enterprise Content Planner and zero-entry Pixel Command"),
+>   Encima, el **Prompt 14 (Enterprise Content Planner) y el Prompt 14.1 (Zero-entry UX:
+>   PixelCommand), implementados, verificados y confirmados en un único commit** (`1593576`) ("Add Prompt 14: Enterprise Content Planner and zero-entry Pixel Command"),
 >   autorizado por el usuario el 2026-10-10. **Sin push** (§0, §1, §13).
+> - Encima, el **Prompt 15 (Brand Guardian Core)**, implementado y confirmado en el commit "Add Prompt 15: Pixel Brand Guardian Core" (autorizado el 2026-10-10, **sin push**), verificado el
+>   2026-10-10 (§13).
 > - Leyenda: ✅ implementado y verificado (tests automáticos; si solo hubo revisión manual, se dice) ·
 >   🟨 parcial · 📝 solo planificado (docs o prompts, sin código) · ❓ pendiente de verificación ·
 >   ⛔ bloqueado.
@@ -18,13 +20,13 @@
 
 | Tema | Estado |
 |---|---|
-| Última etapa verificada | **Etapa Z — Zero-entry UX: PixelCommand (Prompt 14.1)**, implementada y verificada el 2026-10-09 (§13) en el equipo del usuario, encima de la **Etapa EC — Enterprise Content Planner (Prompt 14)**. Confirmadas juntas en un único commit autorizado ("Add Prompt 14: Enterprise Content Planner and zero-entry Pixel Command", 2026-10-10; sin push). Antes: Etapa M (Prompt 13, `a65e28c`), Etapas O, C, D y E (`e59757d`) y la entrada pública (`24e300a`). |
-| Prompts | Prompt 9 = Operations, 10 = Content Planner, 11 = Daily Director, **12** = Shared Operations + Enterprise Projects (Etapa E; confirmado: el texto del Prompt 12 se recibió e implementó en la sesión del equipo del usuario el 2026-10-08), **13 = Enterprise Campaign Manager** (Etapa M; el usuario envió el texto "PROMPT 13 — ENTERPRISE CAMPAIGN MANAGER" el 2026-10-09), **14 = Enterprise Content Planner** (Etapa EC; recibido el 2026-10-09), **14.1 = Zero-entry UX / PixelCommand** (Etapa Z; recibido el 2026-10-09: "PROMPT 14.1 — ZERO-ENTRY UX"). La entrada pública no tiene número. |
+| Última etapa verificada | **Etapa G — Brand Guardian Core (Prompt 15)**, implementada y verificada el 2026-10-10 (§13) en el equipo del usuario, confirmada en el commit "Add Prompt 15: Pixel Brand Guardian Core" (sin push). Debajo, en `1593576` (sin push): Etapa Z (Prompt 14.1) y Etapa EC (Prompt 14). Antes: Etapa M (Prompt 13, `a65e28c`), Etapas O, C, D y E (`e59757d`) y la entrada pública (`24e300a`). |
+| Prompts | Prompt 9 = Operations, 10 = Content Planner, 11 = Daily Director, **12** = Shared Operations + Enterprise Projects (Etapa E; confirmado: el texto del Prompt 12 se recibió e implementó en la sesión del equipo del usuario el 2026-10-08), **13 = Enterprise Campaign Manager** (Etapa M; el usuario envió el texto "PROMPT 13 — ENTERPRISE CAMPAIGN MANAGER" el 2026-10-09), **14 = Enterprise Content Planner** (Etapa EC; recibido el 2026-10-09), **14.1 = Zero-entry UX / PixelCommand** (Etapa Z; recibido el 2026-10-09: "PROMPT 14.1 — ZERO-ENTRY UX"), **15 = Brand Guardian Core** (Etapa G; recibido el 2026-10-10: "PIXEL BRAND GUARDIAN CORE"). La entrada pública no tiene número. |
 | Ramas | `feat/prompts-9-11` (nueva, en `origin`) = `feat/etapa-0-foundation` + este trabajo. `feat/etapa-0-foundation` sigue en `c846956`: **todavía no se ha fusionado**. |
-| Última etapa | **Zero-entry UX** (Prompt 14.1, Etapa Z): PixelCommand —solicitud natural → intérprete (IA o reglas) → contexto → como mucho una pregunta → propuesta → una confirmación → servicios existentes—, "¿Qué necesitas hacer?" dominante en los Inicios, Campañas y Plan de contenido con los formularios como opciones avanzadas, navegación Enterprise Inicio · Trabajo · Marca (`docs/PIXEL-COMMAND.md`). Anterior: Enterprise Content Planner (Prompt 14, `docs/ENTERPRISE-CONTENT.md`). |
-| Siguiente paso | Decisión del usuario: push de `a65e28c` y del commit de los Prompts 14 + 14.1, y siguiente etapa (§14). No empezar otra etapa sin pedirlo. |
+| Última etapa | **Brand Guardian Core** (Prompt 15, Etapa G): GuardianEngine con 8 evaluadores explicables, score calculado en el backend, BLOCK conservador, override registrado, corrección de una pasada, preflight antes de "Organizar" en PixelCommand Enterprise, informe en `/workspace/:id/guardian` (grupo Marca) y "Revisar con Guardian" en campaña, plan y contenido (`docs/BRAND-GUARDIAN.md`). Anterior: Zero-entry UX (Prompt 14.1, `docs/PIXEL-COMMAND.md`). |
+| Siguiente paso | Usuario: decidir el push de `1593576` (Prompts 14 + 14.1) y del commit del Prompt 15, y la siguiente etapa (§14). No empezar el Prompt 16 sin pedirlo. |
 | Problema a conocer ya | Copiar `apps/api/.env.example` tal cual **impide arrancar la API** (`JWT_SECRET=` y `AI_PROVIDER=` vacíos no validan). Sigue igual en `e59757d`. Ver §11 y §15. |
-| Cambios sin commit | Ninguno. Los Prompts 14 y 14.1 están en un único commit ("Add Prompt 14: Enterprise Content Planner and zero-entry Pixel Command") sobre `a65e28c`, autorizado por el usuario el 2026-10-10. El Prompt 13 está en `a65e28c` ("Add Prompt 13: Enterprise Campaign Manager", sobre `e243c23`), autorizado por el usuario el 2026-10-09. **Sin push** (no se pidió). |
+| Cambios sin commit | Ninguno. El Prompt 15 está en un único commit ("Add Prompt 15: Pixel Brand Guardian Core") sobre `1593576`, autorizado por el usuario el 2026-10-10; los Prompts 14 y 14.1 están en `1593576` (autorizado el 2026-10-10). Ninguno de los dos tiene push; el Prompt 13 (`a65e28c`) ya está en `origin`. |
 
 ## 1. Rama, commits y git
 
@@ -43,8 +45,9 @@
 
 | Commit | Fecha (UTC) | Autor | Mensaje |
 |---|---|---|---|
-| (este commit) | 2026-10-10 | Claude | Add Prompt 14: Enterprise Content Planner and zero-entry Pixel Command (Prompts 14 y 14.1, autorizado; sin push) |
-| `a65e28c` | 2026-10-09 | Claude | Add Prompt 13: Enterprise Campaign Manager |
+| (este commit) | 2026-10-10 | Claude | Add Prompt 15: Pixel Brand Guardian Core (autorizado; sin push) |
+| `1593576` | 2026-10-10 | Claude | Add Prompt 14: Enterprise Content Planner and zero-entry Pixel Command (Prompts 14 y 14.1, autorizado; sin push) |
+| `a65e28c` | 2026-10-09 | Claude | Add Prompt 13: Enterprise Campaign Manager (en `origin`) |
 | (el que añade este documento) | 2026-10-09 | Claude | Add continuity docs and record the public entry stage (`CLAUDE.md`, `README.md`, `docs/BACKLOG.md`, `docs/PIXEL_ESTADO.md`) |
 | `24e300a` | 2026-10-09 | Claude | Add public entry experience: welcome, explore and auth modal (solo `apps/web`) |
 | `e59757d` | 2026-10-08 19:27 | jondelk | Add Prompts 9-11: projects, tasks, content planner and daily director (144 archivos, +19 106 líneas) |
@@ -91,9 +94,10 @@ en este repositorio.
 | 11 | Daily Director Personal | D | `e59757d` | ✅ (Enterprise y acciones: después) |
 | 12 | Shared Operations + Enterprise Projects | E | `e59757d` | ✅ |
 | sin número | Experiencia de entrada pública (bienvenida, Explorar, acceso) | "Experiencia de entrada pública" | `24e300a` | ✅ verificada el 2026-10-09; pendiente el video final |
-| 13 | Enterprise Campaign Manager | M | `a65e28c` (2026-10-09, sin push) | ✅ verificado el 2026-10-09 (§13); sin prueba con Claude real |
-| 14 | Enterprise Content Planner | EC | "Add Prompt 14: Enterprise Content Planner and zero-entry Pixel Command" (2026-10-10, sin push) | ✅ implementado y verificado el 2026-10-09 (§13), incluido el navegador; sin prueba con Claude real |
-| 14.1 | Zero-entry UX: PixelCommand | Z | el mismo commit que el Prompt 14 (2026-10-10, sin push) | ✅ implementado y verificado el 2026-10-09 (§13), incluido el navegador; sin prueba con Claude real |
+| 13 | Enterprise Campaign Manager | M | `a65e28c` (2026-10-09, en `origin`) | ✅ verificado el 2026-10-09 (§13); sin prueba con Claude real |
+| 14 | Enterprise Content Planner | EC | `1593576` (2026-10-10, sin push) | ✅ implementado y verificado el 2026-10-09 (§13), incluido el navegador; sin prueba con Claude real |
+| 14.1 | Zero-entry UX: PixelCommand | Z | `1593576`, el mismo commit que el Prompt 14 (2026-10-10, sin push) | ✅ implementado y verificado el 2026-10-09 (§13), incluido el navegador; sin prueba con Claude real |
+| 15 | Brand Guardian Core | G | "Add Prompt 15: Pixel Brand Guardian Core" (2026-10-10, sin push) | ✅ implementado y verificado el 2026-10-10 (§13), incluido el navegador; sin prueba con Claude real (sin `ANTHROPIC_API_KEY`) |
 
 En la sesión remota del 2026-10-08, el Prompt 11 se recibió antes de que existieran sus
 prerrequisitos en `origin`; aquí solo se comprobó que faltaban. Lo implementado es lo que llegó en
@@ -121,13 +125,14 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
                   ├─ campaigns: Campaign → CampaignStrategy (versiones) · CampaignDeliverable (→ Project | ContentItem)   (solo Enterprise)
                   ├─ content planner: ContentPlan (contextType) → ContentPlanItem (→ ContentItem al aceptar)   (Personal y Enterprise; Enterprise: BrandDNA + Campaign opcional)
                   ├─ daily director: DailyBrief (versión por día local; solo lee)   (solo Personal)
-                  └─ pixel command: PixelCommand (solicitud → propuesta → confirmación; orquesta lo anterior)   (Personal y Enterprise)
+                  ├─ pixel command: PixelCommand (solicitud → propuesta → [preflight Guardian] → confirmación; orquesta lo anterior)   (Personal y Enterprise)
+                  └─ brand guardian: GuardianReport (revisión explicable; nunca modifica el recurso)   (solo Enterprise)
 ```
 
 Qué funcionalidad tiene cada tipo lo decide `packages/contracts/src/capabilities.ts`
 (`workspaceSupportsFeature`): Personal tiene `projects`, `tasks`, `content`, `contentPlanner` y
 `dailyDirector`; Enterprise, `projects`, `tasks`, `content`, `contentPlanner` (desde el Prompt 14)
-y `campaigns`.
+y `campaigns` y `brandGuardian` (Prompt 15).
 
 - **Cadena de una petición:**
   - Global: `requestLogger` → `cors` → `originGuard` (403 si un método no seguro llega con un
@@ -149,10 +154,11 @@ y `campaigns`.
   mensajes (el de Pixel con `meta`: proveedor, modelo, modo, latencia y versiones de ADN/avatar). Un
   fallo de la IA responde 422/503 sin guardar nada; sin contexto, 409 antes de llamarla.
 - **Dónde se usa IA hoy:** el chat (`generateText`, también para el consejo creativo de PixelCommand)
-  y seis salidas estructuradas (`generateStructuredOutput`): el enriquecimiento opcional del
+  y ocho salidas estructuradas (`generateStructuredOutput`): el enriquecimiento opcional del
   PersonalDNA, el `ContentPlanningEngine`, la `EnterprisePlanningStrategy`, el intérprete de
-  PixelCommand (con reglas de respaldo si falla), el `DailyDirectorEngine` y el
-  `CampaignStrategyEngine`. El director cae a
+  PixelCommand (con reglas de respaldo si falla), el `DailyDirectorEngine`, el
+  `CampaignStrategyEngine` y, en el Brand Guardian, la evaluación semántica (una llamada por
+  revisión, con respaldo por reglas) y la corrección de una pasada. El director cae a
   un resultado determinístico si la IA falla; el planner y el Campaign Manager responden 503 sin
   resultado falso con un proveedor real caído y tienen versión determinista solo en modo demo. BrandDNA y avatares son **reglas
   deterministas versionadas**.
@@ -180,16 +186,16 @@ apps/api/src
   config/env.ts  db/{connection,tenantScoped.plugin}.ts  lib/{errors,logger,mongo}.ts
   middleware/    requireAuth, requireWorkspaceAccess, requireCompanyAccess, originGuard, errorHandler…
   modules/       auth · health · workspaces · companies · brand-dna · personal · avatars · conversations · creative-memory
-                 · operations · content-plans · daily-director · campaigns · pixel-command
-apps/api/scripts/{migrate-companies-to-workspaces,migrate-content-plans}.ts      apps/api/test/  (38 archivos + support/ + fixtures/)
+                 · operations · content-plans · daily-director · campaigns · pixel-command · guardian
+apps/api/scripts/{migrate-companies-to-workspaces,migrate-content-plans}.ts      apps/api/test/  (40 archivos + support/ + fixtures/)
 apps/web/src
   app/           router, AppShell, Sidebar, Header, navigation, theme
   features/      auth · dashboard · workspaces · companies · onboarding · brand · personal · pixel · chat · avatar3d · system
-                 · operations · content-planner · daily-director · campaigns · pixel-command
+                 · operations · content-planner · daily-director · campaigns · pixel-command · guardian
   components/    Button, Field, Alert, EmptyState, DnaBlocks, Reveal, BrandLogo, Pixi, rise…
   lib/           api.ts (fetch + validación Zod), apiPaths.ts, forms.ts, useResource.ts
   styles/theme.css  ← único archivo de tokens
-packages/contracts/src   24 módulos reexportados por index.ts (se consume solo desde dist/)
+packages/contracts/src   25 módulos reexportados por index.ts (se consume solo desde dist/)
 ```
 
 ## 5. Módulos implementados (estado real)
@@ -211,6 +217,7 @@ packages/contracts/src   24 módulos reexportados por index.ts (se consume solo 
 | `content-plans` | ContentPlan (`contextType`) + ContentPlanItem; Personal: `ContentPlanningEngine`; Enterprise: `EnterprisePlanningStrategy` (BrandDNA + campaña opcional, refs controladas, grounding promocional y de campaña, versión exacta de la estrategia); migración de `contextType`; aceptar un ítem crea su ContentItem (idempotente, con `campaignId`); editar/rechazar condicionados; `DELETE` archiva | ✅ Personal y Enterprise (Enterprise 2026-10-09); sin prueba con Claude real (`CONTENT-PLANNER.md` §10, `ENTERPRISE-CONTENT.md` §9) |
 | `campaigns` | Campaign, CampaignStrategy (versionada) y CampaignDeliverable; `CampaignStrategyEngine` (IA con contexto controlado + validación de fundamento de marca; 503 sin IA; demo determinista); aceptar una pieza crea su ContentItem o Project con `campaignId` (idempotente); `DELETE` archiva | ✅ solo Enterprise (2026-10-09); sin prueba con Claude real |
 | `pixel-command` | PixelCommand: `PixelIntentResolver` (IA + reglas en español de respaldo; saneado del backend), `PixelContextResolver`, `planCommand` (información que falta + ActionPlan, puro), respuestas sin escritura (estado, consejo, desconocido) y ejecutor que llama a los servicios existentes; confirmación única con reserva atómica + revisión; `partial` con reintento | ✅ Personal y Enterprise (2026-10-09); sin prueba con Claude real (`PIXEL-COMMAND.md` §10) |
+| `guardian` | GuardianReport (`guardian_reports`); `GuardianEngine` con 8 evaluadores (identidad, comunicación, claims, restricciones, estrategia, alineación de campaña, contenido, dirección visual estructurada), una sola llamada semántica con referencias controladas (`BRAND_*`, `CAMPAIGN_*`, `RESOURCE_TEXT_n`) y respaldo por reglas; `GuardianScoreAggregator`; override registrado; corrección de una pasada (`guardian_correction`) y aplicación con el servicio del recurso; `stale` por hash de la instantánea; preflight de PixelCommand (`guardian`/`guardianBlocked`, 409 `guardian_preflight_blocked`) | ✅ solo Enterprise (2026-10-10); sin prueba con Claude real (`BRAND-GUARDIAN.md` §12) |
 | `daily-director` | DailyBrief por día local y versión; `DailyDataCollector`, `PriorityScorer`, `ProjectHealth`, `ContentHealth`, `DailyDirectorEngine` (IA + fallback determinístico), detección de "desactualizado" | ✅ solo Personal; sin prueba con Claude real |
 
 ### Web (`apps/web/src/features`)
@@ -226,6 +233,7 @@ packages/contracts/src   24 módulos reexportados por index.ts (se consume solo 
 | `campaigns` (Campañas, "Crear con Pixel" / "Nueva campaña", detalle con Estrategia · Piezas · Proyectos · Contenido · Plan de contenido, versiones e hipótesis) | ✅ (2026-10-09; recorrido en navegador en el smoke del Prompt 14) |
 | `content-planner` Enterprise ("Plan de contenido de {marca}", selector y resumen de campaña, `?campaign=`, plan con estrategia editorial → alineación → pilares → plan, tarjetas con campaña y porqué de marca) | ✅ (2026-10-09; verificado en navegador) |
 | `pixel-command` (`PixelCommand`, `PixelCommandPanel`, `PixelProposalCard`, `PixelRequestInput`): "¿Qué necesitas hacer?" dominante en los Inicios Enterprise (con ADN) y Personal; "¿Qué quieres lograr?" en Campañas y "¿Qué quieres comunicar?" en Plan de contenido, con los formularios como opciones avanzadas; navegación Enterprise Inicio · Trabajo · Marca | ✅ (2026-10-09; verificado en navegador) |
+| `guardian` (Brand Guardian en Marca: revisar campaña, plan, pieza o texto pegado; informe con estado, score heurístico, dimensiones aplicables, hallazgos explicados, override, "Corregir con Pixel" y "Aplicar"; historial) · "Revisar con Guardian" en el detalle de campaña, el plan de contenido y Contenido · preflight compacto en la propuesta de PixelCommand (`GuardianPreflight`) | ✅ (2026-10-10; verificado en navegador) |
 
 Tests web: entorno `node`, sin DOM. Además de funciones puras, los de Operations, Content Planner y
 Daily Director renderizan vistas con `renderToStaticMarkup`; no hay tests de interacción.
@@ -262,8 +270,8 @@ sin tests automáticos) · Workspaces y migración Company → Workspace · Pixe
 PersonalDNA, avatar, chat) · Operations para Personal y Enterprise (Etapas O y E) · Content Planner
 Personal (Etapa C) · Daily Director Personal (Etapa D) · Campaign Manager Enterprise (Etapa M,
 Prompt 13) · Content Planner Enterprise (Etapa EC, Prompt 14) · PixelCommand /
-zero-entry (Etapa Z, Prompt 14.1). Las seis últimas, verificadas con tests y en modo
-demo (EC y Z también en navegador); con Claude real, sin probar (❓). Experiencia de entrada pública (solo web,
+zero-entry (Etapa Z, Prompt 14.1) · Brand Guardian (Etapa G, Prompt 15). Las siete últimas, verificadas con tests y en modo
+demo (EC, Z y G también en navegador); con Claude real, sin probar (❓). Experiencia de entrada pública (solo web,
 verificada en navegador el 2026-10-09; falta el video final).
 
 ### Parciales o abiertas 🟨
@@ -304,6 +312,9 @@ verificada en navegador el 2026-10-09; falta el video final).
   vivo; solo demo y salidas fijas. Tampoco hay `ANTHROPIC_API_KEY` en este equipo (2026-10-09).
 - El intérprete de PixelCommand (`PIXEL_COMMAND_SYSTEM`) con Claude real: solo probado con las
   reglas (modo demo).
+- El Brand Guardian (`GUARDIAN_SYSTEM` y `GUARDIAN_CORRECTION_SYSTEM`) con Claude real: solo demo,
+  reglas y proveedores de prueba (uno que cita refs inválidas, otro que inventa en la corrección).
+  Sin `ANTHROPIC_API_KEY` el 2026-10-10: prueba en vivo SKIPPED.
 - ~~La interfaz de Campañas en un navegador~~: recorrida en el smoke del Prompt 14 (detalle,
   pestaña "Plan de contenido" y su CTA).
 - El enriquecimiento IA del PersonalDNA (`personal-rules-1+ai`) con Claude real:
@@ -356,6 +367,12 @@ verificada en navegador el 2026-10-09; falta el video final).
 | D38 | PixelCommand orquesta servicios existentes; la IA solo interpreta lenguaje; el backend valida capacidades (`pixelIntentAvailable`), descarta entidades que no están en el texto y resuelve campañas y proyectos por texto contra el workspace activo | Ni otro cerebro ni ids elegidos por el modelo | `PIXEL-COMMAND.md` §2–§3 |
 | D39 | Como mucho una pregunta y solo si cambia materialmente el resultado; nunca lo que ya está en el ADN; valores por defecto del contexto (canales de la campaña, plataformas del PersonalDNA, periodo por plazo en el día local) | Fricción mínima: 0 campos con una frase suficiente, 1 pregunta si falta un dato crítico | `PIXEL-COMMAND.md` §4 |
 | D40 | Una confirmación para todo el plan: reserva atómica `proposed\|partial\|failed → executing` + revisión; pasos que guardan lo creado; `partial` con reintento desde el paso fallido | Nunca duplicados ni "todo listo" falso | `PIXEL-COMMAND.md` §6 |
+| D41 | **Pixel does not only generate. Pixel evaluates its own output against the user's or brand's known context before asking the user to commit to execution. Guardian provides explainable creative judgment, not opaque approval scores.** | Cada hallazgo dice qué falla, dónde (evidencia del recurso), por qué (evidencia del ADN) y qué hacer | `BRAND-GUARDIAN.md`, ADR 35 |
+| D42 | Un GuardianEngine con evaluadores modulares: deterministas primero y una sola llamada semántica agrupada con refs controladas; los hallazgos de la IA nunca bloquean, se limitan a `high` y desde `medium` necesitan una ref de marca válida | Trazabilidad, coste acotado y ninguna "opinión" sin respaldo | `BRAND-GUARDIAN.md` §3–§4, ADR 36 |
+| D43 | Severidad ≠ bloqueo. BLOCK solo para integridad factual (promoción, claim de mercado o cifra sin fundamento) y restricciones explícitas; override solo en lo creativo (no en lo factual), registrado | Conservador con lo que puede dañar a la marca; el humano decide lo creativo | `BRAND-GUARDIAN.md` §5 |
+| D44 | Score calculado en el backend: penalizaciones fijas (info 0 · low 5 · medium 12 · high 25 · critical 40), pesos simples por dimensión, solo dimensiones aplicables; la UI lo presenta como heurístico | Reproducible y explicable, nunca una "verdad" | `BRAND-GUARDIAN.md` §5 |
+| D45 | Corrección de una sola pasada + una re-evaluación; solo quita o suaviza; se descarta si añade afirmaciones; aplicar es otra acción explícita con el servicio del recurso y exige que el informe no esté `stale` | Pixel se corrige sin inventar ni sobrescribir a escondidas | `BRAND-GUARDIAN.md` §6–§8 |
+| D46 | Preflight solo en Enterprise y solo en intenciones que crean campaña, plan o pieza; el texto del propio usuario cuenta como fundamento; BLOCK deja `guardianBlocked` y confirmar responde 409 hasta ajustar o hacer override | "Organizar" nunca ejecuta algo que el Guardian bloqueó sin decisión explícita | `PIXEL-COMMAND.md` §8 bis |
 
 ## 9. Contratos que no deben romperse
 
@@ -383,6 +400,8 @@ verificada en navegador el 2026-10-09; falta el video final).
 | `/workspaces/:id/campaigns/:campaignId/deliverables` · `/:deliverableId` · `/accept` · `/reject` | GET · PATCH · POST (201 al crear, 200 si ya existía) · POST | convertida → 409 `campaign_deliverable_converted` al editar o rechazar |
 | `/workspaces/:id/daily-brief` · `/daily-brief/generate` | GET (404 `daily_brief_not_generated` si no hay) · POST (201) | solo Personal; respuesta `{ brief, stale }` |
 | `/workspaces/:id/pixel/commands` · `/:commandId` · `/adjust` · `/confirm` · `/cancel` | POST (201) · GET · POST · POST (`{ command, executed }`) · POST | Personal y Enterprise; sin ADN → 409; confirmar exige la `revision` vista; segunda confirmación → 200 `executed: false` |
+| `/workspaces/:id/pixel/commands/:commandId/guardian-override` | POST | solo Enterprise; todos los hallazgos bloqueantes deben admitir override (si no, 409 `guardian_not_overridable`) |
+| `/workspaces/:id/guardian/evaluate` · `/reports` · `/reports/:reportId` · `/override` · `/correct` · `/apply` | POST (201) · GET (paginado, `?resourceType=&resourceId=`) · GET (`{ report }` con `stale`) · POST · POST (201) · POST | solo Enterprise (Personal → 400 `feature_not_available`); sin ADN → 409 `brand_dna_missing`; recurso ajeno → 404 |
 | `/workspaces/:id/daily-briefs` · `/:briefId` | GET (paginado) · GET | solo Personal |
 | `/companies` · `/companies/:id` | GET, POST (201) · GET, PATCH | legacy Enterprise; `POST` crea también su workspace. `/companies/:id/memories` está montado pero vacío (404) |
 | `/companies/:id/brand-dna` | GET, PUT | PUT = `{ step, data }` |
@@ -409,7 +428,9 @@ con `INVALID_RESPONSE`.
   `campaign_strategy_generation_in_progress`, `campaign_deliverable_converted`,
   `campaign_strategy_missing` (Prompt 14), `pixel_command_not_adjustable`, `pixel_command_not_confirmable`,
   `pixel_command_revision_changed`, `pixel_command_changed`, `pixel_command_not_cancellable`,
-  `pixel_command_reply_unavailable` (Prompt 14.1). No tienen schema en
+  `pixel_command_reply_unavailable` (Prompt 14.1), `guardian_preflight_blocked`, `guardian_not_overridable`,
+  `guardian_single_correction_pass`, `guardian_nothing_to_fix`, `guardian_no_safe_correction`,
+  `guardian_report_stale` (409) y `guardian_apply_not_supported` (400) (Prompt 15). No tienen schema en
   contracts. `ChatStudio` reacciona a
   `personal_context_not_configured`, `brand_dna_missing` y `enterprise_company_missing`.
 
@@ -421,7 +442,7 @@ con `INVALID_RESPONSE`.
 (arquetipos, `LanguageCode`, roles de paleta…); `generator.kind`; claves de paso de ambos
 onboardings (un paso guardado que deja de validar se descarta en silencio); `CreativeMemory.kind`,
 `memoryScope` y `source.type`; `ContentPlan.contextType`, `ContentPlanItem.strategicRole` y
-`funnelStage` (Prompt 14); `PixelCommand.status`, `intent` y los tipos de paso (Prompt 14.1). Al leer, la API valida con `Schema.parse` BrandDNA, PersonalDNA,
+`funnelStage` (Prompt 14); `PixelCommand.status`, `intent` y los tipos de paso (Prompt 14.1); `GuardianReport.mode`, `resourceType`, `status`, las dimensiones, severidades y códigos de hallazgo (Prompt 15). Al leer, la API valida con `Schema.parse` BrandDNA, PersonalDNA,
 AvatarProfile, Conversation, Message y CreativeMemory; Workspace y Company no se validan al leer,
 pero la web valida cada respuesta (un valor fuera del enum rompe la UI con `INVALID_RESPONSE`). En
 ambos casos: **no estrechar enums**.
@@ -431,7 +452,7 @@ ambos casos: **no estrechar enums**.
 `users`, `workspaces`, `companies`, `brand_dnas`, `personal_profiles`, `personal_dnas`,
 `avatar_profiles`, `conversations`, `messages`, `creative_memories`, `projects`, `tasks`,
 `content_items`, `content_plans`, `content_plan_items`, `daily_briefs`, `campaigns`,
-`campaign_strategies`, `campaign_deliverables`, `pixel_commands`. Índices con nombre:
+`campaign_strategies`, `campaign_deliverables`, `pixel_commands`, `guardian_reports`. Índices con nombre:
 `one_personal_per_owner` (workspaces), `brand_company_version` y `brand_company_dna_version`
 (avatar_profiles, parciales). Únicos relevantes: `users.email`, `{ownerId, slug}` en workspaces y
 companies, `workspaces.migratedFromCompanyId` (parcial; mantiene idempotente la migración),
@@ -467,15 +488,15 @@ createdAt: -1}` en el Prompt 14).
   0 empresas → `/companies/new`, 1 → su workspace, varias → `/dashboard`).
 - **Rutas web:** `/login`, `/register`, `/dashboard`, `/pixels/new`, `/companies`, `/companies/new`
   (`?workspace=`), `/company/:companyId/{,onboarding,brand,pixel,chat}`,
-  `/workspace/:workspaceId/{,chat,pixel,personal/onboarding,personal/dna,campaigns,campaigns/:campaignId,projects,projects/:projectId,tasks,content,content-planner,content-planner/:planId}`.
+  `/workspace/:workspaceId/{,chat,pixel,personal/onboarding,personal/dna,campaigns,campaigns/:campaignId,projects,projects/:projectId,tasks,content,content-planner,content-planner/:planId,guardian,guardian/reports/:reportId}` (las dos últimas, solo Enterprise).
 - **Tests guardianes de invariantes:** `tenantScoped`, `contextBuilders`, `enterpriseWorkspace`,
   `workspaces`, `migration`, `avatarIndexes`, `personal*`, `chat`, el aislamiento por empresa de
   `companies`, `brandDna` y `avatar` (recurso ajeno → 404), `auth` (cookie, 401),
   `operationsIsolation`, `enterpriseOperations`, `projects`, `tasks`, `content`, `contentPlans`,
   `dailyBrief`, `dailyDirector.unit`, `contentPlanning.engine`, `campaigns`,
   `campaignStrategy.engine`, `enterpriseContentPlanner`, `enterprisePlanning.strategy`,
-  `pixelCommand` y `pixelCommand.rules`, en `apps/api/test/`; `enterpriseContentPlan` y
-  `pixelCommand` en contracts.
+  `pixelCommand`, `pixelCommand.rules`, `guardian` y `guardian.engine`, en `apps/api/test/`; `enterpriseContentPlan`,
+  `pixelCommand` y `guardian` en contracts.
 
 ## 10. Decisiones que no estaban documentadas (se registran aquí)
 
@@ -596,6 +617,20 @@ a "no convertida") y **R11** (el rollback borra también los ítems). El resto s
 
 ## 13. Última verificación
 
+### 2026-10-10: Prompt 15 (Brand Guardian Core), equipo del usuario
+
+| Comprobación | Resultado |
+|---|---|
+| `npm run typecheck` | 0 errores |
+| `npm run lint` | sin errores ni avisos |
+| Prettier | OK en los archivos de código tocados; el CRLF preexistente del repo no se normalizó |
+| `npm run test` | contracts 74/74 · API 438 + 2 omitidos (`chat.live`, `contentPlanning.live`) · web 218/218 |
+| `npm run build` | OK (Vite avisa de un chunk grande: aviso, no error) |
+| Navegador (API :4100 y web :5180 temporales, modo demo, base `pixel_smoke_p15` borrada al terminar) | 27/27: preflight TINTO en verde → Organizar; preflight BLOCK con promoción inventada y "Continuar de todas formas"; revisión de campaña; claim, copy fundamentado y "neón"; el mismo copy genérico da hallazgos distintos en TINTO e INVENTIA; corregir + aplicar en una pieza; Personal sin Guardian (ni ruta ni navegación); tableta y móvil sin desbordes; consola limpia salvo el 404 documentado del daily brief |
+| Claude real | SKIPPED: no hay `ANTHROPIC_API_KEY` en el entorno ni `apps/api/.env` |
+
+Los servidores del usuario (:4000 y :5173) no se tocaron.
+
 ### 2026-10-09: Prompt 14.1 (Zero-entry UX: PixelCommand), equipo del usuario
 
 | Comprobación | Resultado |
@@ -704,9 +739,10 @@ Verificación anterior: `c846956` (2026-10-08): contracts 27 · API 185 + 1 · w
 
 ## 14. Siguiente paso (no implementado)
 
-0. **Usuario: revisar los informes de los Prompts 14 y 14.1 y autorizar (o no) su commit**; después,
-   decidir el push (también de `a65e28c`) y la siguiente etapa. No empezar otra etapa sin pedirlo.
-   Probar `CAMPAIGN_SYSTEM`, `ENTERPRISE_PLANNING_SYSTEM` y `PIXEL_COMMAND_SYSTEM` con Claude real
+0. **Usuario: decidir el push** de `1593576` (Prompts 14 + 14.1) y del commit del Prompt 15
+   (autorizado el 2026-10-10), y la siguiente etapa. No empezar
+   el Prompt 16 sin pedirlo. Probar `CAMPAIGN_SYSTEM`, `ENTERPRISE_PLANNING_SYSTEM`,
+   `PIXEL_COMMAND_SYSTEM`, `GUARDIAN_SYSTEM` y `GUARDIAN_CORRECTION_SYSTEM` con Claude real
    cuando haya `ANTHROPIC_API_KEY`.
 
 1. **Usuario: aportar el video final de la bienvenida** (el recibido es un teaser de otro estudio y
@@ -721,7 +757,8 @@ Verificación anterior: `c846956` (2026-10-08): contracts 27 · API 185 + 1 · w
 4. Probar con Claude real el Content Planner y el Daily Director (`CONTENT-PLANNER.md` §10).
 5. Resolver la colisión "Prompt 9/10" ↔ "Etapa 9/10" en `BACKLOG.md`.
 6. ~~Prompt 13 — Campaign Manager~~: hecho (Etapa M, §13). ~~Prompt 14 — Enterprise Content
-   Planner~~ y ~~Prompt 14.1 — Zero-entry UX~~: hechos (Etapas EC y Z, §13), en un único commit sin push.
+   Planner~~ y ~~Prompt 14.1 — Zero-entry UX~~: hechos (Etapas EC y Z, §13), en `1593576`, sin push. ~~Prompt 15 — Brand Guardian
+   Core~~: hecho (Etapa G, §13), en el commit "Add Prompt 15: Pixel Brand Guardian Core", sin push.
 7. Opcional, previa petición: corregir la deriva de §12.
 
 ## 15. Comandos reales

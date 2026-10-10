@@ -204,6 +204,13 @@ TINTO e INVENTIA del mismo dueño: ninguno puede planificar con la campaña del 
 que existe), los proyectos de un plan son siempre de su workspace y el plan de INVENTIA no contiene
 nada de TINTO. Personal genera y acepta como antes, sin BrandDNA ni campañas.
 
+## 8 bis. Brand Guardian (Prompt 15)
+
+"Revisar con Guardian" en el plan evalúa en un solo informe su estrategia editorial y sus piezas
+contra el BrandDNA y su campaña (alineación por pieza, encaje plataforma–formato, claims). "Corregir
+con Pixel" propone cambios en las piezas no convertidas y "Aplicar" usa `updateContentPlanItem`
+(`docs/BRAND-GUARDIAN.md` §8).
+
 ## 9. Limitaciones
 
 - Validación heurística (como el resto del planner); estricta a propósito.

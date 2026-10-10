@@ -47,6 +47,7 @@ function featureItems(workspaceId: string): [WorkspaceFeature, NavItem][] {
     ['projects', { to: `${base}/projects`, label: 'Proyectos', icon: 'projects' }],
     ['tasks', { to: `${base}/tasks`, label: 'Tareas', icon: 'tasks' }],
     ['content', { to: `${base}/content`, label: 'Contenido', icon: 'content' }],
+    ['brandGuardian', { to: `${base}/guardian`, label: 'Brand Guardian', icon: 'guardian' }],
   ];
 }
 
@@ -118,6 +119,7 @@ const SEGMENT_FEATURES: Record<string, WorkspaceFeature> = {
   tasks: 'tasks',
   content: 'content',
   'content-planner': 'contentPlanner',
+  guardian: 'brandGuardian',
 };
 
 /**
@@ -179,7 +181,16 @@ export function enterpriseNav(companyId: string, workspaceId: string | null): Na
           ]),
         ]
       : []),
-    { label: 'Marca', items: brand },
+    {
+      label: 'Marca',
+      // Brand Guardian vive en Marca (bajo /workspace) para no añadir otro grupo de navegación.
+      items: [
+        ...brand,
+        ...(workspaceId
+          ? navGroup('Marca', workspaceId, 'enterprise', ['brandGuardian']).items
+          : []),
+      ],
+    },
   ];
 }
 

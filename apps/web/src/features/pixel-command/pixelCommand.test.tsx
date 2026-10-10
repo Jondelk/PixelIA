@@ -24,6 +24,7 @@ function commandFixture(overrides: Partial<PixelCommand> = {}): PixelCommand {
     turns: [],
     question: null,
     reply: 'Entendí que quieres lanzar TINTO 500 g.',
+    guardian: null,
     plan: {
       intent: 'create_campaign',
       summary: 'Entendí que quieres lanzar TINTO 500 g. Propongo una campaña alineada con el ADN.',

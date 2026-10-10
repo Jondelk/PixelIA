@@ -33,6 +33,13 @@ import { composeDemoContentPlan } from './demoContentPlan.js';
 import { composeDemoEnterpriseContentPlan } from './demoEnterpriseContentPlan.js';
 import { extractPixelCommandPayload, PIXEL_COMMAND_SCHEMA_NAME } from '../pixelCommandPayload.js';
 import { interpretPixelPayload } from '../pixelCommandRules.js';
+import {
+  extractGuardianCorrectionPayload,
+  extractGuardianPayload,
+  GUARDIAN_CORRECTION_SCHEMA_NAME,
+  GUARDIAN_EVALUATION_SCHEMA_NAME,
+} from '../guardianPayload.js';
+import { composeDemoGuardianCorrection, composeDemoGuardianEvaluation } from './demoGuardian.js';
 
 /**
  * Proveedor local sin IA, para desarrollo sin credenciales y para tests deterministas.
@@ -337,7 +344,7 @@ export class DemoProvider implements AIProvider {
   }
 
   /**
-   * Solo los planes de contenido (Personal y Enterprise), la estrategia de campaña y el intérprete de PixelCommand tienen versión demo (compuesta con reglas a partir del contexto real,
+   * Solo los planes de contenido (Personal y Enterprise), la estrategia de campaña, el intérprete de PixelCommand y el Brand Guardian (evaluación y corrección) tienen versión demo (compuesta con reglas a partir del contexto real,
    * marcada `mode: demo`). Cualquier otra salida estructurada exige un modelo real.
    */
   async generateStructuredOutput<T>(
@@ -365,6 +372,26 @@ export class DemoProvider implements AIProvider {
         : null;
     if (command) {
       return { data: validated(input, interpretPixelPayload(command)), ...this.meta(start) };
+    }
+    const guardian =
+      input.schemaName === GUARDIAN_EVALUATION_SCHEMA_NAME
+        ? extractGuardianPayload(input.prompt)
+        : null;
+    if (guardian) {
+      return {
+        data: validated(input, composeDemoGuardianEvaluation(guardian)),
+        ...this.meta(start),
+      };
+    }
+    const correction =
+      input.schemaName === GUARDIAN_CORRECTION_SCHEMA_NAME
+        ? extractGuardianCorrectionPayload(input.prompt)
+        : null;
+    if (correction) {
+      return {
+        data: validated(input, composeDemoGuardianCorrection(correction)),
+        ...this.meta(start),
+      };
     }
     const campaign =
       input.schemaName === CAMPAIGN_SCHEMA_NAME ? extractCampaignPayload(input.prompt) : null;

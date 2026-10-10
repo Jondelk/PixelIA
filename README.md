@@ -82,7 +82,7 @@ La API arranca aunque MongoDB no esté disponible: `/api/health` responde `503` 
 
 ```
 apps/web            React + Vite + Tailwind (shell y pantallas)
-apps/api            Express + Mongoose (módulos: health, auth, workspaces, companies, brand-dna, personal, avatars, conversations, creative-memory, operations, content-plans, daily-director, campaigns, pixel-command)
+apps/api            Express + Mongoose (módulos: health, auth, workspaces, companies, brand-dna, personal, avatars, conversations, creative-memory, operations, content-plans, daily-director, campaigns, pixel-command, guardian)
 packages/contracts  Schemas Zod y tipos compartidos
 docs/               Estado real (PIXEL_ESTADO), MVP, arquitectura, entidades, backlog, workspaces, migración, Pixel Personal, Operations, Campaign Manager, Content Planner (Personal y Enterprise) y Daily Director
 ```
@@ -104,4 +104,5 @@ docs/               Estado real (PIXEL_ESTADO), MVP, arquitectura, entidades, ba
 - [`docs/ENTERPRISE-CONTENT.md`](./docs/ENTERPRISE-CONTENT.md) — Content Planner Enterprise: plan editorial desde el BrandDNA y la estrategia de una campaña.
 - [`docs/DAILY-DIRECTOR.md`](./docs/DAILY-DIRECTOR.md) — Daily Director: la dirección del día en Inicio.
 - [`docs/PIXEL-COMMAND.md`](./docs/PIXEL-COMMAND.md) — PixelCommand: Pixel como interfaz principal (zero-entry-first): una frase → propuesta → una confirmación.
+- [`docs/BRAND-GUARDIAN.md`](./docs/BRAND-GUARDIAN.md) — Brand Guardian: revisión explicable de propuestas, campañas, planes, contenido y textos contra el BrandDNA (solo Enterprise).
 - [`docs/WORKSPACE-MIGRATION.md`](./docs/WORKSPACE-MIGRATION.md) — migración Company → Workspace.

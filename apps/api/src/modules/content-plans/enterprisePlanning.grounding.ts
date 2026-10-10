@@ -34,7 +34,7 @@ export function enterprisePlanningVocabulary(payload: EnterprisePlanningPayload)
   ]);
 }
 
-const PROMO_CLAIMS: [RegExp, string][] = [
+export const PROMO_CLAIMS: [RegExp, string][] = [
   [/\bdescuentos?\b|\brebajas?\b|\b\d+\s*%\s*(off|de descuento)/, 'descuent'],
   [/\bofertas?\b|\bpromociones\b|\bpromocion\b/, 'ofert'],
   [/\bgratis\b|\bgratuit[oa]s?\b|\bsin costo\b/, 'gratis'],
