@@ -1,7 +1,8 @@
 import { Link } from 'react-router';
 import { buttonClasses } from '../../components/buttonClasses';
 import { Icon } from '../../components/Icon';
-import { companyBasePath, companyNav } from '../../app/navigation';
+import { companyBasePath, companyNav, workspaceBasePath } from '../../app/navigation';
+import { PixelCommand } from '../pixel-command/PixelCommand';
 import { BrandWorkSection } from './BrandWorkSection';
 import { CompanyAvatar } from './CompanyAvatar';
 import { useCompany } from './companyContext';
@@ -37,73 +38,100 @@ export function CompanyOverviewPage() {
             text: 'Para que Pixel tome forma, primero estudiará el ADN de la marca en el onboarding. De ahí saldrán su voz, su criterio y el personaje de tu marca.',
           };
 
+  const header = (
+    <div className="mb-10 flex flex-col gap-6 sm:flex-row sm:items-center">
+      {company.logoUrl ? (
+        <img
+          src={company.logoUrl}
+          alt={`Logo de ${company.name}`}
+          className="size-16 rounded-xl border border-line-strong bg-elevated object-contain p-2"
+        />
+      ) : (
+        <CompanyAvatar name={company.name} size="lg" />
+      )}
+      <div className="min-w-0">
+        <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-subtle">
+          {company.industry}
+        </p>
+        <h1 className="font-display text-3xl font-bold tracking-tight sm:text-[2.5rem] sm:leading-[1.1]">
+          {company.name}
+        </h1>
+      </div>
+    </div>
+  );
+
+  const brandCards = (
+    <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
+      <section className="rounded-2xl border border-line bg-surface p-6 sm:p-8">
+        <h2 className="font-display text-base font-bold">Su personaje</h2>
+        <div className="mt-3">
+          <PixelStatusBadge company={company} />
+        </div>
+        <p className="mt-4 text-sm leading-relaxed text-muted">{cta.text}</p>
+        <Link to={cta.to} className={`${buttonClasses('primary')} mt-5`}>
+          {cta.label} <Icon name="arrowRight" className="size-4" />
+        </Link>
+        <ul className="mt-6 grid gap-2 sm:grid-cols-3">
+          {sections.map((item) => (
+            <li key={item.to}>
+              <Link
+                to={item.to}
+                className="flex items-center gap-2 rounded-lg border border-line px-3 py-2.5 text-sm text-muted transition-colors hover:border-line-strong hover:text-fg"
+              >
+                <Icon name={item.icon} className="size-4" /> {item.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="rounded-2xl border border-line bg-surface p-6 sm:p-8">
+        <h2 className="font-display text-base font-bold">Datos de la empresa</h2>
+        <dl className="mt-4 space-y-4 text-sm">
+          <div>
+            <dt className="text-subtle">Descripción</dt>
+            <dd className="mt-1 whitespace-pre-line text-fg">
+              {company.description || <span className="text-subtle">Sin descripción</span>}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-subtle">Identificador</dt>
+            <dd className="mt-1 text-xs text-muted">{company.slug}</dd>
+          </div>
+          <div>
+            <dt className="text-subtle">Creada</dt>
+            <dd className="mt-1 text-muted">{dateFormat.format(new Date(company.createdAt))}</dd>
+          </div>
+        </dl>
+      </section>
+    </div>
+  );
+
+  // Zero-entry-first: con el ADN de la marca, lo dominante es pedirle algo a Pixel; debajo, lo que
+  // está en marcha, y al final la marca (personaje y datos). Sin ADN, primero el onboarding.
+  if (company.brandDnaVersion) {
+    return (
+      <>
+        {header}
+        <PixelCommand
+          workspaceId={company.workspaceId}
+          base={workspaceBasePath(company.workspaceId)}
+        />
+        <BrandWorkSection company={company} />
+        <section className="mt-12" aria-label="Tu marca">
+          <h2 className="mb-5 text-xs font-medium uppercase tracking-[0.2em] text-subtle">
+            Tu marca
+          </h2>
+          {brandCards}
+        </section>
+      </>
+    );
+  }
+
   return (
     <>
-      <div className="mb-10 flex flex-col gap-6 sm:flex-row sm:items-center">
-        {company.logoUrl ? (
-          <img
-            src={company.logoUrl}
-            alt={`Logo de ${company.name}`}
-            className="size-16 rounded-xl border border-line-strong bg-elevated object-contain p-2"
-          />
-        ) : (
-          <CompanyAvatar name={company.name} size="lg" />
-        )}
-        <div className="min-w-0">
-          <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-subtle">
-            {company.industry}
-          </p>
-          <h1 className="font-display text-3xl font-bold tracking-tight sm:text-[2.5rem] sm:leading-[1.1]">
-            {company.name}
-          </h1>
-        </div>
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
-        <section className="rounded-2xl border border-line bg-surface p-6 sm:p-8">
-          <h2 className="font-display text-base font-bold">Su personaje</h2>
-          <div className="mt-3">
-            <PixelStatusBadge company={company} />
-          </div>
-          <p className="mt-4 text-sm leading-relaxed text-muted">{cta.text}</p>
-          <Link to={cta.to} className={`${buttonClasses('primary')} mt-5`}>
-            {cta.label} <Icon name="arrowRight" className="size-4" />
-          </Link>
-          <ul className="mt-6 grid gap-2 sm:grid-cols-3">
-            {sections.map((item) => (
-              <li key={item.to}>
-                <Link
-                  to={item.to}
-                  className="flex items-center gap-2 rounded-lg border border-line px-3 py-2.5 text-sm text-muted transition-colors hover:border-line-strong hover:text-fg"
-                >
-                  <Icon name={item.icon} className="size-4" /> {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section className="rounded-2xl border border-line bg-surface p-6 sm:p-8">
-          <h2 className="font-display text-base font-bold">Datos de la empresa</h2>
-          <dl className="mt-4 space-y-4 text-sm">
-            <div>
-              <dt className="text-subtle">Descripción</dt>
-              <dd className="mt-1 whitespace-pre-line text-fg">
-                {company.description || <span className="text-subtle">Sin descripción</span>}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-subtle">Identificador</dt>
-              <dd className="mt-1 text-xs text-muted">{company.slug}</dd>
-            </div>
-            <div>
-              <dt className="text-subtle">Creada</dt>
-              <dd className="mt-1 text-muted">{dateFormat.format(new Date(company.createdAt))}</dd>
-            </div>
-          </dl>
-        </section>
-      </div>
-
+      {header}
+      {brandCards}
       <BrandWorkSection company={company} />
     </>
   );

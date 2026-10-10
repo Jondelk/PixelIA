@@ -8,6 +8,7 @@ import {
   type ContentPlanListResponse,
   type ContentPlanResponse,
   type ContentPlanStatus,
+  type CreateContentPlanInput,
   type GenerateContentPlanInput,
   type UpdateContentPlanInput,
   type UpdateContentPlanItemInput,
@@ -26,7 +27,7 @@ const itemPath = (workspaceId: string, planId: string, itemId: string) =>
 
 export function listContentPlans(
   workspaceId: string,
-  filters: { status?: readonly ContentPlanStatus[] } = {},
+  filters: { status?: readonly ContentPlanStatus[]; campaignId?: string } = {},
   signal?: AbortSignal,
 ): Promise<ContentPlanListResponse> {
   return apiRequest(
@@ -36,6 +37,17 @@ export function listContentPlans(
       signal,
     },
   );
+}
+
+/** Plan manual (sin Pixel): nombre, periodo y plataformas. */
+export function createContentPlan(
+  workspaceId: string,
+  input: CreateContentPlanInput,
+): Promise<ContentPlanResponse> {
+  return apiRequest(plansPath(workspaceId), ContentPlanResponseSchema, {
+    method: 'POST',
+    body: input,
+  });
 }
 
 export function getContentPlan(

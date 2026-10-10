@@ -25,3 +25,4 @@ export * from './capabilities.js';
 export * from './campaign.js';
 export * from './campaignDeliverable.js';
 export * from './campaignStrategy.js';
+export * from './pixelCommand.js';

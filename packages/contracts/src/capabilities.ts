@@ -6,7 +6,8 @@ import type { WorkspaceType } from './workspace.js';
  * gating, tanto en la API (400 feature_not_available) como en la web (navegación y rutas).
  *
  * - Operations (projects, tasks, content): compartidas por ambos tipos (Shared Workspace Operations).
- * - Content Planner y Daily Director: solo Personal por ahora (dependen del PersonalDNA).
+ * - Content Planner: ambos (Personal desde el PersonalDNA; Enterprise desde el BrandDNA y, si se
+ *   elige, una campaña). Daily Director: solo Personal por ahora.
  * - Campaign Manager: solo Enterprise (depende del BrandDNA).
  */
 
@@ -35,7 +36,7 @@ const CAPABILITIES: Record<WorkspaceType, WorkspaceCapabilities> = {
     projects: true,
     tasks: true,
     content: true,
-    contentPlanner: false,
+    contentPlanner: true,
     dailyDirector: false,
     campaigns: true,
   },

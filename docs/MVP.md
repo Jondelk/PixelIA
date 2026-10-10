@@ -31,7 +31,7 @@ Documentos relacionados: [`ARCHITECTURE.md`](./ARCHITECTURE.md) · [`ENTITIES.md
 | Chat | Conversaciones por empresa, mensajes persistidos, respuestas de Pixel con contexto de BrandDNA + memorias + historial. Respuesta completa (sin streaming). |
 | CreativeMemory | Mínima: el usuario puede fijar un mensaje/idea como memoria, listarla y borrarla. Las memorias activas entran al contexto del chat. |
 | IA | Interfaz `AIProvider`, `MockAIProvider` determinista y un adaptador de proveedor real (proveedor a confirmar). |
-| Operations | Proyectos, tareas y contenido en **cualquier** Pixel (Personal y Enterprise) con los mismos modelos y pantallas (`docs/OPERATIONS.md`, `docs/ENTERPRISE-OPERATIONS.md`). En Enterprise: "Trabajo de la marca" en el Inicio y estado operativo (solo conteos) en el chat. Content Planner y Daily Director solo en Personal. |
+| Operations | Proyectos, tareas y contenido en **cualquier** Pixel (Personal y Enterprise) con los mismos modelos y pantallas (`docs/OPERATIONS.md`, `docs/ENTERPRISE-OPERATIONS.md`). En Enterprise: "Trabajo de la marca" en el Inicio y estado operativo (solo conteos) en el chat. Content Planner en ambos (Enterprise: BrandDNA + campaña opcional, `docs/ENTERPRISE-CONTENT.md`); Daily Director solo en Personal. |
 
 ### Excluido explícitamente
 

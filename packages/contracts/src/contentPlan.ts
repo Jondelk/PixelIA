@@ -12,9 +12,37 @@ import {
 /*
  * Content Planner: Pixel propone una ESTRATEGIA de contenido (ContentPlan) con propuestas
  * justificadas (ContentPlanItem). Una propuesta no es una pieza: solo al aceptarla se convierte en
- * un ContentItem (source = pixel). Recursos del workspace (aislados por workspaceId); hoy solo un
- * workspace personal puede generarlos con Pixel. Ver docs/CONTENT-PLANNER.md.
+ * un ContentItem (source = pixel). Recursos del workspace (aislados por workspaceId), compartidos
+ * por Personal y Enterprise: `contextType` dice desde qué contexto se planificó (PersonalDNA, o
+ * BrandDNA + campaña opcional). Ver docs/CONTENT-PLANNER.md y docs/ENTERPRISE-CONTENT.md.
  */
+
+/** Contexto de un plan: coincide siempre con el tipo de su workspace. */
+export const ContentPlanContextTypeSchema = z.enum(['personal', 'enterprise']);
+export type ContentPlanContextType = z.infer<typeof ContentPlanContextTypeSchema>;
+
+/** Para qué existe una pieza dentro del plan (no es una métrica). */
+export const ContentStrategicRoleSchema = z.enum([
+  'awareness',
+  'education',
+  'authority',
+  'engagement',
+  'community',
+  'conversion',
+  'launch',
+  'retention',
+  'other',
+]);
+export type ContentStrategicRole = z.infer<typeof ContentStrategicRoleSchema>;
+
+/** Etapa del recorrido (opcional: no toda pieza la necesita). */
+export const ContentFunnelStageSchema = z.enum([
+  'awareness',
+  'consideration',
+  'conversion',
+  'retention',
+]);
+export type ContentFunnelStage = z.infer<typeof ContentFunnelStageSchema>;
 
 export const CONTENT_PLAN_MAX_DAYS = 30;
 export const CONTENT_PLAN_MAX_ITEMS = 30;
@@ -65,7 +93,8 @@ export function periodDays(startDate: string, endDate: string): number {
   );
 }
 
-const periodRefinement = <T extends { startDate: string; endDate: string }>(schema: z.ZodType<T>) =>
+/** Conserva el tipo del schema (entrada y salida): así `z.input` de las peticiones no es `unknown`. */
+const periodRefinement = <S extends z.ZodType<{ startDate: string; endDate: string }>>(schema: S) =>
   schema
     .refine((value) => periodDays(value.startDate, value.endDate) >= 1, {
       message: 'La fecha final no puede ser anterior a la inicial',
@@ -106,25 +135,74 @@ export const ContentPlanItemCountsSchema = z.object({
 });
 export type ContentPlanItemCounts = z.infer<typeof ContentPlanItemCountsSchema>;
 
-export const ContentPlanSchema = z.object({
-  id: ObjectIdSchema,
-  workspaceId: ObjectIdSchema,
-  name: z.string(),
-  objective: z.string().nullable(),
-  period: z.object({ startDate: DayStringSchema, endDate: DayStringSchema }),
-  strategySummary: z.string().nullable(),
-  pillars: z.array(ContentPillarSchema),
-  targetAudience: z.array(z.string()),
-  platforms: z.array(ContentPlatformSchema),
-  status: ContentPlanStatusSchema,
-  generatedBy: ContentPlanGeneratedBySchema,
-  /** Versión del PersonalDNA con la que se generó (null si es manual). */
-  personalDnaVersion: z.number().int().min(1).nullable(),
-  generation: ContentPlanGenerationSchema.nullable(),
-  itemCounts: ContentPlanItemCountsSchema,
-  createdAt: IsoDateSchema,
-  updatedAt: IsoDateSchema,
-});
+/**
+ * Combinaciones válidas del contexto de un plan:
+ * - personal: sin BrandDNA ni campaña.
+ * - enterprise: sin PersonalDNA; si lo generó Pixel, con su brandDnaVersion; con campaña, siempre
+ *   con la versión de su estrategia (y al revés).
+ */
+export function contentPlanContextIssues(plan: {
+  contextType: ContentPlanContextType;
+  generatedBy: ContentPlanGeneratedBy;
+  personalDnaVersion: number | null;
+  brandDnaVersion: number | null;
+  campaignId: string | null;
+  campaignStrategyVersion: number | null;
+}): string[] {
+  const issues: string[] = [];
+  if (plan.contextType === 'personal') {
+    if (plan.brandDnaVersion !== null) issues.push('Un plan personal no usa BrandDNA');
+    if (plan.campaignId !== null || plan.campaignStrategyVersion !== null) {
+      issues.push('Un plan personal no puede tener campaña');
+    }
+  } else {
+    if (plan.personalDnaVersion !== null) issues.push('Un plan de empresa no usa PersonalDNA');
+    if (plan.generatedBy === 'pixel' && plan.brandDnaVersion === null) {
+      issues.push('Un plan de empresa generado con Pixel necesita su versión de BrandDNA');
+    }
+    if ((plan.campaignId === null) !== (plan.campaignStrategyVersion === null)) {
+      issues.push('Campaña y versión de su estrategia van juntas');
+    }
+  }
+  return issues;
+}
+
+export const ContentPlanSchema = z
+  .object({
+    id: ObjectIdSchema,
+    workspaceId: ObjectIdSchema,
+    contextType: ContentPlanContextTypeSchema,
+    name: z.string(),
+    objective: z.string().nullable(),
+    period: z.object({ startDate: DayStringSchema, endDate: DayStringSchema }),
+    strategySummary: z.string().nullable(),
+    pillars: z.array(ContentPillarSchema),
+    targetAudience: z.array(z.string()),
+    platforms: z.array(ContentPlatformSchema),
+    status: ContentPlanStatusSchema,
+    generatedBy: ContentPlanGeneratedBySchema,
+    /** Personal: versión del PersonalDNA con la que se generó (null si es manual). */
+    personalDnaVersion: z.number().int().min(1).nullable(),
+    /** Enterprise: versión del BrandDNA con la que se generó (null si es manual). */
+    brandDnaVersion: z.number().int().min(1).nullable().default(null),
+    /** Enterprise: campaña que desarrolla el plan (opcional). */
+    campaignId: ObjectIdSchema.nullable().default(null),
+    /** Versión EXACTA de la estrategia de campaña usada (no cambia si la campaña se regenera). */
+    campaignStrategyVersion: z.number().int().min(1).nullable().default(null),
+    /** Enterprise: objetivo editorial del plan. */
+    editorialObjective: z.string().nullable().default(null),
+    /** Enterprise con campaña: cómo el plan desarrolla la estrategia. */
+    campaignAlignment: z.string().nullable().default(null),
+    /** Por qué las piezas se reparten así en el periodo. */
+    distributionRationale: z.string().nullable().default(null),
+    generation: ContentPlanGenerationSchema.nullable(),
+    itemCounts: ContentPlanItemCountsSchema,
+    createdAt: IsoDateSchema,
+    updatedAt: IsoDateSchema,
+  })
+  .superRefine((plan, ctx) => {
+    for (const message of contentPlanContextIssues(plan)) ctx.addIssue({ code: 'custom', message });
+  });
 export type ContentPlan = z.infer<typeof ContentPlanSchema>;
 
 export const ContentPlanItemSchema = z.object({
@@ -133,6 +211,16 @@ export const ContentPlanItemSchema = z.object({
   contentPlanId: ObjectIdSchema,
   /** Proyecto real del workspace en el que se basa la propuesta (si aplica). */
   projectId: ObjectIdSchema.nullable(),
+  /** Enterprise: campaña del plan (la del mismo workspace). */
+  campaignId: ObjectIdSchema.nullable().default(null),
+  /** Enterprise: pieza de campaña que desarrolla esta propuesta (de esa campaña). */
+  campaignDeliverableId: ObjectIdSchema.nullable().default(null),
+  strategicRole: ContentStrategicRoleSchema.nullable().default(null),
+  funnelStage: ContentFunnelStageSchema.nullable().default(null),
+  /** Mensaje que la pieza comunica (de la estrategia de campaña o del ADN). */
+  strategicMessage: z.string().nullable().default(null),
+  /** "¿Por qué esta ejecución pertenece a ESTA marca?" */
+  brandRationale: z.string().nullable().default(null),
   title: z.string(),
   concept: z.string().nullable(),
   /** "¿Por qué Pixel recomienda esto?" */
@@ -173,10 +261,14 @@ export const GenerateContentPlanSchema = periodRefinement(
         .max(CONTENT_PLAN_MAX_FREQUENCY, `Máximo ${CONTENT_PLAN_MAX_FREQUENCY} por semana`)
         .optional(),
       platforms: z.array(ContentPlatformSchema).max(9).optional(),
+      /** Formatos permitidos (Prompt 14.1: "tres Reels", "sin Stories"): una pieza en otro se descarta. */
+      formats: z.array(ContentFormatSchema).min(1).max(11).optional(),
       goal: z.string().trim().max(200, 'Máximo 200 caracteres').optional(),
       name: z.string().trim().min(1).max(120).optional(),
       /** Regenerar: crea un plan NUEVO evitando repetir las propuestas de este. */
       regenerateFrom: ObjectIdSchema.optional(),
+      /** Solo Enterprise: campaña del mismo workspace cuya estrategia vigente desarrolla el plan. */
+      campaignId: ObjectIdSchema.optional(),
       tzOffset: z.number().int().min(-840).max(840).default(0),
     })
     .strict(),
@@ -219,7 +311,9 @@ export const UpdateContentPlanItemSchema = z
   .object({
     title: operationTitle('un título'),
     concept: operationText(2000),
+    objective: operationText(300),
     hook: operationText(500),
+    suggestedAngle: operationText(300),
     platform: ContentPlatformSchema.nullable(),
     format: ContentFormatSchema.nullable(),
     scheduledFor: IsoDateSchema.nullable(),
@@ -238,6 +332,8 @@ export type RejectContentPlanItemInput = z.input<typeof RejectContentPlanItemSch
 
 export const ContentPlanListQuerySchema = z.object({
   status: queryEnumList(ContentPlanStatusSchema),
+  /** Planes que desarrollan una campaña (Enterprise). */
+  campaignId: ObjectIdSchema.optional(),
   limit: queryLimit,
   offset: queryOffset,
 });
@@ -305,6 +401,71 @@ export const GeneratedContentPlanSchema = z.object({
 export type GeneratedContentPlan = z.infer<typeof GeneratedContentPlanSchema>;
 
 /* ---------- Etiquetas de producto (UI en español) ---------- */
+
+/* ---------- Salida estructurada de la IA (Enterprise) ---------- */
+
+/**
+ * Plan editorial de una marca. Las referencias son CONTROLADAS (`DELIVERABLE_1`, `PROJECT_2`…):
+ * el modelo nunca ve ids de Mongo; lo desconocido se descarta.
+ */
+export const GeneratedEnterpriseContentPlanItemSchema = z.object({
+  title: z.string().min(3).max(160),
+  concept: z.string().min(3).max(1000),
+  rationale: z.string().min(3).max(600),
+  brandRationale: z.string().min(3).max(600),
+  objective: z.string().min(2).max(300),
+  strategicRole: ContentStrategicRoleSchema.nullable().optional(),
+  funnelStage: ContentFunnelStageSchema.nullable().optional(),
+  audience: z.array(z.string().max(160)).max(4),
+  platform: ContentPlatformSchema,
+  format: ContentFormatSchema,
+  pillar: z.string().max(80),
+  angle: ContentAngleSchema,
+  strategicMessage: z.string().max(300).nullable().optional(),
+  hook: z.string().max(300).nullable().optional(),
+  suggestedAngle: z.string().max(300).nullable().optional(),
+  deliverableRef: z.string().max(40).nullable().optional(),
+  projectRef: z.string().max(40).nullable().optional(),
+  /** "YYYY-MM-DD" dentro del periodo. */
+  suggestedDate: z.string().nullable().optional(),
+});
+export type GeneratedEnterpriseContentPlanItem = z.infer<
+  typeof GeneratedEnterpriseContentPlanItemSchema
+>;
+
+export const GeneratedEnterpriseContentPlanSchema = z.object({
+  strategySummary: z.string().min(10).max(1200),
+  editorialObjective: z.string().min(5).max(400),
+  campaignAlignment: z.string().max(800).nullable().optional(),
+  distributionRationale: z.string().max(600).nullable().optional(),
+  pillars: z
+    .array(z.object({ name: z.string().min(2).max(80), purpose: z.string().min(3).max(400) }))
+    .min(1)
+    .max(6),
+  items: z.array(GeneratedEnterpriseContentPlanItemSchema).min(1).max(CONTENT_PLAN_MAX_ITEMS),
+});
+export type GeneratedEnterpriseContentPlan = z.infer<typeof GeneratedEnterpriseContentPlanSchema>;
+
+/* ---------- Etiquetas de producto (UI en español) ---------- */
+
+export const CONTENT_STRATEGIC_ROLE_LABELS: Record<ContentStrategicRole, string> = {
+  awareness: 'Reconocimiento',
+  education: 'Educación',
+  authority: 'Autoridad',
+  engagement: 'Conversación',
+  community: 'Comunidad',
+  conversion: 'Conversión',
+  launch: 'Lanzamiento',
+  retention: 'Fidelización',
+  other: 'Otro',
+};
+
+export const CONTENT_FUNNEL_STAGE_LABELS: Record<ContentFunnelStage, string> = {
+  awareness: 'Descubrimiento',
+  consideration: 'Consideración',
+  conversion: 'Decisión',
+  retention: 'Fidelización',
+};
 
 export const CONTENT_PLAN_STATUS_LABELS: Record<ContentPlanStatus, string> = {
   draft: 'Borrador',

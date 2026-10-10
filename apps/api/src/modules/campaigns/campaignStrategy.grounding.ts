@@ -83,7 +83,12 @@ export function groundedCampaignText(text: string, vocabulary: Vocabulary): stri
 }
 
 /** Palabras clave (raíces) de las restricciones visuales y lo que la marca rechaza. */
-export function forbiddenVisualStems(payload: CampaignPayload): Set<string> {
+/** Basta con la parte del ADN que veta cosas (la usan el Campaign Manager y el planner Enterprise). */
+export function forbiddenVisualStems(payload: {
+  brand: Pick<CampaignPayload['brand'], 'restrictions' | 'dislikes'> & {
+    communication: { avoidWords: string[] };
+  };
+}): Set<string> {
   const { restrictions, dislikes } = payload.brand;
   const words = [...restrictions.visual, ...dislikes, ...payload.brand.communication.avoidWords]
     .flatMap((value) => normalize(value).split(/[^a-z0-9ñ]+/))

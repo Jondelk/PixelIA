@@ -28,8 +28,8 @@ Projects, Tasks y ContentItems son **recursos del workspace**. Su frontera de ai
   ambos tipos, protegidas por `FeatureOnly` (capacidades de contracts). Enterprise **no** redirige
   estas rutas a `/company/:companyId` (`enterpriseStaysInWorkspace`): son workspace-first.
 - **Feature gating.** `workspaceSupportsFeature(type, feature)` (`packages/contracts/src/capabilities.ts`)
-  decide qué existe en cada tipo: `projects`, `tasks` y `content` en ambos; `contentPlanner` y
-  `dailyDirector` solo en Personal. La API (`assertWorkspaceFeature` → 400 `feature_not_available`)
+  decide qué existe en cada tipo: `projects`, `tasks`, `content` y (desde el Prompt 14)
+  `contentPlanner` en ambos; `dailyDirector` solo en Personal; `campaigns` solo en Enterprise. La API (`assertWorkspaceFeature` → 400 `feature_not_available`)
   y la web (navegación y `FeatureOnly`) leen la misma tabla. Nada se guarda en Mongo.
 - No hay rutas tipo `/personal/tasks` ni `/company/:companyId/projects`.
 
@@ -242,8 +242,7 @@ Las mismas pantallas para ambos tipos; solo cambian algunos textos (`operationsC
 ofrecen.
 
 Navegación Personal: **Inicio · Trabajo** (Proyectos, Tareas, Contenido, Plan de contenido) **·
-Pixel** (Mi ADN, Mi Pixel, Chat). Navegación Enterprise: **Inicio · Trabajo** (Proyectos, Tareas,
-Contenido) **· Marca** (ADN de marca, Personaje, Chat).
+Pixel** (Mi ADN, Mi Pixel, Chat). Navegación Enterprise: **Inicio · Trabajo** (Campañas, Plan de contenido, Proyectos, Tareas, Contenido) **· Marca** (ADN de marca, Personaje, Chat).
 
 | Ruta | Pantalla |
 |---|---|
@@ -280,5 +279,6 @@ Fechas: un día del `<input type="date">` se guarda como el **mediodía local** 
    destructiva. Operations no se reescribe.
 3. Equipos/roles: añadir `assigneeId`/`createdByUserId` cuando existan miembros del workspace. La
    frontera seguirá siendo `workspaceId`.
-4. Daily Director / Content Planner Enterprise: leer los mismos datos + BrandDNA y crear con
-   `source: 'pixel'`; se habilitan cambiando la tabla de capacidades cuando existan.
+4. Daily Director Enterprise: leer los mismos datos + BrandDNA y crear con `source: 'pixel'`; se
+   habilita cambiando la tabla de capacidades. (El Content Planner Enterprise ya existe:
+   `docs/ENTERPRISE-CONTENT.md`.)

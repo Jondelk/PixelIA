@@ -155,8 +155,8 @@ flowchart TB
    inyección de prompt puede exponer información ajena porque no está en el contexto. El estado
    operativo Enterprise (conteos de Operations) se calcula con el mismo `workspaceId`.
 7. **Capacidades**: `assertWorkspaceFeature` (contracts `capabilities.ts`) bloquea con 400
-   `feature_not_available` lo que un tipo de workspace no tiene (Content Planner y Daily Director
-   en Enterprise).
+   `feature_not_available` lo que un tipo de workspace no tiene (Daily Director en Enterprise;
+   Campaign Manager en Personal).
 8. **Tests**: aislamiento entre usuarios y entre workspaces del mismo dueño en cada endpoint
    (lectura y escritura cruzada → 404, sin rastro en la base) y en el contenido del contexto de IA.
 
@@ -292,7 +292,8 @@ Prefijo `/api`. JSON. Errores con forma `ApiError { code, message, details? }`.
 | CRUD | `/workspaces/:workspaceId/tasks[/:taskId]` | Operations: tareas (filtros `status`, `priority`, `projectId`, `due`, `search`) ✅ |
 | CRUD | `/workspaces/:workspaceId/content[/:contentItemId]` | Operations: piezas de contenido (filtros `status`, `platform`, `format`, `projectId`, `search`) ✅ |
 | GET | `/workspaces/:workspaceId/operations/summary` | Operations: conteos y próximos elementos del Inicio ✅ |
-| POST | `/workspaces/:workspaceId/content-plans/generate` | Content Planner: Pixel propone estrategia + propuestas (solo Personal; sin ADN → 409) ✅ |
+| POST | `/workspaces/:workspaceId/content-plans/generate` | Content Planner: Pixel propone estrategia + propuestas (Personal: PersonalDNA; Enterprise: BrandDNA + `campaignId` opcional; sin ADN → 409) ✅ |
+| POST | `/workspaces/:workspaceId/pixel/commands` (+ `/:id/adjust`, `/:id/confirm`, `/:id/cancel`) | PixelCommand: solicitud natural → propuesta → una confirmación → servicios existentes (`docs/PIXEL-COMMAND.md`) ✅ |
 | CRUD | `/workspaces/:workspaceId/content-plans[/:planId]` | Planes de contenido (DELETE archiva) ✅ |
 | PATCH/POST | `/workspaces/:workspaceId/content-plans/:planId/items/:itemId[/accept · /reject]` | Editar, aceptar (→ ContentItem, idempotente) o rechazar una propuesta ✅ |
 | GET | `/workspaces/:workspaceId/daily-brief` | Daily Director: dirección vigente de hoy + `stale` (404 `daily_brief_not_generated`) ✅ |
@@ -439,3 +440,10 @@ Los tests de integración de la API arrancan un MongoDB efímero una vez por eje
 | 25 | CampaignStrategyEngine con contexto controlado + validación de fundamento propia de marca (claims de mercado, cifras, nombres, restricciones visuales, paleta, canales del brief) | Pixel no inventa datos de la marca; lo dudoso se recorta, se descarta o marca el insight como hipótesis |
 | 26 | Sin IA disponible, el Campaign Manager responde 503 (sin estrategia de respaldo); demo determinista solo con `AI_PROVIDER=demo` | Una campaña requiere criterio creativo: mejor nada que una estrategia falsa (como el Content Planner) |
 | 27 | Aceptar una pieza = conversión explícita e idempotente por reserva atómica (content → ContentItem; resto → Project); editar/rechazar condicionados a "no convertida" | Nunca duplicados ni estados incoherentes por concurrencia |
+| 28 | Un solo ContentPlan con `contextType` y estrategias de planificación por `workspace.type` en el mismo endpoint (Personal: `ContentPlanningEngine`; Enterprise: `EnterprisePlanningStrategy`) | Sin modelos ni pantallas `Enterprise*` duplicados; invariantes en contracts |
+| 29 | El plan Enterprise guarda `brandDnaVersion` y la `campaignStrategyVersion` exacta; nunca se regenera solo | Trazabilidad: se sabe con qué estrategia se planificó; un cambio de estrategia no reescribe planes |
+| 30 | Ids controlados en el contexto de planificación (`CAMPAIGN_1`, `DELIVERABLE_n`, `PROJECT_n`, `CONTENT_n`) + grounding promocional (descuentos, precios, "favorito de…") | La IA no puede apuntar a recursos ajenos ni afirmar ofertas que la marca no dio |
+| 31 | Migración de `contextType` idempotente con dry-run, driver nativo y ejecución al arrancar; sin `default` en Mongoose | Planes anteriores clasificados con certeza (el tipo del workspace es inmutable) sin ocultar los pendientes |
+| 32 | **Pixel is conversation-first and zero-entry-first.** Structured resources exist primarily as Pixel's operational memory and as an advanced control surface for the user. Users should not have to maintain Pixel's internal model manually for the product to be useful. | La entrada principal es una frase (PixelCommand); los formularios pasan a opciones avanzadas |
+| 33 | PixelCommand orquesta (intérprete → contexto → falta información → propuesta → confirmación) y nunca duplica motores ni escribe en Mongo directamente; la IA solo interpreta lenguaje, el backend valida capacidades, pertenencia y campos y resuelve los recursos por texto contra el workspace activo | Un solo cerebro por dominio; el modelo nunca elige ids |
+| 34 | Confirmación única por plan con reserva atómica + revisión; pasos idempotentes que guardan lo creado; fallos parciales explícitos (`partial`) y reintento desde el paso fallido | Nunca duplicados ni "todo listo" falso |

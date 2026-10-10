@@ -14,6 +14,10 @@ import {
 import { CAMPAIGN_SCHEMA_NAME, extractCampaignPayload } from '../campaignStrategyPayload.js';
 import { extractPlanningPayload, PLANNING_SCHEMA_NAME } from '../contentPlanningPayload.js';
 import {
+  ENTERPRISE_PLANNING_SCHEMA_NAME,
+  extractEnterprisePlanningPayload,
+} from '../enterprisePlanningPayload.js';
+import {
   DAILY_QUESTION,
   extractDailyBriefContext,
   type DailyBriefContext,
@@ -26,6 +30,9 @@ import {
 } from '../operationsStatusContext.js';
 import { composeDemoCampaignStrategy } from './demoCampaignStrategy.js';
 import { composeDemoContentPlan } from './demoContentPlan.js';
+import { composeDemoEnterpriseContentPlan } from './demoEnterpriseContentPlan.js';
+import { extractPixelCommandPayload, PIXEL_COMMAND_SCHEMA_NAME } from '../pixelCommandPayload.js';
+import { interpretPixelPayload } from '../pixelCommandRules.js';
 
 /**
  * Proveedor local sin IA, para desarrollo sin credenciales y para tests deterministas.
@@ -277,7 +284,12 @@ export function composeOperationsReply(brand: string, ops: OperationsStatusConte
         `- ${plural(ops.activeCampaigns, 'campaña activa', 'campañas activas')}${ops.campaigns.length ? `: ${ops.campaigns.map((campaign) => `«${campaign.name}»`).join(', ')}` : ''}`,
         `- ${plural(ops.activeProjects, 'proyecto activo', 'proyectos activos')}`,
         `- ${plural(ops.openTasks, 'tarea pendiente', 'tareas pendientes')}${ops.overdueTasks ? ` (${ops.overdueTasks} vencidas)` : ''}`,
-        `- ${plural(ops.activeContentItems, 'pieza de contenido en curso', 'piezas de contenido en curso')}`,
+        `- ${plural(ops.activeContentItems, 'pieza de contenido en curso', 'piezas de contenido en curso')}${ops.plannedContentItems ? ` (${ops.plannedContentItems} planificadas)` : ''}`,
+        ...(ops.activeContentPlans
+          ? [
+              `- ${plural(ops.activeContentPlans, 'plan de contenido activo', 'planes de contenido activos')}`,
+            ]
+          : []),
       ];
   lines.push(
     '',
@@ -325,7 +337,7 @@ export class DemoProvider implements AIProvider {
   }
 
   /**
-   * Solo el plan de contenido y la estrategia de campaña tienen versión demo (compuesta con reglas a partir del contexto real,
+   * Solo los planes de contenido (Personal y Enterprise), la estrategia de campaña y el intérprete de PixelCommand tienen versión demo (compuesta con reglas a partir del contexto real,
    * marcada `mode: demo`). Cualquier otra salida estructurada exige un modelo real.
    */
   async generateStructuredOutput<T>(
@@ -335,13 +347,30 @@ export class DemoProvider implements AIProvider {
     const payload =
       input.schemaName === PLANNING_SCHEMA_NAME ? extractPlanningPayload(input.prompt) : null;
     if (payload) {
-      return { data: input.schema.parse(composeDemoContentPlan(payload)), ...this.meta(start) };
+      return { data: validated(input, composeDemoContentPlan(payload)), ...this.meta(start) };
+    }
+    const editorial =
+      input.schemaName === ENTERPRISE_PLANNING_SCHEMA_NAME
+        ? extractEnterprisePlanningPayload(input.prompt)
+        : null;
+    if (editorial) {
+      return {
+        data: validated(input, composeDemoEnterpriseContentPlan(editorial)),
+        ...this.meta(start),
+      };
+    }
+    const command =
+      input.schemaName === PIXEL_COMMAND_SCHEMA_NAME
+        ? extractPixelCommandPayload(input.prompt)
+        : null;
+    if (command) {
+      return { data: validated(input, interpretPixelPayload(command)), ...this.meta(start) };
     }
     const campaign =
       input.schemaName === CAMPAIGN_SCHEMA_NAME ? extractCampaignPayload(input.prompt) : null;
     if (campaign) {
       return {
-        data: input.schema.parse(composeDemoCampaignStrategy(campaign)),
+        data: validated(input, composeDemoCampaignStrategy(campaign)),
         ...this.meta(start),
       };
     }
@@ -350,4 +379,20 @@ export class DemoProvider implements AIProvider {
       `El proveedor demo no genera salidas estructuradas (${input.schemaName}); configura un proveedor de IA`,
     );
   }
+}
+
+/**
+ * Como un proveedor real: una salida que no cumple el schema es `invalid_output` (p. ej. un plan
+ * demo sin ideas nuevas porque el historial ya las agotó), nunca un servicio "no disponible".
+ */
+function validated<T>(input: GenerateStructuredInput<T>, value: unknown): T {
+  const parsed = input.schema.safeParse(value);
+  if (!parsed.success) {
+    throw new AIProviderError(
+      'invalid_output',
+      `La salida demo no cumple el schema ${input.schemaName}`,
+      parsed.error,
+    );
+  }
+  return parsed.data;
 }

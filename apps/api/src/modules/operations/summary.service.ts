@@ -9,6 +9,7 @@ import {
   type OperationsStatusContext,
 } from '../../ai/operationsStatusContext.js';
 import { CampaignModel } from '../campaigns/campaign.model.js';
+import { ContentPlanModel } from '../content-plans/contentPlan.model.js';
 import type { WorkspaceDocument } from '../workspaces/workspace.model.js';
 import { hasWorkspaceFeature } from '../workspaces/workspaceFeatures.js';
 import { ContentItemModel, toContentItemDTO } from './contentItem.model.js';
@@ -100,7 +101,7 @@ export async function getOperationsStatus(
   { timezone, now = new Date() }: { timezone: string; now?: Date },
 ): Promise<OperationsStatusContext> {
   const { start } = localDayBounds(now, timezoneOffsetMinutes(now, timezone));
-  const [counts, campaigns] = await Promise.all([
+  const [counts, campaigns, activeContentPlans, plannedContentItems] = await Promise.all([
     operationsCounts(workspace, start),
     hasWorkspaceFeature(workspace, 'campaigns')
       ? CampaignModel.find({ workspaceId: workspace._id, status: 'active' })
@@ -109,6 +110,8 @@ export async function getOperationsStatus(
           .select({ name: 1, objective: 1, status: 1 })
           .lean()
       : [],
+    ContentPlanModel.countDocuments({ workspaceId: workspace._id, status: 'active' }),
+    ContentItemModel.countDocuments({ workspaceId: workspace._id, status: 'planned' }),
   ]);
   return {
     activeProjects: counts.activeProjects,
@@ -116,6 +119,8 @@ export async function getOperationsStatus(
     overdueTasks: counts.overdueTasks,
     activeContentItems: counts.activeContentItems,
     activeCampaigns: counts.activeCampaigns,
+    activeContentPlans,
+    plannedContentItems,
     campaigns: campaigns.map((campaign) => ({
       name: campaign.name,
       objective: campaign.objective.slice(0, 160),

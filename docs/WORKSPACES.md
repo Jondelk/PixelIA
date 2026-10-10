@@ -169,8 +169,8 @@ transacciones).
 
 Qué existe en cada tipo se **deriva** de `workspace.type` con `workspaceSupportsFeature(type,
 feature)` / `workspaceCapabilities(type)` (`packages/contracts/src/capabilities.ts`); no se guarda en
-Mongo. Operations (`projects`, `tasks`, `content`) en ambos; `contentPlanner` y `dailyDirector` solo
-en Personal. La API responde **400** `feature_not_available` (`assertWorkspaceFeature`) y la web
+Mongo. Operations (`projects`, `tasks`, `content`) y `contentPlanner` en ambos; `dailyDirector` solo
+en Personal; `campaigns` solo en Enterprise. La API responde **400** `feature_not_available` (`assertWorkspaceFeature`) y la web
 filtra la navegación y protege las rutas con `<FeatureOnly>`. No se reparten comprobaciones
 `workspace.type === …` para funcionalidades: se añade una fila a la tabla.
 

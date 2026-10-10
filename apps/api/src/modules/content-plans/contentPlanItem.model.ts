@@ -1,11 +1,15 @@
 import {
   ContentAngleSchema,
   ContentFormatSchema,
+  ContentFunnelStageSchema,
+  ContentStrategicRoleSchema,
   ContentPlanItemSchema,
   ContentPlanItemStatusSchema,
   ContentPlatformSchema,
   type ContentAngle,
   type ContentFormat,
+  type ContentFunnelStage,
+  type ContentStrategicRole,
   type ContentPlanItem,
   type ContentPlanItemStatus,
   type ContentPlatform,
@@ -16,12 +20,20 @@ import { tenantScoped } from '../../db/tenantScoped.plugin.js';
 /*
  * ContentPlanItem: una PROPUESTA estratégica de un ContentPlan. No es una pieza en producción:
  * solo al aceptarla se crea un ContentItem (convertedContentItemId). Recurso del Workspace:
- * toda consulta filtra por workspaceId (tenantScoped) y además por su contentPlanId.
+ * toda consulta filtra por workspaceId (tenantScoped) y además por su contentPlanId. Los campos
+ * estratégicos (campaña, pieza de campaña, rol, funnel, mensaje, brandRationale) son de Enterprise;
+ * en Personal quedan en null.
  */
 export interface ContentPlanItemAttrs {
   workspaceId: Types.ObjectId;
   contentPlanId: Types.ObjectId;
   projectId: Types.ObjectId | null;
+  campaignId: Types.ObjectId | null;
+  campaignDeliverableId: Types.ObjectId | null;
+  strategicRole: ContentStrategicRole | null;
+  funnelStage: ContentFunnelStage | null;
+  strategicMessage: string | null;
+  brandRationale: string | null;
   title: string;
   concept: string | null;
   rationale: string | null;
@@ -51,6 +63,20 @@ const contentPlanItemSchema = new Schema<ContentPlanItemAttrs>(
     workspaceId: { type: Schema.Types.ObjectId, ref: 'Workspace', required: true },
     contentPlanId: { type: Schema.Types.ObjectId, ref: 'ContentPlan', required: true },
     projectId: { type: Schema.Types.ObjectId, ref: 'Project', default: null },
+    campaignId: { type: Schema.Types.ObjectId, ref: 'Campaign', default: null },
+    campaignDeliverableId: {
+      type: Schema.Types.ObjectId,
+      ref: 'CampaignDeliverable',
+      default: null,
+    },
+    strategicRole: {
+      type: String,
+      enum: [...ContentStrategicRoleSchema.options, null],
+      default: null,
+    },
+    funnelStage: { type: String, enum: [...ContentFunnelStageSchema.options, null], default: null },
+    strategicMessage: { type: String, default: null, maxlength: 300 },
+    brandRationale: { type: String, default: null, maxlength: 600 },
     title: { type: String, required: true, trim: true, maxlength: 160 },
     concept: { type: String, default: null, maxlength: 2000 },
     rationale: { type: String, default: null, maxlength: 1000 },
@@ -91,6 +117,12 @@ export function toContentPlanItemDTO(doc: ContentPlanItemDocument): ContentPlanI
     workspaceId: doc.workspaceId.toString(),
     contentPlanId: doc.contentPlanId.toString(),
     projectId: doc.projectId?.toString() ?? null,
+    campaignId: doc.campaignId?.toString() ?? null,
+    campaignDeliverableId: doc.campaignDeliverableId?.toString() ?? null,
+    strategicRole: doc.strategicRole ?? null,
+    funnelStage: doc.funnelStage ?? null,
+    strategicMessage: doc.strategicMessage ?? null,
+    brandRationale: doc.brandRationale ?? null,
     title: doc.title,
     concept: doc.concept ?? null,
     rationale: doc.rationale ?? null,

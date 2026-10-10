@@ -1,6 +1,7 @@
 import {
   CONTENT_PLAN_STATUS_LABELS,
   CONTENT_PLATFORM_LABELS,
+  type Campaign,
   type ContentPlanResponse,
   type Project,
 } from '@pixel/contracts';
@@ -14,6 +15,7 @@ import { PageHeader } from '../../components/PageHeader';
 import { workspaceBasePath } from '../../app/navigation';
 import { ApiRequestError } from '../../lib/api';
 import { useResource, type ResourceState } from '../../lib/useResource';
+import { getCampaign } from '../campaigns/campaignsApi';
 import { useWorkspace } from '../workspaces/workspaceContext';
 import { Flash, LoadingBlock, SectionHeading } from '../operations/ui';
 import { useFlash } from '../operations/useFlash';
@@ -30,7 +32,14 @@ import {
 import { GenerationError } from './ContentPlannerPage';
 import { PixelThinking } from './PixelThinking';
 import { PlanItemCard, type PlanItemActions } from './PlanItemCard';
-import { periodLabel, regenerateInput, sortItems } from './plannerLogic';
+import {
+  periodLabel,
+  plannerCopy,
+  PERSONAL_PLANNER_COPY,
+  regenerateInput,
+  sortItems,
+  type PlannerCopy,
+} from './plannerLogic';
 
 /** /workspace/:workspaceId/content-planner/:planId — estrategia, pilares y propuestas. */
 export function ContentPlanPage() {
@@ -43,8 +52,15 @@ export function ContentPlanPage() {
   const projects = useWorkspaceProjects(workspaceId);
   const [regenerating, setRegenerating] = useState(false);
   const [regenerateError, setRegenerateError] = useState<unknown>(null);
+  const copy = plannerCopy(overview);
   const { state, reload } = useResource(`content-plan:${workspaceId}:${planId}`, (signal) =>
     getContentPlan(workspaceId, planId, signal),
+  );
+  // Campaña del plan (del mismo workspace): para su enlace y para avisar de una estrategia nueva.
+  const campaignId = state.status === 'success' ? state.data.plan.campaignId : null;
+  const campaign = useResource(
+    `content-plan-campaign:${workspaceId}:${campaignId ?? 'none'}`,
+    (signal) => (campaignId ? getCampaign(workspaceId, campaignId, signal) : Promise.resolve(null)),
   );
 
   const actions: PlanItemActions = {
@@ -76,6 +92,8 @@ export function ContentPlanPage() {
   return (
     <ContentPlanView
       base={base}
+      copy={copy}
+      campaign={campaign.state.status === 'success' ? campaign.state.data : null}
       state={state}
       projects={projects.all}
       onRetry={reload}
@@ -84,7 +102,7 @@ export function ContentPlanPage() {
       regenerating={regenerating}
       regenerateSlot={
         regenerating ? (
-          <PixelThinking workspaceId={workspaceId} />
+          <PixelThinking workspaceId={workspaceId} copy={copy.thinking} />
         ) : regenerateError !== null ? (
           <GenerationError error={regenerateError} base={base} />
         ) : null
@@ -116,6 +134,8 @@ type Plan = ContentPlanResponse['plan'];
 
 export function ContentPlanView({
   base,
+  copy = PERSONAL_PLANNER_COPY,
+  campaign = null,
   state,
   projects,
   onRetry,
@@ -127,6 +147,9 @@ export function ContentPlanView({
   onStatus,
 }: {
   base: string;
+  copy?: PlannerCopy;
+  /** Campaña del plan (Enterprise), si tiene. */
+  campaign?: Campaign | null;
   state: ResourceState<ContentPlanResponse>;
   projects: readonly Project[];
   onRetry: () => void;
@@ -228,19 +251,38 @@ export function ContentPlanView({
       {plan.generation?.mode === 'demo' && (
         <p className="mb-8 flex items-start gap-3 rounded-xl border border-line-strong px-4 py-3 text-sm text-muted">
           <span className="mt-1.5 size-1.5 shrink-0 bg-alert" aria-hidden="true" />
-          Modo demo: Pixel compuso este plan con reglas a partir de tu ADN y tus proyectos, sin un
-          modelo de IA. Con un proveedor de IA configurado, las propuestas son más ricas.
+          {copy.demoNotice}
         </p>
       )}
 
       {plan.strategySummary && (
         <section aria-label="Estrategia" className="mb-12">
           <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-subtle">
-            Estrategia
+            {plan.contextType === 'enterprise' ? 'Estrategia editorial' : 'Estrategia'}
           </p>
           <p className="mt-4 max-w-3xl font-display text-xl font-bold leading-snug tracking-tight sm:text-2xl">
             {plan.strategySummary}
           </p>
+          {(plan.editorialObjective || plan.distributionRationale) && (
+            <dl className="mt-6 grid max-w-3xl gap-5 text-sm sm:grid-cols-2">
+              {plan.editorialObjective && (
+                <div>
+                  <dt className="text-[11px] font-medium uppercase tracking-[0.18em] text-subtle">
+                    Qué vamos a comunicar
+                  </dt>
+                  <dd className="mt-1.5 leading-relaxed text-fg">{plan.editorialObjective}</dd>
+                </div>
+              )}
+              {plan.distributionRationale && (
+                <div>
+                  <dt className="text-[11px] font-medium uppercase tracking-[0.18em] text-subtle">
+                    Cómo se distribuye
+                  </dt>
+                  <dd className="mt-1.5 leading-relaxed text-fg">{plan.distributionRationale}</dd>
+                </div>
+              )}
+            </dl>
+          )}
           {plan.generation && plan.generation.discardedItems > 0 && (
             <p className="mt-4 text-xs text-subtle">
               Pixel descartó {plan.generation.discardedItems}{' '}
@@ -248,6 +290,38 @@ export function ContentPlanView({
               en tu información real o repetían contenido.
             </p>
           )}
+        </section>
+      )}
+
+      {plan.campaignId && (
+        <section
+          aria-label="Alineación con la campaña"
+          className="mb-12 rounded-2xl border border-line bg-surface p-6 sm:p-8"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-subtle">
+              Alineación con la campaña
+            </p>
+            <Link
+              to={`${base}/campaigns/${plan.campaignId}`}
+              className="inline-flex items-center gap-2 rounded-md border border-line-strong px-2.5 py-1 text-xs text-fg hover:border-fg"
+            >
+              <Icon name="campaigns" className="size-3.5" />
+              Campaña{campaign ? ` · ${campaign.name}` : ''}
+            </Link>
+          </div>
+          {plan.campaignAlignment && (
+            <p className="mt-4 max-w-3xl text-[15px] leading-relaxed text-fg">
+              {plan.campaignAlignment}
+            </p>
+          )}
+          <p className="mt-3 text-xs text-subtle">
+            Creado desde la estrategia de campaña v{plan.campaignStrategyVersion}.
+            {campaign?.currentStrategyVersion &&
+              plan.campaignStrategyVersion &&
+              campaign.currentStrategyVersion > plan.campaignStrategyVersion &&
+              ` Existe una estrategia de campaña más reciente (v${campaign.currentStrategyVersion}): este plan no cambia solo.`}
+          </p>
         </section>
       )}
 
@@ -269,7 +343,7 @@ export function ContentPlanView({
 
       <section aria-label="Propuestas">
         <SectionHeading
-          title="Propuestas"
+          title={plan.contextType === 'enterprise' ? 'Plan de contenido' : 'Propuestas'}
           count={items.length}
           action={
             plan.itemCounts.converted > 0 ? (
@@ -291,6 +365,11 @@ export function ContentPlanView({
                 item={item}
                 projectName={item.projectId ? (projectNames.get(item.projectId) ?? null) : null}
                 contentHref={`${base}/content`}
+                campaign={
+                  item.campaignId
+                    ? { name: campaign?.name ?? null, href: `${base}/campaigns/${item.campaignId}` }
+                    : null
+                }
                 actions={actions}
               />
             ))}

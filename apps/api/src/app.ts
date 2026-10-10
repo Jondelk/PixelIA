@@ -14,7 +14,9 @@ import {
 } from './modules/avatars/engine/index.js';
 import { createApiRouter } from './modules/index.js';
 import { createCampaignStrategyEngine } from './modules/campaigns/campaignStrategy.engine.js';
+import { createPixelIntentResolver } from './modules/pixel-command/pixelIntent.resolver.js';
 import { createContentPlanningEngine } from './modules/content-plans/contentPlanning.engine.js';
+import { createEnterprisePlanningStrategy } from './modules/content-plans/enterprisePlanning.strategy.js';
 import { createDailyDirectorEngine } from './modules/daily-director/dailyDirector.engine.js';
 import { createPersonalDnaGenerator } from './modules/personal/personalDna.generator.js';
 import type { DatabaseStatus } from '@pixel/contracts';
@@ -72,8 +74,10 @@ export function createApp({ env, logger, getDatabaseStatus, ai }: AppOptions): E
       },
       personalDnaGenerator: createPersonalDnaGenerator({ ai, logger }),
       planningEngine: createContentPlanningEngine({ ai, logger }),
+      enterprisePlanning: createEnterprisePlanningStrategy({ ai, logger }),
       dailyDirector: createDailyDirectorEngine({ ai, logger }),
       campaignEngine: createCampaignStrategyEngine({ ai, logger }),
+      pixelIntentResolver: createPixelIntentResolver({ ai, logger }),
       defaultTimezone: env.DEFAULT_TIMEZONE,
       logger,
       session: {

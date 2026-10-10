@@ -65,6 +65,8 @@ export interface ContentPlanningInput {
   requestedPeriod: { startDate: string; endDate: string };
   desiredFrequency?: number;
   requestedPlatforms?: ContentPlatform[];
+  /** Formatos permitidos (vacío o ausente = cualquiera). */
+  requiredFormats?: ContentFormat[];
   requestedGoal?: string;
   tzOffset: number;
 }
@@ -123,6 +125,8 @@ export interface PlanningRequest {
   frequencySource: ContentPlanProposal['frequencySource'];
   allowedPlatforms: ContentPlatform[];
   preferredFormats: ContentFormat[];
+  /** Formatos obligatorios del pedido (vacío = cualquiera). */
+  requiredFormats: ContentFormat[];
 }
 
 export function resolvePlanningRequest(input: ContentPlanningInput): PlanningRequest {
@@ -153,7 +157,10 @@ export function resolvePlanningRequest(input: ContentPlanningInput): PlanningReq
     frequencyPerWeek,
     frequencySource,
     allowedPlatforms,
-    preferredFormats: uniqueValues(content.preferredFormats.map(formatFromText)),
+    preferredFormats: input.requiredFormats?.length
+      ? uniqueValues(input.requiredFormats)
+      : uniqueValues(content.preferredFormats.map(formatFromText)),
+    requiredFormats: uniqueValues(input.requiredFormats ?? []),
   };
 }
 
@@ -216,6 +223,7 @@ export function buildPlanningPayload(
       itemCount: request.itemCount,
       allowedPlatforms: request.allowedPlatforms,
       preferredFormats: request.preferredFormats,
+      requiredFormats: request.requiredFormats,
       goal: input.requestedGoal?.trim() || null,
     },
   };
@@ -235,7 +243,7 @@ Criterio:
 - Varía los ángulos (education, opinion, process, case, behind_the_scenes, reflection, portfolio,
   comparison, storytelling) cuando sean coherentes con ella.
 - platform: SOLO una de request.allowedPlatforms. format: prioriza request.preferredFormats; otro
-  formato solo con una razón clara.
+  formato solo con una razón clara. Si request.requiredFormats no está vacío, SOLO esos formatos.
 - suggestedDate: un día de request.days (AAAA-MM-DD). Exactamente request.itemCount propuestas.
 - No repitas temas, hooks ni ángulos de recentContent ni de previousProposals.
 - rationale: por qué Pixel lo recomienda, conectando la pieza con un objetivo, su audiencia o un
@@ -319,7 +327,9 @@ export function groundGeneratedPlan(
       item.pillar,
       ...item.audience,
     ];
-    const allowed = request.allowedPlatforms.includes(item.platform);
+    const allowed =
+      request.allowedPlatforms.includes(item.platform) &&
+      (request.requiredFormats.length === 0 || request.requiredFormats.includes(item.format));
     // Títulos: ni repetidos del historial ni entre sí. Hooks: solo contra el historial (dos
     // hooks parecidos en piezas distintas no son una pieza repetida).
     const duplicate =
@@ -362,16 +372,7 @@ export function groundGeneratedPlan(
       return alternatives <= maxAlternative;
     });
   }
-  // Variedad de ángulos: ninguno ocupa más de la mitad de un plan de 4 o más piezas.
-  if (balanced.length >= 4) {
-    const maxPerAngle = Math.ceil(Math.min(balanced.length, request.itemCount) / 2);
-    const perAngle = new Map<ContentAngle, number>();
-    balanced = balanced.filter((item) => {
-      const count = (perAngle.get(item.angle) ?? 0) + 1;
-      perAngle.set(item.angle, count);
-      return count <= maxPerAngle;
-    });
-  }
+  balanced = limitAngleRepetition(balanced, request.itemCount);
   const selected = balanced.slice(0, request.itemCount);
   discarded += kept.length - selected.length;
   if (selected.length === 0) {
@@ -388,6 +389,24 @@ export function groundGeneratedPlan(
     .map(({ day: _day, ...item }) => item);
 
   return { strategySummary, pillars, items, discardedItems: discarded };
+}
+
+/**
+ * Variedad de ángulos: ninguno ocupa más de la mitad de un plan de 4 o más piezas. Compartida por
+ * las estrategias Personal y Enterprise.
+ */
+export function limitAngleRepetition<T extends { angle: ContentAngle }>(
+  items: T[],
+  itemCount: number,
+): T[] {
+  if (items.length < 4) return items;
+  const maxPerAngle = Math.ceil(Math.min(items.length, itemCount) / 2);
+  const perAngle = new Map<ContentAngle, number>();
+  return items.filter((item) => {
+    const count = (perAngle.get(item.angle) ?? 0) + 1;
+    perAngle.set(item.angle, count);
+    return count <= maxPerAngle;
+  });
 }
 
 /* ---------- Engine ---------- */

@@ -24,9 +24,16 @@ Director Creativo asistido por IA. Producto de **PIXELES — Tecnología creativ
   Organiza el trabajo de la marca con las Operations compartidas (`docs/ENTERPRISE-OPERATIONS.md`)
   y convierte necesidades de negocio en campañas con el Campaign Manager (`docs/CAMPAIGNS.md`):
   estrategia versionada desde el BrandDNA y piezas que se convierten en Projects o ContentItems.
+  Planifica su contenido con el Content Planner Enterprise (`docs/ENTERPRISE-CONTENT.md`): plan
+  editorial desde el BrandDNA y, opcionalmente, la estrategia de una campaña.
 - **Personal:** el director creativo de una persona. Onboarding personal (8 pasos) → `PersonalDNA`
   → "Así te entiende Pixel" → avatar personal → chat (`docs/PERSONAL.md`), más Operations, Content
   Planner y Daily Director.
+
+**Zero-entry-first** (Prompt 14.1, `docs/PIXEL-COMMAND.md`): la entrada principal de cada Pixel es
+"¿Qué necesitas hacer?" (PixelCommand). Pixel entiende la frase, usa lo que ya sabe, pregunta solo lo
+indispensable (una pregunta), propone y, tras una confirmación, organiza los recursos con los módulos
+existentes. Los formularios son opciones avanzadas, no la ruta principal.
 
 El avatar **nunca** es una mascota aleatoria: es una consecuencia trazable del ADN. Ejemplos: café
 artesanal → grano de café cálido; startup → forma geométrica precisa; constructora → personaje
@@ -39,7 +46,8 @@ SaaS, panel administrativo complejo y analytics avanzados.
 
 Referencia (leer lo relevante antes de trabajar): `docs/WORKSPACES.md`, `docs/PERSONAL.md`,
 `docs/WORKSPACE-MIGRATION.md`, `docs/OPERATIONS.md`, `docs/ENTERPRISE-OPERATIONS.md`,
-`docs/CAMPAIGNS.md`, `docs/CONTENT-PLANNER.md` y `docs/DAILY-DIRECTOR.md` describen el diseño vigente; `docs/MVP.md`,
+`docs/CAMPAIGNS.md`, `docs/CONTENT-PLANNER.md`, `docs/ENTERPRISE-CONTENT.md`, `docs/DAILY-DIRECTOR.md`
+y `docs/PIXEL-COMMAND.md` describen el diseño vigente; `docs/MVP.md`,
 `docs/ARCHITECTURE.md`, `docs/ENTITIES.md` y `docs/BACKLOG.md` tienen deriva importante (detalle en
 `PIXEL_ESTADO.md` §12). Ante un conflicto, manda el código.
 
@@ -57,8 +65,9 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
                   ├─ operations: Project (→ Task, ContentItem) · Task · ContentItem
                   ├─ campaigns (enterprise): Campaign → CampaignStrategy (versiones) · CampaignDeliverable
                   │                          (→ Project o ContentItem con campaignId al aceptar)
-                  ├─ content planner: ContentPlan → ContentPlanItem (→ ContentItem al aceptar)
-                  └─ daily director: DailyBrief (versión del día; solo lee Operations, nunca modifica)
+                  ├─ content planner: ContentPlan (contextType personal|enterprise) → ContentPlanItem (→ ContentItem al aceptar)
+                  ├─ daily director: DailyBrief (versión del día; solo lee Operations, nunca modifica)
+                  └─ pixel command: PixelCommand (solicitud → propuesta → confirmación; orquesta lo anterior)
 ```
 
 ## Principios (no negociables)
@@ -67,8 +76,8 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
    - Un usuario tiene N workspaces `enterprise` (1 workspace = 1 Company) y como máximo uno
      `personal`.
    - AvatarProfile, Conversation, Message, CreativeMemory, PersonalProfile, PersonalDNA, Project,
-     Task, ContentItem, ContentPlan, ContentPlanItem, DailyBrief, Campaign, CampaignStrategy y
-     CampaignDeliverable llevan `workspaceId` obligatorio e
+     Task, ContentItem, ContentPlan, ContentPlanItem, DailyBrief, Campaign, CampaignStrategy,
+     CampaignDeliverable y PixelCommand llevan `workspaceId` obligatorio e
      indexado. BrandDNA se aísla por `companyId`, y la empresa pertenece a su workspace
      (`Company.workspaceId`).
    - Toda consulta a un modelo aislado (los que usan `tenantScoped`: BrandDNA y todos los anteriores)
@@ -102,6 +111,11 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
      `if (workspace.type === …)` para gating; no persistir capacidades.
    - El Daily Director y el Content Planner **proponen**: nunca modifican tareas, proyectos ni
      contenido sin una acción explícita del usuario (aceptar un ítem del plan crea el ContentItem).
+     El planner Enterprise tampoco cambia el estado de las piezas de campaña ni la estrategia.
+   - Content Planner: un solo modelo y un solo endpoint para los dos tipos; la estrategia de
+     planificación se elige por `workspace.type` (`ContentPlanningEngine` en Personal,
+     `EnterprisePlanningStrategy` en Enterprise). Las invariantes de `contextType` viven en
+     contracts (`contentPlanContextIssues`).
 3. **Never mix information between workspaces.** El contexto de la IA se construye solo con datos
    del workspace activo: `EnterpriseContextBuilder` (Company → BrandDNA → AvatarProfile →
    CreativeMemory → estado operativo: conteos y, como única excepción, hasta 3 campañas activas
@@ -118,7 +132,8 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
 5. **IA encapsulada.** Solo `apps/api/src/ai/` (y sus tests) importa SDK de IA; ESLint lo impone en
    `apps/api/src/**`, y en el resto lo vigila la revisión. El resto usa la interfaz `AIProvider`
    (`generateText`, `generateStructuredOutput`) y servicios de dominio (`chat.service`,
-   `PersonalDnaGenerator`, `ContentPlanningEngine`, `DailyDirectorEngine`,
+   `PersonalDnaGenerator`, `ContentPlanningEngine`, `EnterprisePlanningStrategy`,
+   `DailyDirectorEngine`,
    `CampaignStrategyEngine`…). Proveedores:
    `AnthropicProvider` y `DemoProvider` (determinista, para desarrollo y tests). Cambiar de proveedor
    = adaptador + variable de entorno. Toda salida de IA se valida contra el contexto real (lo no
@@ -128,7 +143,17 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
 6. **Contratos primero.** Toda entrada y salida HTTP, y toda salida estructurada de la IA, se valida
    con Zod de `packages/contracts`; web y API importan los mismos schemas. Única excepción
    documentada: `PersonalDnaEnrichmentSchema`, interno de la API.
-7. **No sobrearquitectar.** Monolito modular: sin microservicios, colas externas, GraphQL, state
+7. **Pixel is conversation-first and zero-entry-first.** Structured resources exist primarily as
+   Pixel's operational memory and as an advanced control surface for the user. Users should not
+   have to maintain Pixel's internal model manually for the product to be useful.
+   - PixelCommand **orquesta** (intérprete → contexto → información que falta → propuesta →
+     confirmación → servicios existentes): no duplica motores ni escribe en Mongo directamente.
+   - Pixel no pregunta lo que ya sabe (tono, colores, audiencia y personalidad viven en el ADN) y
+     pregunta como mucho una cosa a la vez, solo si cambia materialmente el resultado.
+   - Leer y responder ocurre en el acto; lo que crea recursos espera a **una** confirmación para todo
+     el plan (idempotente: reserva atómica + revisión). La IA solo interpreta lenguaje: el backend
+     valida capacidades, pertenencia y campos, y resuelve campañas y proyectos contra el workspace.
+8. **No sobrearquitectar.** Monolito modular: sin microservicios, colas externas, GraphQL, state
    managers globales ni librerías "por si acaso".
 
 ## Convenciones de código
@@ -138,7 +163,7 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
 - **API:** un módulo de dominio por carpeta (`apps/api/src/modules/<módulo>/` con `*.model`,
   `*.service`, `*.routes`), registrado solo en `modules/index.ts`: `auth`, `health`, `workspaces`,
   `companies`, `brand-dna`, `personal`, `avatars`, `conversations`, `creative-memory`, `operations`,
-  `content-plans`, `daily-director`, `campaigns`. Errores con `AppError` o `lib/errors.ts` (el `errorHandler`
+  `content-plans`, `daily-director`, `campaigns`, `pixel-command`. Errores con `AppError` o `lib/errors.ts` (el `errorHandler`
   responde con `ApiError`). Logs con `lib/logger.ts`, nunca `console.log`.
 - **Fechas:** el "hoy" de un workspace se calcula en su zona horaria IANA (`Workspace.timezone` o
   `DEFAULT_TIMEZONE`), nunca en UTC; no inferir la zona desde texto libre.
@@ -149,10 +174,16 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
   `companyApiBase` / `workspaceApiBase`, `lib/apiPaths.ts`). La entrada de cada Pixel es
   `/workspace/:workspaceId/...` y **toda funcionalidad nueva es workspace-first**, también en
   Enterprise: Inicio, `campaigns`, `projects`, `tasks`, `content`, `content-planner`,
-  `personal/onboarding`, `personal/dna`, `pixel`, `chat`. Las Campañas y Operations Enterprise viven
-  en `/workspace/:workspaceId/{campaigns,projects,tasks,content}` (`enterpriseStaysInWorkspace`); las pantallas
+  `personal/onboarding`, `personal/dna`, `pixel`, `chat`. Las Campañas, el Plan de contenido y las
+  Operations Enterprise viven en `/workspace/:workspaceId/{campaigns,content-planner,projects,tasks,content}`
+  (`enterpriseStaysInWorkspace`); las pantallas
   de marca anteriores siguen en `/company/:companyId/...` (el workspace enterprise redirige allí)
   hasta converger (`docs/WORKSPACES.md`).
+- **Zero-entry en la web** (`features/pixel-command/`): el Inicio de cada Pixel (y Campañas y Plan de
+  contenido) abre con `PixelCommand` ("¿Qué necesitas hacer?"); los formularios existentes quedan
+  como opciones avanzadas ("Brief detallado", "Crear manualmente", "Opciones avanzadas"), nunca se
+  borran. Navegación Enterprise: Inicio · Trabajo (Campañas, Plan de contenido, Proyectos, Tareas,
+  Contenido) · Marca. La entrada entrega `onSubmit(text, source)`: la voz llegará por ahí.
 - **Entrada pública** (`features/public/`): `/` (solo visitantes), `/explore` y su detalle, con el
   acceso como modal en la URL (`?auth=…&next=…`). Todo `next` pasa por `safeNextPath`; visitar no
   crea workspaces (`/pixels/start?intent=` actúa solo tras el acceso). Imágenes y video solo se

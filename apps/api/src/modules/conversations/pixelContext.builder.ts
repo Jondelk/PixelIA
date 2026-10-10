@@ -350,7 +350,8 @@ Estado del trabajo de ${brand} (conteos de las secciones Campañas, Proyectos, T
 - Campañas activas: ${ops.activeCampaigns}
 - Proyectos activos: ${ops.activeProjects}
 - Tareas pendientes: ${ops.openTasks} (vencidas: ${ops.overdueTasks})
-- Contenido en curso: ${ops.activeContentItems}${campaigns}
+- Contenido en curso: ${ops.activeContentItems} (planificado: ${ops.plannedContentItems})
+- Planes de contenido activos: ${ops.activeContentPlans}${campaigns}
 No ves la estrategia de las campañas ni nombres, fechas o detalle de ningún proyecto, tarea o pieza. Si te preguntan por uno concreto que no está arriba, o por la lista completa, no lo inventes ni supongas que existe: di que desde el chat solo ves este resumen y que el detalle está en Campañas, Proyectos, Tareas o Contenido. No puedes crear ni modificar nada desde el chat.
 ${renderOperationsStatusContext(ops)}
 `;

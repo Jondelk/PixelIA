@@ -5,6 +5,7 @@ import { loadEnv, SERVICE_NAME, SERVICE_VERSION } from './config/env.js';
 import { getDatabaseStatus, startDatabase, stopDatabase } from './db/connection.js';
 import { createLogger } from './lib/logger.js';
 import { upgradeAvatarProfileIndexes } from './modules/avatars/avatarProfile.indexes.js';
+import { migrateContentPlanContexts } from './modules/content-plans/contentPlan.migration.js';
 
 const env = loadEnv();
 const logger = createLogger({
@@ -21,6 +22,10 @@ startDatabase(env.MONGODB_URI, logger, {
     // Índices de AvatarProfile compatibles con avatares personales (idempotente, sin tocar datos).
     const dropped = await upgradeAvatarProfileIndexes();
     if (dropped.length) logger.info('Índices legacy de avatar_profiles retirados', { dropped });
+    // contextType de los planes anteriores al Prompt 14 (idempotente; sin cambios si ya está).
+    const plans = await migrateContentPlanContexts();
+    if (plans.migrated || plans.orphaned)
+      logger.info('ContentPlan: contextType asignado', { ...plans });
   },
 });
 

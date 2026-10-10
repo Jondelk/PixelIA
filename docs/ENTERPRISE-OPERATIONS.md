@@ -8,11 +8,11 @@ hay modelos, endpoints ni pantallas duplicados por tipo.
 PIXEL CORE
 ├── Workspace
 ├── Projects · Tasks · ContentItems      ← Shared Workspace Operations
+├── Content Planner                     ← Personal y Enterprise (Prompt 14)
 ├── Avatar · Chat · Memory
 │
 ├── PERSONAL
 │    ├── PersonalDNA
-│    ├── Content Planner                 (solo Personal)
 │    └── Daily Director                  (solo Personal)
 │
 └── ENTERPRISE
@@ -83,7 +83,7 @@ Capacidades **derivadas** del tipo (no se guardan): `packages/contracts/src/capa
 | `projects` | ✅ | ✅ |
 | `tasks` | ✅ | ✅ |
 | `content` | ✅ | ✅ |
-| `contentPlanner` (generar con IA) | ✅ | ❌ |
+| `contentPlanner` (generar con IA; Enterprise desde el Prompt 14) | ✅ | ✅ |
 | `dailyDirector` | ✅ | ❌ |
 | `campaigns` (Campaign Manager, Prompt 13) | ❌ | ✅ |
 
@@ -149,10 +149,9 @@ No ves nombres, fechas ni el detalle … no lo inventes … el detalle está en 
 | `/workspace/:workspaceId/projects[/:projectId]` | Proyectos de la marca (pantalla compartida) |
 | `/workspace/:workspaceId/tasks` | Tareas |
 | `/workspace/:workspaceId/content` | Contenido |
-| `/workspace/:workspaceId/content-planner` | No existe en Enterprise: redirige al Inicio de la empresa |
+| `/workspace/:workspaceId/content-planner` | Plan de contenido de la marca (Prompt 14, `docs/ENTERPRISE-CONTENT.md`) |
 
-Navegación Enterprise (en ambas familias de rutas): **Inicio · Trabajo** (Campañas, Proyectos,
-Tareas, Contenido) **· Marca** (ADN de marca, Personaje, Chat).
+Navegación Enterprise (en ambas familias de rutas): **Inicio · Trabajo** (Campañas, Plan de contenido, Proyectos, Tareas, Contenido) **· Marca** (ADN de marca, Personaje, Chat).
 
 Estrategia (`docs/WORKSPACES.md`): **toda funcionalidad nueva es workspace-first**. `WorkspaceLayout`
 deja en `/workspace/:workspaceId` las rutas cuya funcionalidad Enterprise admite
@@ -164,7 +163,7 @@ moverán después, una a una; no se crearon rutas `/company/:companyId/projects`
 
 - Sin aprobaciones, equipo, roles, responsables ni Brand Guardian (Campaign Manager existe desde
   el Prompt 13).
-- Sin Content Planner IA ni Daily Director para Enterprise.
+- Sin Daily Director para Enterprise (el Content Planner Enterprise existe desde el Prompt 14).
 - El chat solo conoce conteos y las campañas activas resumidas: no lista ni busca proyectos o tareas.
 - Sin integraciones externas ni acciones automáticas.
 - Las pantallas de marca siguen en `/company/:companyId` (dos familias de rutas conviven).

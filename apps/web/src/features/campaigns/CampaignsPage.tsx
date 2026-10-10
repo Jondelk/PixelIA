@@ -18,6 +18,7 @@ import { apiFieldErrors, type FieldErrors } from '../../lib/forms';
 import { errorMessage } from '../../lib/api';
 import { useResource, type ResourceState } from '../../lib/useResource';
 import { PixelThinking } from '../content-planner/PixelThinking';
+import { PixelCommand } from '../pixel-command/PixelCommand';
 import { InlineEmpty, LoadingBlock, Segmented, StatusTag } from '../operations/ui';
 import { useWorkspace } from '../workspaces/workspaceContext';
 import { CampaignForm } from './CampaignForm';
@@ -38,7 +39,11 @@ import { createCampaign, generateCampaign, listCampaigns } from './campaignsApi'
 
 type Mode = 'manual' | 'pixel' | null;
 
-/** /workspace/:workspaceId/campaigns — campañas de la marca: "Nueva campaña" y "Crear con Pixel". */
+/**
+ * /workspace/:workspaceId/campaigns — campañas de la marca. Lo principal es contarle a Pixel qué se
+ * quiere lograr (PixelCommand); el brief detallado y la creación manual siguen como opciones
+ * avanzadas (Prompt 14.1, zero-entry-first).
+ */
 export function CampaignsPage() {
   const { overview } = useWorkspace();
   const workspaceId = overview.workspace.id;
@@ -112,6 +117,16 @@ export function CampaignsPage() {
       onNew={() => open('manual')}
       onGenerate={() => open('pixel')}
       creating={mode !== null}
+      command={
+        <PixelCommand
+          workspaceId={workspaceId}
+          base={base}
+          title="¿Qué quieres lograr?"
+          placeholder="Cuéntale a Pixel qué quieres lograr: «Una campaña de Amor y Amistad»…"
+          contextHint={{ intent: 'create_campaign' }}
+          onCompleted={reload}
+        />
+      }
       panel={
         mode === 'pixel' && busy ? (
           <PixelThinking workspaceId={workspaceId} copy={CAMPAIGN_THINKING_COPY} />
@@ -172,6 +187,7 @@ export function CampaignsView({
   onNew,
   onGenerate,
   creating,
+  command = null,
   panel,
 }: {
   base: string;
@@ -182,17 +198,19 @@ export function CampaignsView({
   onNew: () => void;
   onGenerate: () => void;
   creating: boolean;
+  /** La entrada de Pixel (lo principal); los formularios quedan como opciones avanzadas. */
+  command?: ReactNode;
   panel: ReactNode;
 }) {
   const isFirstRun =
     state.status === 'success' && state.data.total === 0 && filter === 'all' && !creating;
   const actions = (
     <div className="flex flex-wrap gap-3">
-      <Button onClick={onGenerate}>
-        <Icon name="create" className="size-4" /> Crear con Pixel
+      <Button variant="secondary" onClick={onGenerate}>
+        <Icon name="create" className="size-4" /> Brief detallado
       </Button>
-      <Button variant="secondary" onClick={onNew}>
-        <Icon name="plus" className="size-4" /> Nueva campaña
+      <Button variant="ghost" onClick={onNew}>
+        <Icon name="plus" className="size-4" /> Crear manualmente
       </Button>
     </div>
   );
@@ -208,12 +226,16 @@ export function CampaignsView({
         {!creating && !isFirstRun && <div className="mb-8 sm:mb-10">{actions}</div>}
       </div>
 
-      {creating && <div className="mb-10">{panel}</div>}
+      {creating ? (
+        <div className="mb-10">{panel}</div>
+      ) : (
+        command && <div className="mb-12">{command}</div>
+      )}
 
       {isFirstRun ? (
         <EmptyState
           title="Todavía no hay campañas."
-          description="Cuéntale a Pixel qué necesita el negocio y construirá la estrategia desde el ADN de la marca. También puedes crearla a mano."
+          description="Escríbele a Pixel arriba qué necesita el negocio y construirá la estrategia desde el ADN de la marca. También puedes darle un brief detallado o crearla a mano."
           action={actions}
         />
       ) : (

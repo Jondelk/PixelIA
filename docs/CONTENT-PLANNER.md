@@ -1,6 +1,11 @@
 # Content Planner — planificación de contenido con Pixel
 
-Primera capa de planificación inteligente de Pixel Personal (Prompt 10). Pixel lee el
+Planificación inteligente de contenido (Prompt 10 en Personal; Prompt 14 en Enterprise). Este
+documento describe el núcleo compartido y la estrategia **Personal**; la estrategia **Enterprise**
+(BrandDNA + campaña) está en `docs/ENTERPRISE-CONTENT.md`. Mismos modelos, endpoints y pantallas:
+la estrategia se elige por `workspace.type`.
+
+En Personal, Pixel lee el
 **PersonalDNA**, los **proyectos activos** y el **contenido reciente** de la persona y propone una
 **estrategia** para un periodo (hasta 30 días) con **propuestas justificadas**. Nada pasa a
 producción hasta que la persona acepta cada propuesta.
@@ -24,14 +29,15 @@ Código: `apps/api/src/modules/content-plans/`, `apps/api/src/ai/contentPlanning
 
 ## 1. Entidades
 
-Ambas son recursos del **workspace** (`workspaceId` obligatorio, `tenantScoped`), reutilizables en
-Enterprise. Hoy solo un workspace personal puede **generarlas** con Pixel.
+Ambas son recursos del **workspace** (`workspaceId` obligatorio, `tenantScoped`), de cualquier tipo
+(capacidad `contentPlanner` en Personal y Enterprise).
 
 ### ContentPlan (`content_plans`)
 
 | Campo | Notas |
 |---|---|
 | `workspaceId` | Frontera de aislamiento |
+| `contextType` | `personal` · `enterprise` (el tipo del workspace; invariantes en `docs/ENTERPRISE-CONTENT.md` §1) |
 | `name` | Por defecto "Octubre · Semana 2" (≤ 7 días) u "Octubre · 12–25" |
 | `objective` | Objetivo pedido (opcional) |
 | `period.startDate`, `period.endDate` | Días locales `YYYY-MM-DD`, ambos incluidos, máx. 30 días |
@@ -41,7 +47,8 @@ Enterprise. Hoy solo un workspace personal puede **generarlas** con Pixel.
 | `platforms` | Plataformas usadas en las propuestas |
 | `status` | `draft` · `active` · `completed` · `archived` |
 | `generatedBy` | `pixel` · `manual` |
-| `personalDnaVersion` | Versión del ADN con la que se generó |
+| `personalDnaVersion` | Versión del ADN con la que se generó (solo Personal) |
+| `brandDnaVersion`, `campaignId`, `campaignStrategyVersion`, `editorialObjective`, `campaignAlignment`, `distributionRationale` | Solo Enterprise (null en Personal) |
 | `generation` | `provider`, `model`, `mode` (`ai`/`demo`), `discardedItems`, `frequencyPerWeek`, `frequencySource` (`request`/`personal_dna`/`default`), `requestedGoal`, `regeneratedFromPlanId` |
 
 En las respuestas se añade `itemCounts` (`proposed`, `accepted`, `rejected`, `converted`), que se
@@ -65,11 +72,13 @@ Una **propuesta estratégica**, no una pieza en producción.
 | `rejectionReason` | Motivo opcional al rechazar (para la memoria creativa futura) |
 | `convertedContentItemId` | El ContentItem creado al aceptar |
 | `position` | Orden dentro del plan |
+| `campaignId`, `campaignDeliverableId`, `strategicRole`, `funnelStage`, `strategicMessage`, `brandRationale` | Enterprise (null en Personal) |
 
 `accepted` queda reservado para una aceptación sin conversión. Hoy aceptar **convierte**, así que
 el estado pasa directamente a `converted`.
 
-Índices: `content_plans { workspaceId, status, createdAt: -1 }` y
+Índices: `content_plans { workspaceId, status, createdAt: -1 }`,
+`content_plans { workspaceId, campaignId, createdAt: -1 }` y
 `content_plan_items { workspaceId, contentPlanId, position }`. No hay índices sueltos por
 `workspaceId`.
 
@@ -136,7 +145,6 @@ DTOs de contracts (nunca documentos Mongo): `personalDna` (contenido), `activePr
 | Caso | HTTP | `details.reason` |
 |---|---|---|
 | Sin PersonalDNA | 409 | `personal_context_not_configured` |
-| Workspace Enterprise | 400 | `feature_not_available` |
 | Sin plataformas (ni ADN ni petición) | 400 | `content_platforms_missing` |
 | Proveedor caído, sin red o mal configurado | 503 | `content_plan_generation_unavailable` |
 | Salida inválida, rechazada o sin nada fundamentado | 502 | `content_plan_generation_failed` |
@@ -149,10 +157,12 @@ Sin `ANTHROPIC_API_KEY` (`AI_PROVIDER=demo`, desarrollo y tests), el `DemoProvid
 **con reglas** a partir del mismo `PlanningPayload` (`demoContentPlan.ts`):
 - **Fuentes**: primero proyectos, después temas, habilidades y necesidades de la audiencia.
 - Ángulos variados, solo palabras del contexto y sin cifras.
-- Salta los títulos ya usados.
+- Salta los títulos ya usados (igualdad exacta; el demo Enterprise usa además similitud).
 
 Pasa por la misma validación. El plan queda con `generation.mode = 'demo'` y la interfaz lo indica.
-Fuera de este caso, el demo sigue rechazando salidas estructuradas.
+Fuera de estos casos (plan Personal, plan Enterprise y estrategia de campaña), el demo rechaza las
+salidas estructuradas. Una salida demo que no cumple el schema es `invalid_output` (502), como con
+un proveedor real.
 
 ## 3. Conversión PlanItem → ContentItem
 
@@ -170,6 +180,8 @@ ContentItem existente después (o `contentItem: null` si el usuario ya lo borró
 
 - Una propuesta convertida ya no se edita ni se rechaza desde el plan (409
   `content_plan_item_converted`): se edita en Contenido.
+- Editar y rechazar son una sola operación condicionada a "no convertida": aceptar y rechazar a la
+  vez nunca deja una propuesta rechazada con su ContentItem creado (corrige el R7).
 - Rechazar no borra la propuesta (`status: rejected` + motivo opcional);
   `PATCH { status: 'proposed' }` la recupera. Una rechazada también se puede aceptar después.
 
@@ -189,11 +201,11 @@ propuesta ajenos, inexistentes o malformados → **404**. Las propuestas se busc
 |---|---|---|
 | POST | `/api/workspaces/:id/content-plans/generate` | 201 `{ plan, items }` |
 | POST | `/api/workspaces/:id/content-plans` | Plan manual vacío (201) |
-| GET | `/api/workspaces/:id/content-plans` | `{ plans, total }` (sin archivados salvo `status=archived`) |
+| GET | `/api/workspaces/:id/content-plans` | `{ plans, total }` (sin archivados salvo `status=archived`; `?campaignId=` en Enterprise) |
 | GET | `/api/workspaces/:id/content-plans/:planId` | `{ plan, items }` |
 | PATCH | `/api/workspaces/:id/content-plans/:planId` | `name`, `objective`, `status` |
 | DELETE | `/api/workspaces/:id/content-plans/:planId` | **Archiva** (conserva propuestas) |
-| PATCH | `…/:planId/items/:itemId` | `title`, `concept`, `hook`, `platform`, `format`, `scheduledFor`, `status: 'proposed'` |
+| PATCH | `…/:planId/items/:itemId` | `title`, `concept`, `objective`, `hook`, `suggestedAngle`, `platform`, `format`, `scheduledFor`, `status: 'proposed'` |
 | POST | `…/:planId/items/:itemId/accept` | Convierte (201 / 200 idempotente) |
 | POST | `…/:planId/items/:itemId/reject` | `{ reason? }` |
 
@@ -201,9 +213,12 @@ Cuerpo de `generate` (`strict`; solo las fechas son obligatorias):
 
 ```json
 { "startDate": "2026-10-12", "endDate": "2026-10-25", "frequency": 3,
-  "platforms": ["instagram"], "goal": "posicionamiento", "tzOffset": 300,
-  "regenerateFrom": "<planId opcional>" }
+  "platforms": ["instagram"], "formats": ["reel"], "goal": "posicionamiento", "tzOffset": 300,
+  "regenerateFrom": "<planId opcional>", "campaignId": "<solo Enterprise, opcional>" }
 ```
+
+`formats` (opcional, Prompt 14.1): formatos obligatorios; una pieza en otro formato se descarta en
+los dos motores (Personal y Enterprise). Lo usa PixelCommand para "tres Reels" o "sin Stories".
 
 **Regenerar** = `generate` con `regenerateFrom`. Crea un plan **nuevo**: el anterior no se
 sobrescribe y sus propuestas pasan al contexto para no repetirlas.
@@ -249,16 +264,15 @@ Navegación: **Trabajo → Plan de contenido** (`/workspace/:id/content-planner`
 
   Es estricta a propósito.
 - Sin calendario, sin publicación ni programación real, sin métricas externas.
-- El plan no entra en el contexto del chat (Daily Director lo integrará).
-- Enterprise: los modelos y el CRUD son reutilizables, pero la generación con BrandDNA no existe
-  todavía (`feature_not_available`).
+- El plan no entra en el contexto del chat Personal (el Daily Director lee los planes activos); en
+  Enterprise el chat solo ve conteos.
 - La generación es síncrona (una petición, hasta el timeout del proveedor).
 
 ## 9. Próximos pasos
 
-Daily Director (planificación diaria con tareas y contenido), uso de las propuestas rechazadas y de
-sus motivos en la memoria creativa, vista de calendario sobre `scheduledFor`, Content Planner
-Enterprise basado en BrandDNA y generación en segundo plano para periodos largos.
+Uso de las propuestas rechazadas y de sus motivos en la memoria creativa, vista de calendario sobre
+`scheduledFor` y generación en segundo plano para periodos largos. (Daily Director y Content
+Planner Enterprise ya existen: `docs/DAILY-DIRECTOR.md`, `docs/ENTERPRISE-CONTENT.md`.)
 
 ## 10. Pendiente: validación con el modelo real ⏳
 

@@ -283,7 +283,7 @@ describe('Tipos de proyecto (compatibilidad del enum)', () => {
 });
 
 describe('Feature gating por tipo de workspace', () => {
-  it('Enterprise: Operations sí; Content Planner con IA y Daily Director no', async () => {
+  it('Enterprise: Operations y Content Planner sí (desde el BrandDNA, Prompt 14); Daily Director no', async () => {
     const jhon = await registerUser(app, 'Jhon');
     const tinto = (await enterprise(jhon, 'TINTO')).workspaceId;
     const base = `/api/workspaces/${tinto}`;
@@ -299,12 +299,9 @@ describe('Feature gating por tipo de workspace', () => {
       goal: 'posicionamiento',
       tzOffset: 300,
     });
-    expect(plan.status).toBe(400);
-    expect(plan.body.error.details).toMatchObject({
-      reason: 'feature_not_available',
-      feature: 'contentPlanner',
-      expected: 'personal',
-    });
+    // Disponible: sin BrandDNA (este Pixel no tiene onboarding) responde 409, nunca un plan inventado.
+    expect(plan.status).toBe(409);
+    expect(plan.body.error.details.reason).toBe('brand_dna_missing');
     const brief = await jhon.agent.get(`${base}/daily-brief`).expect(400);
     expect(brief.body.error.details).toMatchObject({
       reason: 'feature_not_available',

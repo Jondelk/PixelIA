@@ -1,4 +1,4 @@
-import type { ContentPlan, ContentPlanItem, ContentPlanResponse } from '@pixel/contracts';
+import type { ContentPlanResponse } from '@pixel/contracts';
 import type { ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router';
@@ -13,6 +13,7 @@ import {
   rejectContentPlanItem,
   updateContentPlanItem,
 } from './contentPlansApi';
+import { itemFixture, planFixture } from '../../test/planFixtures';
 import { ContentPlannerView, GenerationError } from './ContentPlannerPage';
 import { ContentPlanView } from './ContentPlanPage';
 import { PixelThinkingView } from './PixelThinking';
@@ -27,72 +28,10 @@ import {
   regenerateInput,
 } from './plannerLogic';
 
-const NOW = '2026-10-07T15:00:00.000Z';
 const base = '/workspace/w1';
 const render = (node: ReactNode) => renderToStaticMarkup(<MemoryRouter>{node}</MemoryRouter>);
 const text = (html: string) => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
 const ok = <T,>(data: T): ResourceState<T> => ({ status: 'success', data });
-
-function planFixture(overrides: Partial<ContentPlan> = {}): ContentPlan {
-  return {
-    id: '64b7f0c2a1b2c3d4e5f60040',
-    workspaceId: WORKSPACE_ID,
-    name: 'Octubre · 12–25',
-    objective: 'posicionamiento',
-    period: { startDate: '2026-10-12', endDate: '2026-10-25' },
-    strategySummary: 'Durante estas dos semanas propongo priorizar autoridad y proceso creativo.',
-    pillars: [
-      { name: 'Trabajo real', rationale: 'Tus proyectos activos son la fuente más honesta.' },
-      { name: 'Autoridad', rationale: 'Une tus habilidades con lo que quieres conseguir.' },
-    ],
-    targetAudience: ['Emprendedores y marcas'],
-    platforms: ['instagram'],
-    status: 'draft',
-    generatedBy: 'pixel',
-    personalDnaVersion: 3,
-    generation: {
-      provider: 'anthropic',
-      model: 'claude',
-      mode: 'ai',
-      discardedItems: 1,
-      frequencyPerWeek: 3,
-      frequencySource: 'request',
-      requestedGoal: 'posicionamiento',
-      regeneratedFromPlanId: null,
-    },
-    itemCounts: { proposed: 1, accepted: 0, rejected: 1, converted: 1 },
-    createdAt: NOW,
-    updatedAt: NOW,
-    ...overrides,
-  };
-}
-
-function itemFixture(overrides: Partial<ContentPlanItem> = {}): ContentPlanItem {
-  return {
-    id: '64b7f0c2a1b2c3d4e5f60050',
-    workspaceId: WORKSPACE_ID,
-    contentPlanId: '64b7f0c2a1b2c3d4e5f60040',
-    projectId: projectFixture().id,
-    title: 'Cómo convierto un brief confuso en una dirección creativa clara',
-    concept: 'Un proceso real, paso a paso.',
-    rationale: 'Demuestra criterio creativo a partir de un proceso real.',
-    objective: 'Autoridad',
-    audience: ['Emprendedores y marcas'],
-    platform: 'instagram',
-    format: 'reel',
-    pillar: 'Autoridad',
-    angle: 'process',
-    hook: 'Todo brief confuso esconde una decisión.',
-    suggestedAngle: null,
-    scheduledFor: '2026-10-13T17:00:00.000Z',
-    status: 'proposed',
-    rejectionReason: null,
-    convertedContentItemId: null,
-    createdAt: NOW,
-    updatedAt: NOW,
-    ...overrides,
-  };
-}
 
 const actions: PlanItemActions = { onAccept: noop, onReject: noop, onRestore: noop, onSave: noop };
 
@@ -234,7 +173,7 @@ describe('vistas del Content Planner', () => {
   it('estado vacío con su llamada a crear el primero', () => {
     const html = planner(ok({ plans: [], total: 0 }));
     expect(html).toContain('Aún no tienes un plan de contenido.');
-    expect(html).toContain('Crear plan con Pixel');
+    expect(html).toContain('Opciones avanzadas');
   });
 
   it('lista de planes con estado, periodo y conteos', () => {

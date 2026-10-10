@@ -157,6 +157,7 @@ export const CAMPAIGN_TABS = [
   { id: 'deliverables', label: 'Piezas' },
   { id: 'projects', label: 'Proyectos' },
   { id: 'content', label: 'Contenido' },
+  { id: 'plans', label: 'Plan de contenido' },
 ] as const;
 export type CampaignTab = (typeof CAMPAIGN_TABS)[number]['id'];
 

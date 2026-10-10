@@ -182,7 +182,7 @@ export const router = createBrowserRouter([
             ),
             handle: handle('Contenido', 'Trabajo'),
           },
-          // Content Planner: generación con Pixel solo en Personal (capacidad contentPlanner).
+          // Content Planner: Personal y Enterprise (capacidad contentPlanner).
           {
             path: 'content-planner',
             element: (

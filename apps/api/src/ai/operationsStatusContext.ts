@@ -18,6 +18,9 @@ export const OperationsStatusContextSchema = z.object({
   overdueTasks: z.number().int().min(0),
   activeContentItems: z.number().int().min(0),
   activeCampaigns: z.number().int().min(0).default(0),
+  /** Planes de contenido activos y piezas de Contenido en "Planificado" (solo conteos). */
+  activeContentPlans: z.number().int().min(0).default(0),
+  plannedContentItems: z.number().int().min(0).default(0),
   campaigns: z
     .array(z.object({ name: z.string(), objective: z.string(), status: z.string() }))
     .max(OPERATIONS_STATUS_CAMPAIGNS)

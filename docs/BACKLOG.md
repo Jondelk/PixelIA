@@ -21,10 +21,12 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 | W | Arquitectura de Workspaces (Enterprise / Personal) | ✅ |
 | P | Pixel Personal MVP (perfil, ADN, avatar, contexto y chat) | ✅ |
 | O | Operations: Projects, Tasks y ContentItems (Prompt 09) | ✅ |
-| C | Content Planner Personal (Prompt 10) | ✅ (Enterprise: después) |
+| C | Content Planner Personal (Prompt 10) | ✅ (Enterprise: etapa EC) |
 | D | Daily Director Personal (Prompt 11) | ✅ (Enterprise y acciones: después) |
 | E | Shared Operations + Enterprise Projects (Prompt 12) | ✅ |
 | M | Enterprise Campaign Manager (Prompt 13) | ✅ (prueba con Claude real pendiente) |
+| EC | Enterprise Content Planner (Prompt 14) | ✅ (prueba con Claude real pendiente) |
+| Z | Zero-entry UX: PixelCommand (Prompt 14.1) | ✅ (prueba con Claude real pendiente) |
 | — | Experiencia de entrada pública: bienvenida, Explorar y acceso (solo web) | ✅ (video final pendiente) |
 | 9 | CreativeMemory básica | ⬜ |
 | 10 | Cierre end-to-end del MVP | ⬜ |
@@ -40,6 +42,9 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 - [ ] **Daily Director con Claude real**: en local siempre usa el fallback determinístico (`demo`).
   Hay que probar `DAILY_SYSTEM` con un modelo y revisar `sanitizedFields` y `fallbackReason` en
   `generation` (`docs/DAILY-DIRECTOR.md §15`).
+
+- [ ] **Campaign Manager y Content Planner Enterprise con Claude real**: `CAMPAIGN_SYSTEM` y
+  `ENTERPRISE_PLANNING_SYSTEM` solo se han validado con el proveedor demo (`docs/ENTERPRISE-CONTENT.md` §9).
 
 No bloquea el resto de etapas: todas se desarrollan y se prueban con el proveedor demo.
 
@@ -363,9 +368,56 @@ Ver `docs/CAMPAIGNS.md`.
 - [x] Tests (contracts, motor, API, web) y smoke HTTP (TINTO, INVENTIA, Personal).
 - [x] Corregido de paso el test dependiente de la hora (`PIXEL_ESTADO.md` §11.2).
 - [ ] Probar `CAMPAIGN_SYSTEM` con Claude real (requiere `ANTHROPIC_API_KEY`).
-- [ ] Recorrido visual en navegador.
+- [x] Recorrido visual en navegador (detalle de campaña, en el smoke del Prompt 14).
 - [ ] Vincular proyectos o contenidos existentes a una campaña desde la UI.
-- [ ] Creative Workflow (aprobaciones), Brand Guardian, Enterprise Content Planner y Daily Director.
+- [x] Enterprise Content Planner (etapa EC).
+- [ ] Creative Workflow (aprobaciones), Brand Guardian y Daily Director Enterprise.
+
+## Etapa EC — Enterprise Content Planner ✅
+
+Ver `docs/ENTERPRISE-CONTENT.md`. Mismos modelos, endpoints y pantallas que el Content Planner
+Personal; la estrategia se elige por `workspace.type`.
+
+- [x] Contratos: `contextType`, `brandDnaVersion`, `campaignId`, `campaignStrategyVersion`,
+  `editorialObjective`, `campaignAlignment`, `distributionRationale`; invariantes
+  (`contentPlanContextIssues`); campos estratégicos del item; `GeneratedEnterpriseContentPlanSchema`;
+  capacidad `contentPlanner` en Enterprise.
+- [x] Migración de `contextType` idempotente con dry-run (`npm run migrate:content-plans`), también al
+  arrancar la API.
+- [x] `EnterprisePlanningStrategy`: contexto controlado con refs (`CAMPAIGN_1`, `DELIVERABLE_n`,
+  `PROJECT_n`, `CONTENT_n`), grounding promocional y de campaña, versión exacta de la estrategia.
+- [x] Demo por voz editorial del arquetipo (TINTO ≠ INVENTIA; campaña A ≠ B; planes sucesivos sin
+  repetir).
+- [x] Aceptar idempotente y seguro ante concurrencia; editar/rechazar condicionados (corrige R7);
+  rollback de items al fallar el guardado (corrige R11).
+- [x] Web: navegación Estrategia · Trabajo · Marca, planner con selector y resumen de campaña,
+  orden estrategia → alineación → pilares → plan, tarjetas con campaña y porqué de marca, sección
+  "Plan de contenido" en el detalle de campaña; cabecera con sección por tipo.
+- [x] Chat Enterprise: solo conteos de planes activos y piezas planificadas.
+- [x] Tests (contracts, estrategia, API, web), smoke HTTP y smoke de navegador.
+- [ ] Probar `ENTERPRISE_PLANNING_SYSTEM` con Claude real (requiere `ANTHROPIC_API_KEY`).
+- [x] Commit (junto con la Etapa Z, autorizado el 2026-10-10; sin push).
+
+## Etapa Z — Zero-entry UX: PixelCommand ✅
+
+Ver `docs/PIXEL-COMMAND.md`. Capa de orquestación + simplificación + UX encima de las Etapas O–EC;
+no reescribe ningún módulo.
+
+- [x] Contratos `pixelCommand.ts`: intenciones (derivadas de las capacidades), entidades, interpretación
+  estructurada, ActionPlan, estados, requests y respuestas; `formats` opcional en el plan de contenido.
+- [x] `PixelIntentResolver` (IA + reglas en español de respaldo y demo; saneado del backend),
+  `PixelContextResolver`, MissingInformationResolver + ActionPlan (`planCommand`, puro),
+  respuestas sin escritura (estado, consejo, desconocido) y ejecutor que llama a los servicios.
+- [x] Modelo `PixelCommand` (`tenantScoped`); API create · get · adjust · confirm · cancel;
+  confirmación única con reserva atómica + revisión; reintento desde el paso fallido; `partial`.
+- [x] Web: `PixelCommand`, `PixelProposalCard`, `PixelRequestInput` (punto de extensión de voz);
+  Inicio Enterprise y Personal con "¿Qué necesitas hacer?" dominante; Campañas ("¿Qué quieres
+  lograr?") y Plan de contenido ("¿Qué quieres comunicar?") con los formularios como opciones
+  avanzadas; navegación Enterprise Inicio · Trabajo · Marca.
+- [x] Tests (contracts, reglas, API, web) y smoke de navegador (TINTO, INVENTIA, Personal).
+- [ ] Probar `PIXEL_COMMAND_SYSTEM` con Claude real (requiere `ANTHROPIC_API_KEY`).
+- [ ] Voz (STT/TTS) sobre el mismo `source`, historial de solicitudes en la interfaz.
+- [x] Commit (junto con la Etapa EC, autorizado el 2026-10-10; sin push).
 
 ## Etapa 9 — CreativeMemory básica
 
@@ -445,5 +497,5 @@ datos. Detalle en `PIXEL_ESTADO.md` §5 y §9.5.
 
 Streaming de respuestas (SSE) · extracción automática de memorias · subida de logo y análisis de
 imágenes · scraping del sitio web · equipos y roles por empresa · rate limiting y endurecimiento de
-seguridad · voz y lip-sync · generación avanzada de modelos 3D · campañas · facturación y planes ·
+seguridad · voz y lip-sync · generación avanzada de modelos 3D · campañas automáticas · facturación y planes ·
 analytics.

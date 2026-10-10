@@ -6,7 +6,9 @@ import {
   type CampaignDeliverable,
   type CampaignStatus,
   type CampaignStrategyResponse,
+  CONTENT_PLAN_STATUS_LABELS,
   type ContentItemListResponse,
+  type ContentPlanListResponse,
   type ProjectListResponse,
 } from '@pixel/contracts';
 import { useCallback, useState, type ReactNode } from 'react';
@@ -14,13 +16,16 @@ import { Link, useLocation, useParams, useSearchParams } from 'react-router';
 import { Alert } from '../../components/Alert';
 import { Button } from '../../components/Button';
 import { ErrorState } from '../../components/ErrorState';
+import { buttonClasses } from '../../components/buttonClasses';
 import { Icon } from '../../components/Icon';
 import { PageHeader } from '../../components/PageHeader';
 import { SelectField } from '../../components/SelectField';
 import { workspaceBasePath } from '../../app/navigation';
 import { ApiRequestError, errorMessage } from '../../lib/api';
 import { useResource, type ResourceState } from '../../lib/useResource';
+import { listContentPlans } from '../content-planner/contentPlansApi';
 import { PixelThinking } from '../content-planner/PixelThinking';
+import { periodLabel } from '../content-planner/plannerLogic';
 import { listContent } from '../operations/contentApi';
 import { contentListActions } from '../operations/contentActions';
 import { ContentList, type ContentListActions } from '../operations/ContentList';
@@ -87,6 +92,10 @@ export function CampaignDetailPage() {
   const content = useResource(`campaign-content:${key}`, (signal) =>
     listContent(workspaceId, { campaignId, limit: 100 }, signal),
   );
+  // Planes de contenido que desarrollan esta campaña (solo del mismo workspace).
+  const plans = useResource(`campaign-plans:${key}`, (signal) =>
+    listContentPlans(workspaceId, { campaignId }, signal),
+  );
   const reloadCampaign = campaign.reload;
   const reloadDeliverables = deliverables.reload;
   const reloadProjects = projects.reload;
@@ -126,6 +135,7 @@ export function CampaignDetailPage() {
       deliverables={deliverables.state}
       projects={projects.state}
       content={content.state}
+      plans={plans.state}
       tab={tab}
       onTabChange={(next) =>
         setSearchParams(next === 'strategy' ? {} : { tab: next }, { replace: true })
@@ -171,6 +181,7 @@ export function CampaignDetailView({
   deliverables,
   projects,
   content,
+  plans = { status: 'success', data: { plans: [], total: 0 } },
   tab,
   onTabChange,
   onRetry,
@@ -190,6 +201,8 @@ export function CampaignDetailView({
   deliverables: ResourceState<CampaignDeliverable[]>;
   projects: ResourceState<ProjectListResponse>;
   content: ResourceState<ContentItemListResponse>;
+  /** Planes de contenido de la campaña (Content Planner Enterprise). */
+  plans?: ResourceState<ContentPlanListResponse>;
   tab: CampaignTab;
   onTabChange: (tab: CampaignTab) => void;
   onRetry: () => void;
@@ -243,6 +256,7 @@ export function CampaignDetailView({
     deliverables: data.stats.deliverables,
     projects: data.stats.projects,
     content: data.stats.contentItems,
+    plans: plans.status === 'success' ? plans.data.total : undefined,
   };
 
   return (
@@ -374,6 +388,52 @@ export function CampaignDetailView({
               />
             )
           }
+        </Collection>
+      )}
+      {tab === 'plans' && (
+        <Collection state={plans} onRetry={onRetry} label="Cargando planes…">
+          {(list) => (
+            <>
+              <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                <p className="max-w-xl text-sm text-muted">
+                  Convierte la estrategia de esta campaña en un plan editorial: Pixel desarrolla su
+                  concepto, sus pilares y sus piezas pendientes.
+                </p>
+                <Link
+                  to={`${base}/content-planner?campaign=${encodeURIComponent(data.id)}`}
+                  className={buttonClasses(list.plans.length ? 'secondary' : 'primary')}
+                >
+                  <Icon name="create" className="size-4" /> Crear plan de contenido
+                </Link>
+              </div>
+              {list.plans.length === 0 ? (
+                <InlineEmpty>Esta campaña aún no tiene un plan de contenido.</InlineEmpty>
+              ) : (
+                <ul className="grid gap-4 md:grid-cols-2">
+                  {list.plans.map((plan) => (
+                    <li key={plan.id}>
+                      <Link
+                        to={`${base}/content-planner/${plan.id}`}
+                        className="flex h-full flex-col rounded-2xl border border-line bg-surface p-6 transition-colors hover:border-line-strong"
+                      >
+                        <p className="text-xs text-subtle">
+                          {CONTENT_PLAN_STATUS_LABELS[plan.status]} · {periodLabel(plan)}
+                          {plan.campaignStrategyVersion
+                            ? ` · estrategia v${plan.campaignStrategyVersion}`
+                            : ''}
+                        </p>
+                        <h3 className="mt-3 font-display text-base font-bold">{plan.name}</h3>
+                        <p className="mt-4 border-t border-line pt-3 text-xs text-muted">
+                          {plan.itemCounts.proposed} propuestas · {plan.itemCounts.converted}{' '}
+                          convertidas · {plan.itemCounts.rejected} rechazadas
+                        </p>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
         </Collection>
       )}
     </>

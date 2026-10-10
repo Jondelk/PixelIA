@@ -161,14 +161,14 @@ describe('Content Planner: generar con Pixel', () => {
     expect(await ContentPlanModel.countDocuments({ workspaceId: empty })).toBe(0);
   });
 
-  it('Enterprise todavía no genera planes (feature_not_available)', async () => {
+  it('Enterprise genera desde su BrandDNA: sin ADN, 409 brand_dna_missing (nunca el PersonalDNA)', async () => {
     const companyId = await createCompany(jhon, 'TINTO');
     const enterprise = (await workspaceIdOf(companyId)).toString();
     const res = await jhon.agent
       .post(`${plansUrl(enterprise)}/generate`)
       .send(twoWeeks)
-      .expect(400);
-    expect(res.body.error.details.reason).toBe('feature_not_available');
+      .expect(409);
+    expect(res.body.error.details.reason).toBe('brand_dna_missing');
   });
 
   it('sin proveedor de IA disponible: 503, sin plan falso', async () => {
@@ -430,6 +430,7 @@ describe('Content Planner: aislamiento (404, nunca 403)', () => {
     expect((await ContentPlanModel.collection.indexes()).map((index) => index.key)).toEqual([
       { _id: 1 },
       { workspaceId: 1, status: 1, createdAt: -1 },
+      { workspaceId: 1, campaignId: 1, createdAt: -1 },
     ]);
     expect((await ContentPlanItemModel.collection.indexes()).map((index) => index.key)).toEqual([
       { _id: 1 },

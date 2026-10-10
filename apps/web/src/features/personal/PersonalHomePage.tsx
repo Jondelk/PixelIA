@@ -6,13 +6,14 @@ import { Pixi } from '../../components/Pixi';
 import { workspaceBasePath } from '../../app/navigation';
 import { DailyDirector } from '../daily-director/DailyDirector';
 import { OperationsOverview } from '../operations/OperationsOverview';
+import { PixelCommand } from '../pixel-command/PixelCommand';
 import { useWorkspace } from '../workspaces/workspaceContext';
 
 /**
  * Inicio de un Pixel Personal.
  * - Sin PersonalDNA: "Configura tu Pixel Personal" → onboarding.
- * - Con PersonalDNA: primero "TU DÍA" (Daily Director), después el resumen de su trabajo, Tu Pixel, su
- *   ADN personal y el chat.
+ * - Con PersonalDNA (zero-entry-first, Prompt 14.1): primero "¿Qué necesitas hacer?" (PixelCommand),
+ *   después "TU DÍA" (Daily Director), el resumen de su trabajo, Tu Pixel, su ADN personal y el chat.
  */
 export function PersonalHomePage() {
   const { overview } = useWorkspace();
@@ -61,7 +62,15 @@ function PersonalHome({ name, workspaceId }: { name: string; workspaceId: string
 
   return (
     <>
-      {/* Lo primero: la dirección de hoy (Daily Director), con el personaje. */}
+      {/* Zero-entry-first: lo primero es pedirle algo a Pixel; debajo, la dirección de hoy. */}
+      <div className="mb-12">
+        <PixelCommand
+          workspaceId={workspaceId}
+          base={base}
+          title={`¿Qué necesitas hacer, ${firstName}?`}
+        />
+      </div>
+
       <DailyDirector workspaceId={workspaceId} firstName={firstName} base={base} />
 
       <OperationsOverview workspaceId={workspaceId} base={base} />

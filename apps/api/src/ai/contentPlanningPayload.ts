@@ -85,6 +85,8 @@ export const PlanningPayloadSchema = z.object({
     itemCount: z.number().int().min(1),
     allowedPlatforms: z.array(ContentPlatformSchema).min(1),
     preferredFormats: z.array(ContentFormatSchema),
+    /** Prompt 14.1: si no está vacío, SOLO estos formatos. */
+    requiredFormats: z.array(ContentFormatSchema).optional(),
     goal: z.string().nullable(),
   }),
 });

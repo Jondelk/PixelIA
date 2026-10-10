@@ -20,6 +20,7 @@ import { createContentPlansRouter } from './content-plans/contentPlans.routes.js
 import { createDailyBriefRouter } from './daily-director/dailyBrief.routes.js';
 import type { DailyDirectorEngine } from './daily-director/dailyDirector.engine.js';
 import type { ContentPlanningEngine } from './content-plans/contentPlanning.engine.js';
+import type { EnterprisePlanningStrategy } from './content-plans/enterprisePlanning.strategy.js';
 import { createConversationsRouter } from './conversations/conversations.routes.js';
 import type { ChatDeps } from './conversations/chat.service.js';
 import { creativeMemoryRouter } from './creative-memory/creative-memory.routes.js';
@@ -31,6 +32,8 @@ import {
   tasksRouter,
 } from './operations/operations.routes.js';
 import type { PersonalDnaGenerator } from './personal/personalDna.generator.js';
+import { createPixelCommandRouter } from './pixel-command/pixelCommand.routes.js';
+import type { PixelIntentResolver } from './pixel-command/pixelIntent.resolver.js';
 import {
   createPersonalDnaRouter,
   createPersonalProfileRouter,
@@ -47,8 +50,10 @@ export interface ApiDependencies {
   chat: ChatDeps;
   personalDnaGenerator: PersonalDnaGenerator;
   planningEngine: ContentPlanningEngine;
+  enterprisePlanning: EnterprisePlanningStrategy;
   dailyDirector: DailyDirectorEngine;
   campaignEngine: CampaignStrategyEngine;
+  pixelIntentResolver: PixelIntentResolver;
   defaultTimezone: string;
   logger: Logger;
 }
@@ -89,6 +94,19 @@ export function createApiRouter(deps: ApiDependencies): Router {
   workspace.use('/content-plans', createContentPlansRouter(deps));
   // Campaign Manager: solo Enterprise (capacidad `campaigns`, la comprueba el servicio).
   workspace.use('/campaigns', createCampaignsRouter(deps));
+  // PixelCommand: la entrada principal (solicitud natural → propuesta → confirmación); orquesta
+  // los servicios de arriba sin duplicarlos.
+  workspace.use(
+    '/pixel/commands',
+    createPixelCommandRouter({
+      resolver: deps.pixelIntentResolver,
+      ai: deps.chat.ai,
+      defaultTimezone: deps.defaultTimezone,
+      logger: deps.logger,
+      campaigns: deps,
+      contentPlans: deps,
+    }),
+  );
   workspace.use('/', createDailyBriefRouter(deps));
   api.use('/workspaces/:workspaceId', workspace);
 

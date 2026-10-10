@@ -158,13 +158,12 @@ aceptación simultánea (evita el R7 del Content Planner).
 
 ## 5. Interfaz (Enterprise)
 
-Navegación: **Inicio · Trabajo** (Campañas, Proyectos, Tareas, Contenido) **· Marca** (ADN de marca,
-Personaje, Chat). Rutas workspace-first (`enterpriseStaysInWorkspace`):
+Navegación (desde el Prompt 14.1): **Inicio · Trabajo** (Campañas, Plan de contenido, Proyectos, Tareas, Contenido) **· Marca** (ADN de marca, Personaje, Chat). Rutas workspace-first (`enterpriseStaysInWorkspace`):
 
 | Ruta | Pantalla |
 |---|---|
-| `/workspace/:id/campaigns` | Filtros Todas · Borrador · Planificadas · Activas · Completadas · Archivadas; tarjetas con estado, mensaje y piezas en ejecución; **Crear con Pixel** y **Nueva campaña** (formulario en línea; `?new=pixel\|manual`) |
-| `/workspace/:id/campaigns/:campaignId` | Nombre, estado (editable), objetivo, periodo, producto, público y canales; secciones **Estrategia · Piezas · Proyectos · Contenido** |
+| `/workspace/:id/campaigns` | Filtros Todas · Borrador · Planificadas · Activas · Completadas · Archivadas; tarjetas con estado, mensaje y piezas en ejecución. Desde el Prompt 14.1 lo principal es **¿Qué quieres lograr?** (PixelCommand, `docs/PIXEL-COMMAND.md`); **Brief detallado** (el antiguo "Crear con Pixel") y **Crear manualmente** quedan como opciones avanzadas (formulario en línea; `?new=pixel\|manual`) |
+| `/workspace/:id/campaigns/:campaignId` | Nombre, estado (editable), objetivo, periodo, producto, público y canales; secciones **Estrategia · Piezas · Proyectos · Contenido · Plan de contenido** |
 
 - Crear con Pixel: brief simple (solo el objetivo es obligatorio). Mientras genera, el personaje de
   la marca en `thinking` y «Pixel está construyendo la estrategia de campaña…», sin progreso falso.
@@ -176,6 +175,8 @@ Personaje, Chat). Rutas workspace-first (`enterpriseStaysInWorkspace`):
 - Piezas: tipo, canal, formato, objetivo y "¿Por qué?"; **Aceptar · Editar · Rechazar**; convertida
   → "Ver en Contenido" / "Ver el proyecto"; aviso "Creado en Contenido" / "Proyecto creado".
 - Proyectos y Contenido: los del mismo workspace con ese `campaignId`.
+- Plan de contenido (Prompt 14): los planes basados en la campaña, con sus conteos, y el CTA
+  **Crear plan de contenido** (`/content-planner?campaign=<id>`, preselecciona la campaña).
 - Inicio Enterprise: contador **Campañas activas** junto a proyectos, tareas y contenido. Un
   proyecto vinculado muestra "Ver su campaña".
 
@@ -192,7 +193,7 @@ Personal no ve la navegación ni las rutas (`FeatureOnly feature="campaigns"`).
 ## 7. Limitaciones (no implementado)
 
 Creative Workflow y aprobaciones formales, equipo, roles y responsables, Brand Guardian y scores,
-Enterprise Content Planner, Enterprise Daily Director, analytics, publicación o redes externas,
+Enterprise Daily Director, analytics, publicación o redes externas,
 Gmail/Calendar, presupuestos, media buying, ads, automatizaciones de campaña y memoria creativa
 avanzada. Sin vincular a mano un proyecto existente a una campaña desde la UI (la API lo admite con
 `PATCH /projects/:id { campaignId }`). La estrategia demo escribe en español aunque el idioma de la
@@ -204,4 +205,6 @@ marca sea otro. Sin prueba con Claude real (falta `ANTHROPIC_API_KEY`).
 2. Vincular proyectos y contenidos existentes a una campaña desde la UI.
 3. Creative Workflow (aprobaciones formales sobre las piezas) y Brand Guardian (evaluación de piezas
    contra el ADN), encima de esta base.
-4. Enterprise Content Planner a partir de la estrategia de una campaña.
+4. ~~Enterprise Content Planner a partir de la estrategia de una campaña~~ ✅ Prompt 14
+   (`docs/ENTERPRISE-CONTENT.md`). El planner lee la estrategia vigente y guarda su versión exacta
+   en el plan; nunca cambia el estado de las piezas ni la estrategia.

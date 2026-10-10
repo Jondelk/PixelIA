@@ -105,21 +105,20 @@ describe('rutas de workspace', () => {
     }
   });
 
-  it('el resto de rutas de una empresa redirige; Plan de contenido y Personal van al resumen', () => {
+  it('el resto de rutas de una empresa redirige; Personal va al resumen; el Plan de contenido se queda', () => {
     for (const path of ['/workspace/w1', '/workspace/w1/chat', '/workspace/w1/pixel']) {
       expect(enterpriseStaysInWorkspace(path)).toBe(false);
     }
-    for (const path of [
-      '/workspace/w1/content-planner',
-      '/workspace/w1/content-planner/p1',
-      '/workspace/w1/personal/dna',
-    ]) {
-      expect(enterpriseStaysInWorkspace(path)).toBe(false);
-      expect(enterpriseRedirectPath(path, company)).toBe(`/company/${company}`);
-    }
+    expect(enterpriseStaysInWorkspace('/workspace/w1/personal/dna')).toBe(false);
+    expect(enterpriseRedirectPath('/workspace/w1/personal/dna', company)).toBe(
+      `/company/${company}`,
+    );
+    // Prompt 14: el Plan de contenido es workspace-first también en Enterprise.
+    expect(enterpriseStaysInWorkspace('/workspace/w1/content-planner')).toBe(true);
+    expect(enterpriseStaysInWorkspace('/workspace/w1/content-planner/p1')).toBe(true);
   });
 
-  it('un Pixel de empresa: Inicio · Trabajo (Campañas primero, sin Plan de contenido) · Marca', () => {
+  it('un Pixel de empresa: Inicio · Trabajo (Campañas, Plan de contenido, Proyectos, Tareas, Contenido) · Marca', () => {
     const groups = (companyId: string, workspaceId: string | null) =>
       enterpriseNav(companyId, workspaceId).map((group) => [
         group.label ?? null,
@@ -131,6 +130,7 @@ describe('rutas de workspace', () => {
         'Trabajo',
         [
           ['Campañas', '/workspace/w1/campaigns'],
+          ['Plan de contenido', '/workspace/w1/content-planner'],
           ['Proyectos', '/workspace/w1/projects'],
           ['Tareas', '/workspace/w1/tasks'],
           ['Contenido', '/workspace/w1/content'],
@@ -145,10 +145,8 @@ describe('rutas de workspace', () => {
         ],
       ],
     ]);
-    // Sin el workspace aún (cargando) no hay enlaces de Trabajo rotos.
+    // Sin el workspace aún (cargando) no hay enlaces rotos.
     expect(groups('c1', null).map(([label]) => label)).toEqual([null, 'Marca']);
-    const labels = enterpriseNav('c1', 'w1').flatMap((g) => g.items.map((item) => item.label));
-    expect(labels).not.toContain('Plan de contenido');
   });
 
   it('workspaceNav de una empresa con empresa usa la navegación Enterprise', () => {

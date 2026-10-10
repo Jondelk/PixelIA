@@ -30,7 +30,7 @@ export function BrandWorkHeading({ base }: { base: string }) {
   return (
     <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-subtle">Trabajo</p>
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-subtle">En marcha</p>
         <h2 id="brand-work-title" className="mt-2 font-display text-xl font-bold tracking-tight">
           Trabajo de la marca
         </h2>

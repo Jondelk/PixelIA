@@ -1,5 +1,10 @@
-import { CONTENT_PLATFORM_LABELS, type ContentPlatform } from '@pixel/contracts';
-import { useState, type FormEvent } from 'react';
+import {
+  CONTENT_PLATFORM_LABELS,
+  type Campaign,
+  type ContentPlatform,
+  type GenerateContentPlanInput,
+} from '@pixel/contracts';
+import { useState, type FormEvent, type ReactNode } from 'react';
 import { Button } from '../../components/Button';
 import { TextField } from '../../components/Field';
 import { Icon } from '../../components/Icon';
@@ -11,9 +16,10 @@ import {
   generateFormToInput,
   PERIOD_OPTIONS,
   periodEnd,
+  PERSONAL_PLANNER_COPY,
   type GeneratePlanFormState,
+  type PlannerCopy,
 } from './plannerLogic';
-import type { GenerateContentPlanInput } from '@pixel/contracts';
 
 const PLATFORMS = Object.keys(CONTENT_PLATFORM_LABELS).filter(
   (value) => value !== 'other',
@@ -25,25 +31,39 @@ const FREQUENCY_OPTIONS = [1, 2, 3, 4, 5, 7].map((value) => ({
 }));
 
 /**
- * Periodo, objetivo, frecuencia y plataformas. Todo menos el periodo es opcional: sin frecuencia
- * ni plataformas, Pixel usa las de tu ADN personal.
+ * Periodo, objetivo, frecuencia y plataformas (y, en un Pixel de empresa, la campaña opcional).
+ * Todo menos el periodo es opcional. El formulario sigue montado mientras Pixel genera: si falla,
+ * conserva lo que el usuario rellenó.
  */
 export function GeneratePlanForm({
   onGenerate,
   onCancel,
   busy,
+  copy = PERSONAL_PLANNER_COPY,
+  campaigns,
+  initialCampaignId = '',
+  campaignSummary,
 }: {
   onGenerate: (input: Omit<GenerateContentPlanInput, 'tzOffset'>) => void;
   onCancel?: () => void;
   busy: boolean;
+  copy?: PlannerCopy;
+  /** Enterprise: campañas del workspace activo (solo esas). */
+  campaigns?: readonly Campaign[];
+  initialCampaignId?: string;
+  /** Resumen compacto de la campaña elegida. */
+  campaignSummary?: (campaign: Campaign) => ReactNode;
 }) {
-  const [form, setForm] = useState<GeneratePlanFormState>(() => defaultGenerateForm());
+  const [form, setForm] = useState<GeneratePlanFormState>(() =>
+    defaultGenerateForm(new Date(), initialCampaignId),
+  );
   const [errors, setErrors] = useState<FieldErrors>({});
   const set =
     <K extends keyof GeneratePlanFormState>(key: K) =>
     (value: GeneratePlanFormState[K]) =>
       setForm((current) => ({ ...current, [key]: value }));
   const days = PERIOD_OPTIONS.find((option) => option.id === form.period)!.days;
+  const selected = campaigns?.find((campaign) => campaign.id === form.campaignId) ?? null;
 
   const togglePlatform = (platform: ContentPlatform) =>
     set('platforms')(
@@ -70,6 +90,19 @@ export function GeneratePlanForm({
       aria-label="Crear plan con Pixel"
       className="space-y-6 rounded-2xl border border-line bg-surface p-6 sm:p-8"
     >
+      {campaigns && (
+        <div className="space-y-3">
+          <SelectField
+            label="¿Quieres basar este plan en una campaña?"
+            value={form.campaignId}
+            placeholder="Sin campaña"
+            options={campaigns.map((campaign) => ({ value: campaign.id, label: campaign.name }))}
+            onValueChange={set('campaignId')}
+            error={errors.campaignId}
+          />
+          {selected && campaignSummary?.(selected)}
+        </div>
+      )}
       <div className="grid gap-5 sm:grid-cols-[1fr_auto] sm:items-end">
         <TextField
           label="Empieza el"
@@ -91,7 +124,7 @@ export function GeneratePlanForm({
       </div>
       <div className="grid gap-5 sm:grid-cols-[2fr_1fr]">
         <TextField
-          label="Objetivo (opcional)"
+          label={copy.goalLabel}
           value={form.goal}
           onChange={(event) => set('goal')(event.target.value)}
           error={errors.goal}
@@ -101,7 +134,7 @@ export function GeneratePlanForm({
         <SelectField
           label="Frecuencia"
           value={form.frequency}
-          placeholder="Según mi ADN"
+          placeholder={copy.frequencyPlaceholder}
           options={FREQUENCY_OPTIONS}
           onValueChange={set('frequency')}
           error={errors.frequency}
@@ -111,16 +144,16 @@ export function GeneratePlanForm({
         <legend className="mb-1.5 text-[13px] font-medium text-muted">Plataformas</legend>
         <div className="flex flex-wrap gap-1.5">
           {PLATFORMS.map((platform) => {
-            const selected = form.platforms.includes(platform);
+            const isSelected = form.platforms.includes(platform);
             return (
               <button
                 key={platform}
                 type="button"
-                aria-pressed={selected}
+                aria-pressed={isSelected}
                 onClick={() => togglePlatform(platform)}
                 className={[
                   'rounded-md border px-3 py-1.5 text-xs transition-colors',
-                  selected
+                  isSelected
                     ? 'border-brand bg-brand text-on-brand'
                     : 'border-line-strong text-muted hover:border-fg hover:text-fg',
                 ].join(' ')}
@@ -130,15 +163,12 @@ export function GeneratePlanForm({
             );
           })}
         </div>
-        <p className="mt-2 text-xs text-subtle">
-          Si no eliges ninguna, Pixel usa solo las plataformas de tu ADN personal.
-        </p>
+        <p className="mt-2 text-xs text-subtle">{copy.platformsHint}</p>
       </fieldset>
 
       <p className="flex items-start gap-3 border-t border-line pt-5 text-sm leading-relaxed text-muted">
         <span className="mt-2 size-1.5 shrink-0 bg-fg" aria-hidden="true" />
-        Pixel utilizará tu ADN personal y tus proyectos activos para construir el plan. Nada se
-        publica ni pasa a Contenido hasta que aceptes cada propuesta.
+        {copy.formNote}
       </p>
 
       <div className="flex flex-wrap gap-3">

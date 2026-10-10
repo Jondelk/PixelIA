@@ -336,10 +336,10 @@ describe('FeatureOnly: rutas según las capacidades del workspace', () => {
     );
   };
 
-  it('Enterprise entra a Proyectos pero no al Plan de contenido', () => {
+  it('Enterprise entra a Proyectos y, desde el Prompt 14, al Plan de contenido', () => {
     const enterprise = overviewOf('enterprise', tinto);
     expect(at(`${base}/projects`, enterprise)).toContain('PROYECTOS');
-    expect(at(`${base}/content-planner`, enterprise)).not.toContain('PLANNER');
+    expect(at(`${base}/content-planner`, enterprise)).toContain('PLANNER');
   });
 
   it('Personal sigue entrando a ambos', () => {

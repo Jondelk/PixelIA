@@ -45,7 +45,7 @@ const deliverableActions: DeliverableActions = { onAccept: noop, onReject: noop,
 const contentActions: ContentListActions = { onMove: noop, onSave: noop, onDelete: noop };
 
 describe('Navegación y gating', () => {
-  it('Enterprise: Campañas es lo primero de Trabajo y vive en /workspace', () => {
+  it('Enterprise: Campañas encabeza Trabajo y vive en /workspace', () => {
     const work = enterpriseNav('c1', 'w1').find((group) => group.label === 'Trabajo')!;
     expect(work.items[0]).toMatchObject({ label: 'Campañas', to: '/workspace/w1/campaigns' });
     expect(enterpriseStaysInWorkspace('/workspace/w1/campaigns')).toBe(true);
@@ -118,11 +118,11 @@ describe('Lista de campañas', () => {
       />,
     );
 
-  it('estado vacío con "Crear con Pixel" y "Nueva campaña"', () => {
+  it('estado vacío: el brief detallado y la creación manual quedan como opciones', () => {
     const plain = text(view(ok({ campaigns: [], total: 0 })));
     expect(plain).toContain('Todavía no hay campañas.');
-    expect(plain).toContain('Crear con Pixel');
-    expect(plain).toContain('Nueva campaña');
+    expect(plain).toContain('Brief detallado');
+    expect(plain).toContain('Crear manualmente');
   });
 
   it('tarjetas con estado, mensaje y su conexión con la ejecución; filtros', () => {

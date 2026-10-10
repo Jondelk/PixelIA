@@ -1,6 +1,8 @@
 import {
   CONTENT_ANGLE_LABELS,
+  CONTENT_FUNNEL_STAGE_LABELS,
   CONTENT_PLAN_ITEM_STATUS_LABELS,
+  CONTENT_STRATEGIC_ROLE_LABELS,
   type ContentPlanItem,
   type UpdateContentPlanItemInput,
 } from '@pixel/contracts';
@@ -35,11 +37,14 @@ export function PlanItemCard({
   projectName,
   contentHref,
   actions,
+  campaign = null,
 }: {
   item: ContentPlanItem;
   projectName: string | null;
   contentHref: string;
   actions: PlanItemActions;
+  /** Enterprise: campaña de la propuesta (enlace al detalle). */
+  campaign?: { name: string | null; href: string } | null;
 }) {
   const [mode, setMode] = useState<Mode>('view');
   const [busy, setBusy] = useState<'accept' | 'reject' | 'restore' | 'save' | null>(null);
@@ -78,6 +83,24 @@ export function PlanItemCard({
         <span className="flex-1" />
         <DueLabel iso={item.scheduledFor} pending={false} prefix="Sugerida" />
       </div>
+      {(campaign || item.campaignDeliverableId) && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {campaign && (
+            <Link
+              to={campaign.href}
+              className="inline-flex items-center gap-1.5 rounded-md border border-line px-2 py-0.5 text-[11px] text-muted hover:border-line-strong hover:text-fg"
+            >
+              <Icon name="campaigns" className="size-3" />
+              Campaña{campaign.name ? ` · ${campaign.name}` : ''}
+            </Link>
+          )}
+          {item.campaignDeliverableId && (
+            <span className="inline-flex items-center rounded-md border border-line px-2 py-0.5 text-[11px] text-muted">
+              Pieza de campaña
+            </span>
+          )}
+        </div>
+      )}
 
       {mode === 'edit' ? (
         <ItemEditor
@@ -103,9 +126,22 @@ export function PlanItemCard({
           <dl className="mt-5 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
             {item.objective && <Meta label="Objetivo">{item.objective}</Meta>}
             {item.pillar && <Meta label="Pilar">{item.pillar}</Meta>}
+            {item.strategicRole && (
+              <Meta label="Rol estratégico">
+                {CONTENT_STRATEGIC_ROLE_LABELS[item.strategicRole] +
+                  (item.funnelStage ? ` · ${CONTENT_FUNNEL_STAGE_LABELS[item.funnelStage]}` : '')}
+              </Meta>
+            )}
             {item.angle && <Meta label="Ángulo">{CONTENT_ANGLE_LABELS[item.angle]}</Meta>}
+            {item.suggestedAngle && <Meta label="Ángulo sugerido">{item.suggestedAngle}</Meta>}
             {projectName && <Meta label="Proyecto">{projectName}</Meta>}
           </dl>
+          {item.strategicMessage && (
+            <p className="mt-4 text-sm">
+              <span className="text-subtle">Mensaje: </span>
+              <span className="text-fg">{item.strategicMessage}</span>
+            </p>
+          )}
 
           {item.rationale && (
             <div className="mt-5 rounded-xl bg-elevated px-4 py-3.5">
@@ -113,6 +149,14 @@ export function PlanItemCard({
                 Por qué Pixel lo recomienda
               </p>
               <p className="mt-1.5 text-sm leading-relaxed text-fg">{item.rationale}</p>
+            </div>
+          )}
+          {item.brandRationale && (
+            <div className="mt-3 rounded-xl border border-line px-4 py-3.5">
+              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-subtle">
+                Por qué encaja con la marca
+              </p>
+              <p className="mt-1.5 text-sm leading-relaxed text-fg">{item.brandRationale}</p>
             </div>
           )}
           {rejected && item.rejectionReason && (
@@ -236,7 +280,9 @@ function ItemEditor({
     onSave({
       title: form.title,
       concept: form.concept,
+      objective: form.objective,
       hook: form.hook,
+      suggestedAngle: form.suggestedAngle,
       platform: form.platform || null,
       format: form.format || null,
       scheduledFor: dateInputToIso(form.scheduledFor),
@@ -260,11 +306,25 @@ function ItemEditor({
         maxLength={2000}
       />
       <TextField
-        label="Hook"
-        value={form.hook}
-        onChange={(event) => set('hook')(event.target.value)}
-        maxLength={500}
+        label="Objetivo"
+        value={form.objective}
+        onChange={(event) => set('objective')(event.target.value)}
+        maxLength={300}
       />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <TextField
+          label="Hook"
+          value={form.hook}
+          onChange={(event) => set('hook')(event.target.value)}
+          maxLength={500}
+        />
+        <TextField
+          label="Ángulo sugerido"
+          value={form.suggestedAngle}
+          onChange={(event) => set('suggestedAngle')(event.target.value)}
+          maxLength={300}
+        />
+      </div>
       <div className="grid gap-4 sm:grid-cols-3">
         <SelectField
           label="Plataforma"

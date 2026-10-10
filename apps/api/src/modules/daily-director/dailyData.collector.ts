@@ -164,7 +164,8 @@ export async function collectDailyData(
     recentCompleted: completed.map(toTaskDTO),
     content: [...contentById.values()].map(toContentItemDTO),
     activeContentTotal,
-    plans: planDocs.map((plan) => toContentPlanDTO(plan)),
+    // El Daily Director solo existe en Personal: los planes son de ese workspace.
+    plans: planDocs.map((plan) => toContentPlanDTO(plan, undefined, 'personal')),
     planItems: planItemDocs.map(toContentPlanItemDTO),
     snapshotAt,
     fingerprint: { openTasks: openTaskTotal, activeContent: activeContentTotal },

@@ -5,6 +5,7 @@ import {
   type ContentPlanItem,
   type ContentPlatform,
   type GenerateContentPlanInput,
+  type WorkspaceOverview,
 } from '@pixel/contracts';
 import { zodFieldErrors, type FieldErrors } from '../../lib/forms';
 import { errorReason } from '../../lib/api';
@@ -29,6 +30,8 @@ export interface GeneratePlanFormState {
   /** '' = según el ADN personal. */
   frequency: string;
   platforms: ContentPlatform[];
+  /** Enterprise: campaña cuya estrategia desarrolla el plan ('' = sin campaña). */
+  campaignId: string;
 }
 
 const pad = (value: number) => String(value).padStart(2, '0');
@@ -49,8 +52,15 @@ export function periodEnd(startDate: string, days: number): string {
   return dayString(new Date(year, month - 1, day + days - 1));
 }
 
-export function defaultGenerateForm(now = new Date()): GeneratePlanFormState {
-  return { startDate: nextMonday(now), period: '14', goal: '', frequency: '', platforms: [] };
+export function defaultGenerateForm(now = new Date(), campaignId = ''): GeneratePlanFormState {
+  return {
+    startDate: nextMonday(now),
+    period: '14',
+    goal: '',
+    frequency: '',
+    platforms: [],
+    campaignId,
+  };
 }
 
 export type GenerateFormResult =
@@ -66,6 +76,7 @@ export function generateFormToInput(form: GeneratePlanFormState): GenerateFormRe
     ...(form.frequency ? { frequency: Number(form.frequency) } : {}),
     ...(form.platforms.length ? { platforms: form.platforms } : {}),
     ...(form.goal.trim() ? { goal: form.goal.trim() } : {}),
+    ...(form.campaignId ? { campaignId: form.campaignId } : {}),
   };
   const parsed = GenerateContentPlanSchema.safeParse({ ...input, tzOffset: 0 });
   return parsed.success ? { ok: true, input } : { ok: false, errors: zodFieldErrors(parsed.error) };
@@ -77,11 +88,79 @@ export function regenerateInput(plan: ContentPlan): Omit<GenerateContentPlanInpu
     startDate: plan.period.startDate,
     endDate: plan.period.endDate,
     regenerateFrom: plan.id,
+    ...(plan.campaignId ? { campaignId: plan.campaignId } : {}),
     ...(plan.platforms.length ? { platforms: plan.platforms } : {}),
     ...(plan.generation?.requestedGoal ? { goal: plan.generation.requestedGoal } : {}),
     ...(plan.generation?.frequencySource === 'request'
       ? { frequency: plan.generation.frequencyPerWeek }
       : {}),
+  };
+}
+
+/* ---------- Textos por tipo de Pixel (la misma pantalla para Personal y Enterprise) ---------- */
+
+export interface PlannerCopy {
+  enterprise: boolean;
+  title: string;
+  description: string;
+  emptyTitle: string;
+  emptyDescription: string;
+  loading: string;
+  formNote: string;
+  platformsHint: string;
+  frequencyPlaceholder: string;
+  goalLabel: string;
+  thinking: { title: string; description: string };
+  demoNotice: string;
+}
+
+export const PERSONAL_PLANNER_COPY: PlannerCopy = {
+  enterprise: false,
+  title: 'Plan de contenido',
+  description:
+    'Pixel construye contigo una estrategia de contenido a partir de quién eres, lo que quieres conseguir y en qué estás trabajando.',
+  emptyTitle: 'Aún no tienes un plan de contenido.',
+  emptyDescription:
+    'Elige un periodo y Pixel te propondrá una estrategia y piezas concretas, cada una con su porqué. Tú decides cuáles pasan a Contenido.',
+  loading: 'Cargando tus planes…',
+  formNote:
+    'Pixel utilizará tu ADN personal y tus proyectos activos para construir el plan. Nada se publica ni pasa a Contenido hasta que aceptes cada propuesta.',
+  platformsHint: 'Si no eliges ninguna, Pixel usa solo las plataformas de tu ADN personal.',
+  frequencyPlaceholder: 'Según mi ADN',
+  goalLabel: 'Objetivo (opcional)',
+  thinking: {
+    title: 'Pixel está construyendo tu estrategia…',
+    description:
+      'Está leyendo tu ADN personal, tus proyectos activos y tu contenido reciente para proponerte piezas con un porqué. Puede tardar un poco.',
+  },
+  demoNotice:
+    'Modo demo: Pixel compuso este plan con reglas a partir de tu ADN y tus proyectos, sin un modelo de IA. Con un proveedor de IA configurado, las propuestas son más ricas.',
+};
+
+export function plannerCopy(overview: WorkspaceOverview): PlannerCopy {
+  if (overview.workspace.type !== 'enterprise') return PERSONAL_PLANNER_COPY;
+  const brand = overview.company?.name ?? overview.workspace.name;
+  return {
+    enterprise: true,
+    title: `Plan de contenido de ${brand}`,
+    description:
+      'Pixel convierte el ADN de la marca y, si eliges una, la estrategia de una campaña en un plan editorial con piezas concretas y su porqué.',
+    emptyTitle: 'Aún no tienes un plan de contenido.',
+    emptyDescription:
+      'Puedes crear uno manualmente o pedirle a Pixel que lo construya desde el ADN de la marca. También puedes convertir una estrategia de campaña en un plan editorial.',
+    loading: 'Cargando los planes de la marca…',
+    formNote: `Pixel utilizará el ADN de ${brand}, la campaña que elijas, sus proyectos y su contenido reciente. Nada pasa a Contenido hasta que aceptes cada propuesta.`,
+    platformsHint:
+      'Si no eliges ninguna, Pixel usa los canales de la campaña (si los tiene); si no, elige al menos una.',
+    frequencyPlaceholder: '3 por semana (por defecto)',
+    goalLabel: 'Objetivo editorial (opcional)',
+    thinking: {
+      title: `Pixel está construyendo el plan editorial de ${brand}…`,
+      description:
+        'Está leyendo el ADN de la marca, la estrategia de la campaña y el trabajo reciente para proponer piezas con un porqué. Puede tardar un poco.',
+    },
+    demoNotice:
+      'Modo demo: Pixel compuso este plan con reglas a partir del ADN de la marca, la campaña y sus proyectos, sin un modelo de IA. Con un proveedor de IA configurado, las propuestas son más ricas.',
   };
 }
 
@@ -97,6 +176,12 @@ export function generationErrorMessage(err: unknown): { title: string; reason: s
       return { title: 'Pixel no pudo construir un plan fundamentado', reason };
     case 'content_platforms_missing':
       return { title: 'Elige al menos una plataforma', reason };
+    case 'brand_dna_missing':
+      return { title: 'Pixel aún no conoce el ADN de esta marca', reason };
+    case 'enterprise_company_missing':
+      return { title: 'Este Pixel aún no tiene empresa', reason };
+    case 'campaign_strategy_missing':
+      return { title: 'La campaña aún no tiene estrategia', reason };
     default:
       return { title: 'No se pudo crear el plan', reason };
   }
@@ -123,7 +208,9 @@ export function itemEditForm(item: ContentPlanItem) {
   return {
     title: item.title,
     concept: item.concept ?? '',
+    objective: item.objective ?? '',
     hook: item.hook ?? '',
+    suggestedAngle: item.suggestedAngle ?? '',
     platform: item.platform ?? ('' as const),
     format: item.format ?? ('' as const),
     scheduledFor: isoToDateInput(item.scheduledFor),

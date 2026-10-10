@@ -55,7 +55,8 @@ variable existe, manda ella (opcional `AI_MODEL`, por defecto `claude-opus-5-5`)
 modelo real (`apps/api/test/chat.live.test.ts` y `contentPlanning.live.test.ts`) solo corren si
 `ANTHROPIC_API_KEY` está en el entorno del proceso (p. ej. `ANTHROPIC_API_KEY=... npm run test`): los
 tests no cargan `apps/api/.env`. **Pendiente**: ejecutar la del Content Planner y ajustar su prompt
-(`docs/CONTENT-PLANNER.md §10`).
+(`docs/CONTENT-PLANNER.md §10`); el Campaign Manager y el Content Planner Enterprise tampoco se han
+probado con Claude real.
 
 **Zona horaria**: `DEFAULT_TIMEZONE` (IANA, por defecto `America/Bogota`) define el "hoy" del Daily
 Director para los Pixels que aún no tienen una propia.
@@ -74,15 +75,16 @@ La API arranca aunque MongoDB no esté disponible: `/api/health` responde `503` 
 | `npm run build` | Build de producción: contracts → api → web |
 | `npm run format` | Prettier |
 | `npm run migrate:workspaces` | Migra empresas anteriores a los workspaces (`-- --dry-run` para simular). Ver `docs/WORKSPACE-MIGRATION.md` |
+| `npm run migrate:content-plans` | Asigna `contextType` a los planes de contenido anteriores al Prompt 14 (`-- --dry-run` para simular; también corre al arrancar la API). Ver `docs/ENTERPRISE-CONTENT.md` |
 | `npm run start -w @pixel/api` | API compilada (`dist/`) tras `npm run build` |
 
 ## Estructura
 
 ```
 apps/web            React + Vite + Tailwind (shell y pantallas)
-apps/api            Express + Mongoose (módulos: health, auth, workspaces, companies, brand-dna, personal, avatars, conversations, creative-memory, operations, content-plans, daily-director, campaigns)
+apps/api            Express + Mongoose (módulos: health, auth, workspaces, companies, brand-dna, personal, avatars, conversations, creative-memory, operations, content-plans, daily-director, campaigns, pixel-command)
 packages/contracts  Schemas Zod y tipos compartidos
-docs/               Estado real (PIXEL_ESTADO), MVP, arquitectura, entidades, backlog, workspaces, migración, Pixel Personal, Operations, Content Planner y Daily Director
+docs/               Estado real (PIXEL_ESTADO), MVP, arquitectura, entidades, backlog, workspaces, migración, Pixel Personal, Operations, Campaign Manager, Content Planner (Personal y Enterprise) y Daily Director
 ```
 
 ## Documentación
@@ -98,6 +100,8 @@ docs/               Estado real (PIXEL_ESTADO), MVP, arquitectura, entidades, ba
 - [`docs/OPERATIONS.md`](./docs/OPERATIONS.md) — Shared Operations: proyectos, tareas y contenido de cualquier Pixel.
 - [`docs/ENTERPRISE-OPERATIONS.md`](./docs/ENTERPRISE-OPERATIONS.md) — Operations en un Pixel de empresa: gating, aislamiento, Inicio y chat.
 - [`docs/CAMPAIGNS.md`](./docs/CAMPAIGNS.md) — Campaign Manager: estrategia de campaña desde el BrandDNA, piezas y conversión a Operations.
-- [`docs/CONTENT-PLANNER.md`](./docs/CONTENT-PLANNER.md) — Content Planner: estrategia de contenido con PersonalDNA y proyectos.
+- [`docs/CONTENT-PLANNER.md`](./docs/CONTENT-PLANNER.md) — Content Planner: núcleo compartido y estrategia Personal (PersonalDNA y proyectos).
+- [`docs/ENTERPRISE-CONTENT.md`](./docs/ENTERPRISE-CONTENT.md) — Content Planner Enterprise: plan editorial desde el BrandDNA y la estrategia de una campaña.
 - [`docs/DAILY-DIRECTOR.md`](./docs/DAILY-DIRECTOR.md) — Daily Director: la dirección del día en Inicio.
+- [`docs/PIXEL-COMMAND.md`](./docs/PIXEL-COMMAND.md) — PixelCommand: Pixel como interfaz principal (zero-entry-first): una frase → propuesta → una confirmación.
 - [`docs/WORKSPACE-MIGRATION.md`](./docs/WORKSPACE-MIGRATION.md) — migración Company → Workspace.

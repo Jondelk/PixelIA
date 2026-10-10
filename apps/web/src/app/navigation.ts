@@ -35,28 +35,39 @@ export interface NavGroup {
   items: NavItem[];
 }
 
-/**
- * Sección Trabajo de un workspace: Operations compartidas (Proyectos, Tareas, Contenido) y, si el
- * tipo lo admite, el Plan de contenido. Siempre bajo /workspace/:workspaceId (workspace-first).
- */
-function workNav(workspaceId: string, type: WorkspaceType): NavGroup {
+/** Enlaces de las funcionalidades de un workspace (siempre bajo /workspace/:workspaceId). */
+function featureItems(workspaceId: string): [WorkspaceFeature, NavItem][] {
   const base = workspaceBasePath(workspaceId);
-  const items: [WorkspaceFeature, NavItem][] = [
+  return [
     ['campaigns', { to: `${base}/campaigns`, label: 'Campañas', icon: 'campaigns' }],
-    ['projects', { to: `${base}/projects`, label: 'Proyectos', icon: 'projects' }],
-    ['tasks', { to: `${base}/tasks`, label: 'Tareas', icon: 'tasks' }],
-    ['content', { to: `${base}/content`, label: 'Contenido', icon: 'content' }],
     [
       'contentPlanner',
       { to: `${base}/content-planner`, label: 'Plan de contenido', icon: 'planner' },
     ],
+    ['projects', { to: `${base}/projects`, label: 'Proyectos', icon: 'projects' }],
+    ['tasks', { to: `${base}/tasks`, label: 'Tareas', icon: 'tasks' }],
+    ['content', { to: `${base}/content`, label: 'Contenido', icon: 'content' }],
   ];
+}
+
+function navGroup(
+  label: string,
+  workspaceId: string,
+  type: WorkspaceType,
+  features: readonly WorkspaceFeature[],
+): NavGroup {
   return {
-    label: 'Trabajo',
-    items: items
-      .filter(([feature]) => workspaceSupportsFeature(type, feature))
+    label,
+    items: featureItems(workspaceId)
+      .filter(([feature]) => features.includes(feature) && workspaceSupportsFeature(type, feature))
+      .sort(([a], [b]) => features.indexOf(a) - features.indexOf(b))
       .map(([, item]) => item),
   };
+}
+
+/** Personal: todo su trabajo junto (Proyectos, Tareas, Contenido y Plan de contenido). */
+function workNav(workspaceId: string, type: WorkspaceType): NavGroup {
+  return navGroup('Trabajo', workspaceId, type, ['projects', 'tasks', 'content', 'contentPlanner']);
 }
 
 /**
@@ -148,15 +159,26 @@ export function companyNav(companyId: string): NavItem[] {
 }
 
 /**
- * Navegación de un Pixel de empresa: Inicio · Trabajo (Campañas y Operations, bajo
- * /workspace/:workspaceId) · Marca (ADN, personaje y chat, todavía bajo /company/:companyId). Sin
- * workspaceId (aún cargando) se omite Trabajo.
+ * Navegación de un Pixel de empresa (Prompt 14.1, menos ruido): Inicio — donde se le pide algo a
+ * Pixel — · Trabajo (Campañas, Plan de contenido, Proyectos, Tareas, Contenido: el control
+ * detallado, bajo /workspace/:workspaceId) · Marca (ADN, personaje y chat, todavía bajo
+ * /company/:companyId). Sin workspaceId (aún cargando) se omite Trabajo.
  */
 export function enterpriseNav(companyId: string, workspaceId: string | null): NavGroup[] {
   const [summary, ...brand] = companyNav(companyId);
   return [
     { items: [{ ...summary!, label: 'Inicio' }] },
-    ...(workspaceId ? [workNav(workspaceId, 'enterprise')] : []),
+    ...(workspaceId
+      ? [
+          navGroup('Trabajo', workspaceId, 'enterprise', [
+            'campaigns',
+            'contentPlanner',
+            'projects',
+            'tasks',
+            'content',
+          ]),
+        ]
+      : []),
     { label: 'Marca', items: brand },
   ];
 }

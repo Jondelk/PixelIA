@@ -20,7 +20,7 @@ import {
 import { Types, type QueryFilter } from 'mongoose';
 import { AppError, notFound } from '../../lib/errors.js';
 import type { Logger } from '../../lib/logger.js';
-import { isDuplicateKeyError } from '../../lib/mongo.js';
+import { isDuplicateKeyError, isObjectIdString } from '../../lib/mongo.js';
 import { BrandDnaModel, toBrandDnaDTO } from '../brand-dna/brandDna.model.js';
 import { formatFromText, platformFromText } from '../content-plans/contentPlanning.grounding.js';
 import { createContentItem } from '../operations/content.service.js';
@@ -270,7 +270,7 @@ function strategyErrorToHttp(err: CampaignStrategyError): AppError {
 }
 
 /** Empresa y BrandDNA vigente del workspace; sin ellos no se genera nada (409). */
-async function loadBrandContext(workspace: WorkspaceDocument) {
+export async function loadBrandContext(workspace: WorkspaceDocument) {
   const company = await findWorkspaceCompany(workspace);
   if (!company) {
     throw new AppError(
@@ -586,6 +586,51 @@ export async function getCampaignStrategy(
   return {
     strategy: strategy ? toCampaignStrategyDTO(strategy) : null,
     versions: versions.map((doc) => doc.version),
+  };
+}
+
+/* ---------- Lectura para el Content Planner Enterprise ---------- */
+
+/**
+ * Campaña del MISMO workspace con su estrategia VIGENTE y sus piezas (las de esa versión y las ya
+ * convertidas de versiones anteriores), para que el planner la desarrolle. Un id ajeno, inexistente
+ * o malformado responde igual que en el resto de referencias del cuerpo (400 en `campaignId`), sin
+ * revelar si existe en otro workspace. Sin estrategia → 409 `campaign_strategy_missing`.
+ * Solo lee: no cambia la campaña, su estrategia ni el estado de sus piezas.
+ */
+export async function loadCampaignForPlanning(workspace: WorkspaceDocument, rawId: string) {
+  assertCampaigns(workspace);
+  const campaign = isObjectIdString(rawId)
+    ? await CampaignModel.findOne({ _id: new Types.ObjectId(rawId), workspaceId: workspace._id })
+    : null;
+  if (!campaign) throw fieldError('campaignId', CAMPAIGN_NOT_FOUND);
+  const version = campaign.currentStrategyVersion;
+  const strategy = version
+    ? await CampaignStrategyModel.findOne({
+        workspaceId: workspace._id,
+        campaignId: campaign._id,
+        version,
+      })
+    : null;
+  if (!strategy) {
+    throw new AppError(
+      409,
+      'CONFLICT',
+      'Esta campaña aún no tiene estrategia: créala antes de planificar su contenido',
+      { reason: 'campaign_strategy_missing' },
+    );
+  }
+  const deliverables = await CampaignDeliverableModel.find({
+    workspaceId: workspace._id,
+    campaignId: campaign._id,
+    $or: [{ strategyVersion: version }, { status: 'converted' }],
+  })
+    .sort({ strategyVersion: -1, position: 1, _id: 1 })
+    .limit(50);
+  return {
+    campaign,
+    strategy: toCampaignStrategyDTO(strategy),
+    deliverables: deliverables.map(toCampaignDeliverableDTO),
   };
 }
 

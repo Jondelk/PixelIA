@@ -107,12 +107,16 @@ versión de su estrategia (único `{workspaceId, campaignId, version}`; nunca se
 
 ## 1e. ContentPlan y ContentPlanItem (Content Planner) ✅
 
-`ContentPlan` (`content_plans`) es la estrategia de un periodo (máx. 30 días), con sus pilares, sus
-plataformas y su `personalDnaVersion`. `ContentPlanItem` (`content_plan_items`) es una **propuesta**
+`ContentPlan` (`content_plans`) es la estrategia de un periodo (máx. 30 días), con sus pilares y sus
+plataformas. Lleva `contextType` (`personal` · `enterprise`, el tipo de su workspace) y, según el
+contexto, `personalDnaVersion` o `brandDnaVersion` + `campaignId`/`campaignStrategyVersion`
+opcionales (van juntos; invariantes en contracts). `ContentPlanItem` (`content_plan_items`) es una **propuesta**
 justificada (`rationale`), no una pieza en producción: al aceptarla se crea un ContentItem
 (`source pixel`, `status idea`) y la propuesta queda `converted` con `convertedContentItemId`.
-Ambos son recursos del workspace (`tenantScoped` por `workspaceId`). Generar con Pixel solo está
-disponible en Personal. Detalle en [`CONTENT-PLANNER.md`](./CONTENT-PLANNER.md).
+En Enterprise, la propuesta añade `campaignId`, `campaignDeliverableId`, `strategicRole`,
+`funnelStage`, `strategicMessage` y `brandRationale`. Ambos son recursos del workspace
+(`tenantScoped` por `workspaceId`) y se generan con Pixel en los dos tipos. Detalle en
+[`CONTENT-PLANNER.md`](./CONTENT-PLANNER.md) y [`ENTERPRISE-CONTENT.md`](./ENTERPRISE-CONTENT.md).
 
 ## 1f. DailyBrief (Daily Director) ✅
 

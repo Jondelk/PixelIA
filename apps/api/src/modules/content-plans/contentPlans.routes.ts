@@ -28,7 +28,8 @@ import {
 /**
  * Módulo content-plans — /api/workspaces/:workspaceId/content-plans, detrás de
  * requireWorkspaceAccess (`req.workspace` es del usuario de la sesión). Los planes son recursos
- * del workspace; generar con Pixel exige un workspace personal (lo comprueba el servicio).
+ * del workspace (Personal o Enterprise); generar con Pixel usa la estrategia del tipo de workspace
+ * (la elige el servicio). `?campaignId=` lista los planes de una campaña del mismo workspace.
  */
 export function createContentPlansRouter(deps: ContentPlanDeps): Router {
   const router = Router({ mergeParams: true });
