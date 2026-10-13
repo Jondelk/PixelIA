@@ -124,6 +124,8 @@ export const ContentPlanGenerationSchema = z.object({
   requestedGoal: z.string().nullable(),
   /** Plan del que se regeneró (si aplica). */
   regeneratedFromPlanId: ObjectIdSchema.nullable(),
+  /** Prompt 16: memorias creativas aplicadas (claves). Lo decidido sobre esto no cuenta como señal independiente. */
+  memoryKeys: z.array(z.string()).default([]),
 });
 export type ContentPlanGeneration = z.infer<typeof ContentPlanGenerationSchema>;
 

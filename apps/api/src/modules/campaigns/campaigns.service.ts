@@ -50,6 +50,9 @@ import {
   type CampaignStrategyProposal,
 } from './campaignStrategy.engine.js';
 import { CampaignStrategyModel, toCampaignStrategyDTO } from './campaignStrategy.model.js';
+import { recordCreativeDecision } from '../creative-memory/memory.detector.js';
+import { memoryLines, resolveCreativeMemories } from '../creative-memory/memory.resolver.js';
+import { compact, formatSignal, platformSignal } from '../creative-memory/memory.signals.js';
 
 /*
  * Campaign Manager de un workspace Enterprise (docs/CAMPAIGNS.md). Todas las funciones reciben el
@@ -377,6 +380,21 @@ async function generationContext(workspace: WorkspaceDocument, excludeCampaign?:
   };
 }
 
+/**
+ * Lo que Pixel ha aprendido y aplica a una campaña (Prompt 16): comunicación, estrategia, visual,
+ * campañas, plataformas y formatos; con la campaña, también sus excepciones. Acotado por el resolver.
+ */
+async function campaignMemory(workspace: WorkspaceDocument, campaignId: Types.ObjectId | null) {
+  const resolved = await resolveCreativeMemories(workspace, {
+    dimensions: ['communication', 'strategy', 'visual', 'campaign', 'platform', 'format'],
+    campaignId,
+  });
+  return memoryLines(resolved).map((line, index) => ({
+    ...line,
+    normalizedKey: resolved.memories[index]!.normalizedKey,
+  }));
+}
+
 async function runEngine(
   deps: CampaignDeps,
   input: Parameters<CampaignStrategyEngine['generate']>[0],
@@ -407,6 +425,7 @@ async function persistStrategy(
       ...proposal.meta,
       discardedDeliverables: proposal.discardedDeliverables,
       discardedClaims: proposal.discardedClaims,
+      memoryKeys: proposal.memoryKeys ?? [],
     },
   });
   try {
@@ -466,7 +485,10 @@ export async function generateCampaign(
     startDate: toDate(input.startDate) ?? null,
     endDate: toDate(input.endDate) ?? null,
   });
-  const context = await generationContext(workspace);
+  const [context, memory] = await Promise.all([
+    generationContext(workspace),
+    campaignMemory(workspace, null),
+  ]);
   const proposal = await runEngine(deps, {
     workspaceId: workspace._id.toString(),
     company: { name: company.name },
@@ -474,6 +496,7 @@ export async function generateCampaign(
     brief,
     previousVersions: [],
     ...context,
+    creativeMemory: memory,
   });
 
   const { name, ...fields } = input;
@@ -541,6 +564,7 @@ export async function regenerateCampaignStrategy(
       keyMessage: version.keyMessage,
     })),
     ...context,
+    creativeMemory: await campaignMemory(workspace, campaign._id),
   });
 
   const version = (latest?.version ?? 0) + 1;
@@ -726,12 +750,60 @@ export function updateCampaignDeliverable(
   return updateUnconverted(workspace, campaignId, rawId, input);
 }
 
-export function rejectCampaignDeliverable(
+export async function rejectCampaignDeliverable(
   workspace: WorkspaceDocument,
   campaignId: unknown,
   rawId: unknown,
 ) {
-  return updateUnconverted(workspace, campaignId, rawId, { status: 'rejected' });
+  const result = await updateUnconverted(workspace, campaignId, rawId, { status: 'rejected' });
+  const campaign = await findCampaign(workspace, campaignId);
+  await recordDeliverableDecision(workspace, campaign, result.deliverable, false);
+  return result;
+}
+
+/**
+ * Creative Memory (Prompt 16): aceptar o rechazar una pieza de campaña es evidencia, nunca memoria
+ * por sí sola. Aceptar tal cual es una señal débil y, si la estrategia ya la eligió por una memoria,
+ * no cuenta como independiente (sin auto-refuerzo).
+ */
+async function recordDeliverableDecision(
+  workspace: WorkspaceDocument,
+  campaign: CampaignDocument,
+  deliverable: CampaignDeliverable,
+  accepted: boolean,
+) {
+  const format = deliverable.format ? formatFromText(deliverable.format) : null;
+  const platform = deliverable.platform ? platformFromText(deliverable.platform) : null;
+  // Best-effort: un fallo aquí nunca deshace la aceptación (ya ocurrió).
+  const strategy = campaign.currentStrategyVersion
+    ? await CampaignStrategyModel.findOne({
+        workspaceId: workspace._id,
+        campaignId: campaign._id,
+        version: campaign.currentStrategyVersion,
+      })
+        .select({ 'generation.memoryKeys': 1 })
+        .catch(() => null)
+    : null;
+  const keys = strategy?.generation?.memoryKeys ?? [];
+  await recordCreativeDecision(workspace, {
+    eventType: accepted ? 'campaign_deliverable_accepted' : 'campaign_deliverable_rejected',
+    resourceType: 'campaign_deliverable',
+    resourceId: deliverable.id,
+    campaignId: campaign._id,
+    signals: accepted
+      ? [...formatSignal(format, 'prefer', 'approve', 'low')]
+      : [
+          ...formatSignal(format, 'avoid', 'reject', 'medium'),
+          ...platformSignal(platform, 'avoid', 'reject', 'low'),
+        ],
+    before: compact('Pieza', deliverable.title),
+    sourceEventKey: `campaign-deliverable:${deliverable.id}:${accepted ? 'accept' : 'reject'}`,
+    description: `${accepted ? 'Aceptaste' : 'Rechazaste'} la pieza «${deliverable.title}» de «${campaign.name}»`,
+    metadata: {
+      source: 'campaign_manager',
+      influencedByMemory: accepted && Boolean(format && keys.includes(`format:${format}:prefer`)),
+    },
+  });
 }
 
 /** Tipo de proyecto para una pieza de producción (clasificación humana, editable después). */
@@ -835,12 +907,9 @@ export async function acceptCampaignDeliverable(
         },
         { source: 'pixel', id: resourceIdToCreate },
       );
-      return {
-        deliverable: toCampaignDeliverableDTO(claimed),
-        created: true,
-        contentItem,
-        project: null,
-      };
+      const dto = toCampaignDeliverableDTO(claimed);
+      await recordDeliverableDecision(workspace, campaign, dto, true);
+      return { deliverable: dto, created: true, contentItem, project: null };
     }
     const project = await createProject(
       workspace,
@@ -861,12 +930,9 @@ export async function acceptCampaignDeliverable(
       },
       { id: resourceIdToCreate },
     );
-    return {
-      deliverable: toCampaignDeliverableDTO(claimed),
-      created: true,
-      contentItem: null,
-      project,
-    };
+    const dto = toCampaignDeliverableDTO(claimed);
+    await recordDeliverableDecision(workspace, campaign, dto, true);
+    return { deliverable: dto, created: true, contentItem: null, project };
   } catch (err) {
     await CampaignDeliverableModel.updateOne(
       { _id: claimed._id, workspaceId: workspace._id, [field]: resourceIdToCreate },

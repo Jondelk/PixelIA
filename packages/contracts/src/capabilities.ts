@@ -10,6 +10,7 @@ import type { WorkspaceType } from './workspace.js';
  *   elige, una campaña). Daily Director: solo Personal por ahora.
  * - Campaign Manager: solo Enterprise (depende del BrandDNA).
  * - Brand Guardian (Prompt 15): solo Enterprise (revisa contra el BrandDNA; Personal no lo tiene).
+ * - Creative Memory (Prompt 16): ambos (cada memoria vive en su workspace; no habilita el Guardian).
  */
 
 export const WORKSPACE_FEATURES = [
@@ -20,6 +21,7 @@ export const WORKSPACE_FEATURES = [
   'dailyDirector',
   'campaigns',
   'brandGuardian',
+  'creativeMemory',
 ] as const;
 export type WorkspaceFeature = (typeof WORKSPACE_FEATURES)[number];
 
@@ -34,6 +36,7 @@ const CAPABILITIES: Record<WorkspaceType, WorkspaceCapabilities> = {
     dailyDirector: true,
     campaigns: false,
     brandGuardian: false,
+    creativeMemory: true,
   },
   enterprise: {
     projects: true,
@@ -43,6 +46,7 @@ const CAPABILITIES: Record<WorkspaceType, WorkspaceCapabilities> = {
     dailyDirector: false,
     campaigns: true,
     brandGuardian: true,
+    creativeMemory: true,
   },
 };
 

@@ -317,7 +317,7 @@ Ejemplo de criterio (marca ficticia, solo para ilustrar la diferencia):
 
 Palancas creativas de ${input.company.name} (puntos de partida; elige, combina o descarta según la petición):
 ${levers}
-${brief.avatar ? `\nNuestro personaje, ${brief.avatar.name}: ${brief.avatar.concept} Personalidad: ${brief.avatar.personality.join(', ')}. Úsalo si ayuda a la idea.\n` : ''}${memories.length ? `\nLo que ya decidimos juntos (memoria creativa; respétalo):\n${memories.map((memory) => `- ${memory}`).join('\n')}\n` : ''}${input.operations ? renderOperations(input.company.name, input.operations) : ''}
+${brief.avatar ? `\nNuestro personaje, ${brief.avatar.name}: ${brief.avatar.concept} Personalidad: ${brief.avatar.personality.join(', ')}. Úsalo si ayuda a la idea.\n` : ''}${memories.length ? `\nLo que Pixel ha aprendido de la marca y el equipo confirmó (memoria creativa: respétalo como preferencia; lo que se pida ahora manda; nunca es un hecho ni fundamenta claims). Puedes decir "como han indicado…" SOLO sobre esto:\n${memories.map((memory) => `- ${memory}`).join('\n')}\n` : ''}${input.operations ? renderOperations(input.company.name, input.operations) : ''}
 Contexto de marca (referencia para razonar; no lo cites literalmente):
 ${renderBrief(brief)}`;
 

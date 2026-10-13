@@ -195,10 +195,16 @@ export function composeDemoContentPlan(payload: PlanningPayload): GeneratedConte
 
   const items = sequence.map(({ source, angle }, index) => {
     const platform = request.allowedPlatforms[index % request.allowedPlatforms.length]!;
-    const preferred =
-      request.preferredFormats[index % Math.max(request.preferredFormats.length, 1)];
+    // Lo que Pixel ha aprendido (Prompt 16): primero los formatos que la memoria prefiere.
+    const formats = request.memoryPreferredFormats.length
+      ? request.memoryPreferredFormats
+      : request.preferredFormats;
+    const preferred = formats[index % Math.max(formats.length, 1)];
     const textual = platform === 'blog' || platform === 'newsletter';
-    const format = textual ? DEFAULT_FORMAT[platform] : (preferred ?? DEFAULT_FORMAT[platform]);
+    const fallback = request.avoidedFormats.includes(DEFAULT_FORMAT[platform])
+      ? (request.preferredFormats[0] ?? DEFAULT_FORMAT[platform])
+      : DEFAULT_FORMAT[platform];
+    const format = textual ? DEFAULT_FORMAT[platform] : (preferred ?? fallback);
     const pillar =
       source.kind === 'project'
         ? projectPillar

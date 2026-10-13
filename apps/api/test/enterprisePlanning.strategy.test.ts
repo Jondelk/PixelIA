@@ -85,6 +85,7 @@ function strategy(overrides: Partial<CampaignStrategy> = {}): CampaignStrategy {
       mode: 'demo',
       discardedDeliverables: 0,
       discardedClaims: 0,
+      memoryKeys: [],
     },
     createdAt: NOW,
     ...overrides,

@@ -19,6 +19,8 @@ export interface ReferenceIndex {
   brand: ReferenceEntry[];
   campaign: ReferenceEntry[];
   resource: ReferenceEntry[];
+  /** Prompt 16: lo que Pixel ha aprendido (evidencia creativa, nunca factual). */
+  memory: ReferenceEntry[];
   byRef: Map<string, ReferenceEntry>;
 }
 
@@ -146,12 +148,23 @@ export function buildReferenceIndex(
   dna: BrandDna,
   strategy: CampaignStrategy | null,
   texts: GuardianText[],
+  memories: { ref: string; statement: string; scopeLabel: string | null; scopeType: string }[] = [],
 ): ReferenceIndex {
   const brand = brandReferences(dna);
   const campaign = campaignReferences(strategy);
   const resource = texts.map((text) => ({ ref: text.ref, label: text.label, text: text.text }));
-  const byRef = new Map([...brand, ...campaign, ...resource].map((entry) => [entry.ref, entry]));
-  return { brand, campaign, resource, byRef };
+  const memory = memories.map((entry) => ({
+    ref: entry.ref,
+    label:
+      entry.scopeType === 'workspace' || !entry.scopeLabel
+        ? 'Lo que Pixel ha aprendido'
+        : `Lo que Pixel ha aprendido → solo en «${entry.scopeLabel}»`,
+    text: entry.statement,
+  }));
+  const byRef = new Map(
+    [...brand, ...campaign, ...resource, ...memory].map((entry) => [entry.ref, entry]),
+  );
+  return { brand, campaign, resource, memory, byRef };
 }
 
 /** Evidencia legible de una referencia ("ADN → Comunicación → tono: cálido"). */

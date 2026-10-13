@@ -66,6 +66,7 @@ const generationSchema = new Schema(
     frequencySource: { type: String, enum: ['request', 'personal_dna', 'default'], required: true },
     requestedGoal: { type: String, default: null },
     regeneratedFromPlanId: { type: Schema.Types.ObjectId, default: null },
+    memoryKeys: { type: [String], default: undefined },
   },
   { _id: false },
 );
@@ -168,6 +169,7 @@ export function toContentPlanDTO(
           frequencySource: generation.frequencySource,
           requestedGoal: generation.requestedGoal ?? null,
           regeneratedFromPlanId: generation.regeneratedFromPlanId?.toString() ?? null,
+          memoryKeys: generation.memoryKeys ?? [],
         }
       : null,
     itemCounts,

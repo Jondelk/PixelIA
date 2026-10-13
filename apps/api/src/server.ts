@@ -6,6 +6,7 @@ import { getDatabaseStatus, startDatabase, stopDatabase } from './db/connection.
 import { createLogger } from './lib/logger.js';
 import { upgradeAvatarProfileIndexes } from './modules/avatars/avatarProfile.indexes.js';
 import { migrateContentPlanContexts } from './modules/content-plans/contentPlan.migration.js';
+import { migrateLegacyCreativeMemories } from './modules/creative-memory/creativeMemory.migration.js';
 
 const env = loadEnv();
 const logger = createLogger({
@@ -26,6 +27,10 @@ startDatabase(env.MONGODB_URI, logger, {
     const plans = await migrateContentPlanContexts();
     if (plans.migrated || plans.orphaned)
       logger.info('ContentPlan: contextType asignado', { ...plans });
+    // Memorias anteriores al Prompt 16 → legacy (idempotente; fuera del retrieval, nunca se borran).
+    const memories = await migrateLegacyCreativeMemories();
+    if (memories.migrated)
+      logger.info('CreativeMemory: memorias anteriores marcadas legacy', { ...memories });
   },
 });
 

@@ -240,6 +240,7 @@ const strategy: CampaignStrategy = {
     mode: 'demo',
     discardedDeliverables: 0,
     discardedClaims: 0,
+    memoryKeys: [],
   },
   createdAt: new Date().toISOString(),
 };

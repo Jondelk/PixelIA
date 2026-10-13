@@ -16,6 +16,7 @@ import { PersonalOnly } from '../features/personal/PersonalOnly';
 import { ContentPlannerPage } from '../features/content-planner/ContentPlannerPage';
 import { GuardianPage } from '../features/guardian/GuardianPage';
 import { GuardianReportPage } from '../features/guardian/GuardianReportPage';
+import { MemoryPage } from '../features/creative-memory/MemoryPage';
 import { ContentPlanPage } from '../features/content-planner/ContentPlanPage';
 import { CampaignDetailPage } from '../features/campaigns/CampaignDetailPage';
 import { CampaignsPage } from '../features/campaigns/CampaignsPage';
@@ -221,6 +222,16 @@ export const router = createBrowserRouter([
               </FeatureOnly>
             ),
             handle: handle('Revisión del Guardian', 'Empresa'),
+          },
+          // Creative Memory: Personal y Enterprise (capacidad creativeMemory).
+          {
+            path: 'memory',
+            element: (
+              <FeatureOnly feature="creativeMemory">
+                <MemoryPage />
+              </FeatureOnly>
+            ),
+            handle: handle('Lo que Pixel ha aprendido', 'Pixel'),
           },
         ],
       },

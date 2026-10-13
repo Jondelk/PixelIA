@@ -109,6 +109,11 @@ export interface DailyAnalysis {
   refs: Map<string, RefTarget>;
   recentCompleted: string[];
   hasWork: boolean;
+  /**
+   * Prompt 16: SOLO memorias de forma de trabajar (nunca visuales ni de comunicación). La añade el
+   * servicio; `maxPriorities` limita las prioridades del día si la persona lo pidió.
+   */
+  workflowMemory?: { lines: { ref: string; statement: string }[]; maxPriorities: number | null };
 }
 
 const plural = (count: number, one: string, many: string) => (count === 1 ? one : many);

@@ -35,7 +35,14 @@ el usuario escribió y devuelves SOLO su intención y los datos que él mismo di
 - intent: una de availableIntents. create_campaign = lanzar, promocionar o hacer una campaña;
   plan_content = contenido o publicaciones para un periodo; create_content = guardar UNA pieza concreta;
   organize_project = crear u ordenar un proyecto; create_tasks = apuntar tareas; creative_advice =
-  opinión, ideas o qué publicar (no crea nada); work_status = cómo va el trabajo; unknown si no encaja.
+  opinión, ideas o qué publicar (no crea nada); work_status = cómo va el trabajo; manage_memory =
+  recordar, olvidar o mostrar lo que Pixel ha aprendido; unknown si no encaja.
+- manage_memory SOLO con una expresión claramente persistente ("de ahora en adelante", "siempre",
+  "nunca", "recuerda que", "no vuelvas a", "para esta marca", "solo en esta campaña podemos…") o
+  al pedir olvidar o ver lo aprendido. "Hoy no quiero Stories" o "esta vez…" NO es memoria: es la
+  solicitud actual (excludedFormats / formats). memoryAction: remember | forget | show; memoryText:
+  la preferencia en palabras del usuario; memoryScopeHint: campaign si dice "esta campaña" o "solo en
+  la campaña…", workspace si dice "en general", "para la marca", "siempre"…; si no lo dice, null.
 - entities: solo lo que está en el texto (producto, tema, periodo, plataformas, formatos, número de
   piezas, campaña o proyecto mencionados, tareas listadas). Nunca tono, colores, audiencia ni
   personalidad: Pixel ya los conoce por el ADN. Si algo no se dijo, null o lista vacía.

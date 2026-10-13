@@ -1,6 +1,9 @@
 import {
+  CONTENT_FORMAT_LABELS,
+  CONTENT_PLATFORM_LABELS,
   localDateIn,
   PixelCommandEntitiesSchema,
+  type CreativeMemoryDimension,
   pixelIntentAvailable,
   type AdjustPixelCommandInput,
   type ConfirmPixelCommandInput,
@@ -12,7 +15,13 @@ import {
   type PixelCommandStatus,
 } from '@pixel/contracts';
 import { Types } from 'mongoose';
-import type { AIProvider } from '../../ai/index.js';
+import { fold, type AIProvider } from '../../ai/index.js';
+import { recordCreativeDecision } from '../creative-memory/memory.detector.js';
+import {
+  placementDirectives,
+  resolveCreativeMemories,
+} from '../creative-memory/memory.resolver.js';
+import { formatSignal, platformSignal } from '../creative-memory/memory.signals.js';
 import { AppError, notFound } from '../../lib/errors.js';
 import { CampaignModel } from '../campaigns/campaign.model.js';
 import { workspaceTimezone } from '../daily-director/dailyTime.js';
@@ -33,6 +42,7 @@ import {
   type PixelCommandDocument,
   type PixelStepAttrs,
 } from './pixelCommand.model.js';
+import { planMemoryCommand, type MemoryOutcome } from './pixelCommand.memory.js';
 import { matchCampaigns, planCommand } from './pixelCommand.planner.js';
 import { creativeAdviceReply, unknownReply, workStatusReply } from './pixelCommand.replies.js';
 import { resolvePixelContext, type PixelKnownContext } from './pixelContext.resolver.js';
@@ -121,6 +131,28 @@ function fillFromAnswer(
       if (match) return { entities: next, campaignId: match.id };
       break;
     }
+    // Creative Memory: "¿solo para esta campaña o para TINTO en general?" y "¿para cuál campaña?".
+    case 'memoryScope': {
+      const folded = fold(text);
+      if (/\bcampan/.test(folded)) {
+        next.memoryScopeHint = 'campaign';
+        const [match] = matchCampaigns(context.campaigns, text, text);
+        if (match)
+          return { entities: PixelCommandEntitiesSchema.parse(next), campaignId: match.id };
+      } else if (
+        /\b(?:general|marca|todo|todas|siempre|habitual|global)\b/.test(folded) ||
+        folded.includes(fold(context.ownerName))
+      ) {
+        next.memoryScopeHint = 'workspace';
+      }
+      break;
+    }
+    case 'memoryCampaign': {
+      next.memoryScopeHint = 'campaign';
+      const [match] = matchCampaigns(context.campaigns, text, text);
+      if (match) return { entities: PixelCommandEntitiesSchema.parse(next), campaignId: match.id };
+      break;
+    }
   }
   return { entities: PixelCommandEntitiesSchema.parse(next) };
 }
@@ -185,16 +217,27 @@ async function interpretAndPlan(
   }
 
   const timezone = workspaceTimezone(workspace, deps.defaultTimezone);
-  const outcome = planCommand({
-    intent,
-    request: [state.previous?.request, message].filter(Boolean).join('\n'),
-    entities,
-    context,
-    today: localDateIn(new Date(), timezone),
-    tzOffset: state.tzOffset,
-    chosenCampaignId: campaignId,
-    noCampaign,
-  });
+  const request = [state.previous?.request, message].filter(Boolean).join('\n');
+  const outcome: MemoryOutcome =
+    intent === 'manage_memory'
+      ? await planMemoryCommand(workspace, {
+          entities,
+          request,
+          context,
+          chosenCampaignId: campaignId,
+          pendingField: state.pendingField,
+          message,
+        })
+      : planCommand({
+          intent,
+          request,
+          entities,
+          context,
+          today: localDateIn(new Date(), timezone),
+          tzOffset: state.tzOffset,
+          chosenCampaignId: campaignId,
+          noCampaign,
+        });
   const at = new Date();
   const base = {
     intent,
@@ -223,7 +266,8 @@ async function interpretAndPlan(
     };
   }
   if (outcome.kind === 'proposal') {
-    const reviewed = await reviewProposal(workspace, intent, outcome, state, message, deps);
+    const remembered = await withMemories(workspace, intent, entities, outcome);
+    const reviewed = await reviewProposal(workspace, intent, remembered, state, message, deps);
     return {
       ...base,
       guardian: reviewed.guardian,
@@ -251,11 +295,13 @@ async function interpretAndPlan(
     };
   }
   const reply =
-    intent === 'work_status'
-      ? await workStatusReply(workspace, entities, message, context, state.tzOffset)
-      : intent === 'creative_advice'
-        ? await creativeAdviceReply(workspace, message, deps)
-        : unknownReply(workspace.type);
+    outcome.kind === 'memory_reply'
+      ? outcome.reply
+      : intent === 'work_status'
+        ? await workStatusReply(workspace, entities, message, context, state.tzOffset)
+        : intent === 'creative_advice'
+          ? await creativeAdviceReply(workspace, message, deps)
+          : unknownReply(workspace.type);
   return {
     ...base,
     guardian: null,
@@ -364,6 +410,7 @@ export async function adjustPixelCommand(
   if (!updated) {
     throw conflict('La solicitud cambió mientras la ajustabas', 'pixel_command_changed');
   }
+  if (command.status === 'proposed') await recordAdjustment(workspace, command, updated);
   return toPixelCommandDTO(updated);
 }
 
@@ -458,6 +505,82 @@ export async function getPixelCommand(
   rawId: unknown,
 ): Promise<PixelCommand> {
   return toPixelCommandDTO(await findCommand(workspace, rawId));
+}
+
+/* ---------- Creative Memory ---------- */
+
+const MEMORY_DIMENSIONS: Partial<Record<PixelCommandIntent, CreativeMemoryDimension[]>> = {
+  create_campaign: ['communication', 'strategy', 'visual', 'campaign', 'platform', 'format'],
+  plan_content: ['format', 'platform', 'content', 'communication'],
+  create_content: ['format', 'platform', 'content', 'communication'],
+};
+
+/**
+ * La propuesta dice qué memorias tendrá en cuenta (las aplican después los motores) y, si la
+ * solicitud pide justo lo que la memoria evita, lo respeta: lo que pides ahora manda.
+ */
+async function withMemories(
+  workspace: WorkspaceDocument,
+  intent: PixelCommandIntent,
+  entities: PixelCommandEntities,
+  outcome: ProposalOutcome,
+): Promise<ProposalOutcome> {
+  const dimensions = MEMORY_DIMENSIONS[intent];
+  if (!dimensions) return outcome;
+  const resolved = await resolveCreativeMemories(workspace, {
+    dimensions,
+    campaignId: outcome.campaignId,
+  });
+  if (!resolved.memories.length) return outcome;
+  const { avoidFormats } = placementDirectives(resolved);
+  const requested = entities.formats.filter((format) => avoidFormats.includes(format));
+  const notes = [
+    `Tengo en cuenta lo que he aprendido: ${resolved.memories
+      .slice(0, 2)
+      .map((memory) => `«${memory.statement}»`)
+      .join(' y ')}`,
+    ...requested.map(
+      (format) =>
+        `Esta vez incluyo ${CONTENT_FORMAT_LABELS[format]} porque lo pediste, aunque normalmente se evita`,
+    ),
+  ];
+  return { ...outcome, understood: [...outcome.understood, ...notes] };
+}
+
+/**
+ * Un ajuste a una propuesta ("sin Stories") es evidencia de una decisión, nunca una memoria por sí
+ * solo: se registra (idempotente por revisión) y el detector decide si hay patrón.
+ */
+async function recordAdjustment(
+  workspace: WorkspaceDocument,
+  before: PixelCommandDocument,
+  after: PixelCommandDocument,
+): Promise<void> {
+  const previous = PixelCommandEntitiesSchema.parse(before.entities ?? {});
+  const next = PixelCommandEntitiesSchema.parse(after.entities ?? {});
+  const formats = next.excludedFormats.filter((f) => !previous.excludedFormats.includes(f));
+  const platforms = next.excludedPlatforms.filter((p) => !previous.excludedPlatforms.includes(p));
+  const signals = [
+    ...formats.flatMap((format) => formatSignal(format, 'avoid', 'avoid', 'medium')),
+    ...platforms.flatMap((platform) => platformSignal(platform, 'avoid', 'avoid', 'medium')),
+  ];
+  if (!signals.length) return;
+  const names = [
+    ...formats.map((format) => CONTENT_FORMAT_LABELS[format]),
+    ...platforms.map((platform) => CONTENT_PLATFORM_LABELS[platform]),
+  ];
+  await recordCreativeDecision(workspace, {
+    eventType: 'pixel_command_adjusted',
+    resourceType: 'pixel_command',
+    resourceId: after._id,
+    campaignId: after.campaignId ?? null,
+    signals,
+    before: [{ field: 'Propuesta', value: (before.plan?.summary ?? before.request).slice(0, 300) }],
+    after: [{ field: 'Ajuste', value: after.turns.at(-2)?.text.slice(0, 300) ?? '' }],
+    sourceEventKey: `pixel-command:${after._id.toString()}:adjustment:${after.plan?.revision ?? 0}`,
+    description: `Pediste quitar ${names.join(' y ')} de una propuesta de Pixel`,
+    metadata: { source: 'pixel_command', dimension: signals[0]!.dimension },
+  });
 }
 
 /* ---------- Brand Guardian preflight ---------- */

@@ -237,6 +237,70 @@ const CONTENT =
 const PROJECT =
   /\b(?:organiza|organizar|ordena|ordenar|estructura|estructurar|planifica|planificar|arma|armar|crea|crear|monta|montar)\b(?:\s+\w+){0,3}?\s+proyectos?\b/;
 
+/*
+ * Creative Memory (Prompt 16). Solo expresiones inequívocamente PERSISTENTES crean una propuesta de
+ * memoria; "hoy no quiero Stories" o "esta vez quiero Stories" afectan solo a la solicitud actual.
+ */
+const MEMORY_SHOW =
+  /\bque (?:has aprendido|sabes|recuerdas)\b|\blo que (?:has aprendido|recuerdas)\b|\bque tienes en cuenta\b|\bmuestrame (?:tu|la) memoria\b/;
+const MEMORY_FORGET =
+  /\bolvida(?:te)?\b|\bolvidalo\b|\bdeja de (?:recordar|tener en cuenta)\b|\bya no (?:recuerdes|tengas en cuenta)\b/;
+const MEMORY_REMEMBER =
+  /\brecuerda(?:lo)?\b(?! ?me\b)|\bten en cuenta que\b|\bde ahora en adelante\b|\bdesde ahora\b|\ba partir de ahora\b|\bno vuelvas a\b|\bno volvamos a\b|\bpara esta marca\b|\bhabitualmente\b/;
+/** "Solo en la campaña X podemos usar neón": una excepción con alcance. */
+const MEMORY_EXCEPTION =
+  /\bsolo (?:en|para) (?:esta|la|una|nuestra)? ?campanas?\b.{0,80}\b(?:podemos|se puede|se permite|se permiten|permit\w*|vale)\b|\b(?:podemos|se puede) usar\b.{0,60}\bsolo (?:en|para) (?:esta|la|una)? ?campanas?\b/;
+/** Débiles: solo si la frase no pide otra cosa ("prefiero carruseles educativos"). */
+const MEMORY_WEAK = /\b(?:siempre|nunca|prefiero|preferimos|normalmente prefiero)\b/;
+
+function memoryActionOf(
+  t: string,
+  other: PixelCommandIntent,
+): 'remember' | 'forget' | 'show' | null {
+  if (MEMORY_SHOW.test(t)) return 'show';
+  if (MEMORY_FORGET.test(t)) return 'forget';
+  if (MEMORY_REMEMBER.test(t) || MEMORY_EXCEPTION.test(t)) return 'remember';
+  if (other === 'unknown' && MEMORY_WEAK.test(t)) return 'remember';
+  return null;
+}
+
+function memoryScopeHintOf(t: string): 'workspace' | 'campaign' | null {
+  if (/\b(?:esta|la|una|nuestra) campanas?\b|\bsolo (?:en|para)\b.{0,40}\bcampanas?\b/.test(t)) {
+    return 'campaign';
+  }
+  if (
+    /\bpara (?:esta marca|la marca|todo|todas)\b|\ben general\b|\bde ahora en adelante\b|\bsiempre\b|\bnunca\b|\bnormalmente\b|\bhabitualmente\b|\bdesde ahora\b|\ba partir de ahora\b|\bno vuelvas a\b|\bno volvamos a\b/.test(
+      t,
+    )
+  ) {
+    return 'workspace';
+  }
+  return null;
+}
+
+/** "Olvida lo de evitar Stories" → "evitar Stories"; "Recuerda que prefiero X" → la frase entera. */
+function memoryTextOf(original: string, action: 'remember' | 'forget' | 'show'): string | null {
+  if (action === 'show') return null;
+  if (action === 'forget') {
+    const t = fold(original);
+    const match =
+      /\b(?:olvida(?:te)?|olvidalo|deja de (?:recordar|tener en cuenta)|ya no (?:recuerdes|tengas en cuenta))\b\s*(?:(?:de|lo de|lo que|que|eso de|la preferencia de)\s+)*/.exec(
+        t,
+      );
+    const rest = match ? original.slice(match.index + match[0].length) : original;
+    return (
+      rest
+        .replace(/[.!?¿¡]+$/, '')
+        .trim()
+        .slice(0, 500) || original.trim().slice(0, 500)
+    );
+  }
+  return original
+    .trim()
+    .replace(/^pixel[,:]?\s+/i, '')
+    .slice(0, 500);
+}
+
 function intentOf(t: string): PixelCommandIntent {
   if (STATUS.test(t)) return 'work_status';
   if (ADVICE.test(t)) return 'creative_advice';
@@ -256,6 +320,22 @@ export function interpretPixelRequest(
 ): GeneratedPixelInterpretation {
   const t = fold(request);
   let intent = intentOf(t);
+  const memoryAction = availableIntents.includes('manage_memory')
+    ? memoryActionOf(t, intent)
+    : null;
+  if (memoryAction) {
+    return {
+      intent: 'manage_memory',
+      confidence: 0.8,
+      entities: PixelCommandEntitiesSchema.parse({
+        memoryAction,
+        memoryText: memoryTextOf(request, memoryAction),
+        memoryScopeHint: memoryAction === 'remember' ? memoryScopeHintOf(t) : null,
+        campaignHint: campaignHintOf(request, t),
+      }),
+      missingRequiredInformation: [],
+    };
+  }
   // Sin campañas en este tipo de Pixel: lo más cercano es planear contenido.
   if (intent === 'create_campaign' && !availableIntents.includes('create_campaign')) {
     intent = 'plan_content';

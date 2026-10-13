@@ -15,6 +15,7 @@ import {
   campaignPrompt,
   type AIProvider,
   type CampaignPayload,
+  fold,
 } from '../../ai/index.js';
 import type { Logger } from '../../lib/logger.js';
 import { isNearDuplicate } from '../content-plans/contentPlanning.grounding.js';
@@ -80,6 +81,8 @@ export interface CampaignStrategyInput {
   previousVersions: { bigIdea: string; concept: string; keyMessage: string }[];
   activeProjects: { name: string; type: string; status: string }[];
   recentContent: { title: string; platform: string | null; format: string | null }[];
+  /** Prompt 16: memorias activas relevantes (CreativeMemoryResolver), ya ordenadas y acotadas. */
+  creativeMemory?: { ref: string; statement: string; normalizedKey: string }[];
 }
 
 export interface ProposedDeliverable {
@@ -116,6 +119,8 @@ export interface CampaignStrategyProposal {
   deliverables: ProposedDeliverable[];
   discardedDeliverables: number;
   discardedClaims: number;
+  /** Prompt 16: memorias que cambiaron algo de la propuesta. */
+  memoryKeys?: string[];
   meta: { provider: string; model: string; mode: 'ai' | 'demo' };
 }
 
@@ -211,6 +216,11 @@ export function buildCampaignPayload(input: CampaignStrategyInput): CampaignPayl
     previousVersions: input.previousVersions.slice(0, CAMPAIGN_CONTEXT_LIMITS.previousVersions),
     activeProjects: input.activeProjects.slice(0, CAMPAIGN_CONTEXT_LIMITS.activeProjects),
     recentContent: input.recentContent.slice(0, CAMPAIGN_CONTEXT_LIMITS.recentContent),
+    creativeMemory: (input.creativeMemory ?? []).slice(0, 16).map((memory) => ({
+      ref: memory.ref,
+      statement: memory.statement,
+      key: memory.normalizedKey,
+    })),
   };
 }
 
@@ -233,6 +243,9 @@ Criterio:
 - No repitas el concepto, el nombre ni el mensaje de recentCampaigns ni de previousVersions, ni piezas
   de recentContent.
 - Incluye brief.mandatoryElements y respeta brief.constraints.
+- creativeMemory: preferencias y excepciones que el usuario confirmó (lo que Pixel ha aprendido).
+  Úsalas como punto de partida (p. ej. sin CTA de urgencia, sin un formato que evita); si el brief
+  pide otra cosa, manda el brief. Nunca son hechos: no fundamentan cifras, claims ni promociones.
 
 Honestidad (obligatorio):
 - Habla en propuesta («Podríamos construir el mensaje alrededor del origen»), nunca afirmes lo que no
@@ -491,7 +504,7 @@ export function createCampaignStrategyEngine(deps: {
       if (!parsed.success) {
         throw new CampaignStrategyError('failed', 'La estrategia generada no cumple el esquema');
       }
-      const grounded = groundCampaignStrategy(parsed.data, payload);
+      const grounded = applyCampaignMemories(groundCampaignStrategy(parsed.data, payload), payload);
       if (grounded.discardedDeliverables > 0 || grounded.discardedClaims > 0) {
         deps.logger.info('Campaign Manager: elementos descartados por la validación', {
           workspaceId: input.workspaceId,
@@ -506,3 +519,98 @@ export function createCampaignStrategyEngine(deps: {
     },
   };
 }
+
+/* ---------- 3. Lo que Pixel ha aprendido (Prompt 16) ---------- */
+
+const URGENT_CTA =
+  /\b(?:compra(?:lo)? ya|ya mismo|ahora o nunca|ultimas unidades|no te lo pierdas|solo hoy|corre|apurate|date prisa|por tiempo limitado)\b/;
+const SHOUTED_CTA = /!{2,}|(?<!\p{L})[A-ZÁÉÍÓÚÑ]{4,}(?!\p{L})/u;
+
+/**
+ * Aplica las memorias de forma determinista DESPUÉS de la validación de fundamento, con proveedor real
+ * o demo: el brief siempre manda (si lo pide, se respeta). Así Pixel no vuelve a proponer lo que el
+ * usuario ya corrigió para que el Guardian tenga que señalarlo otra vez. Nunca añade hechos.
+ */
+export function applyCampaignMemories(
+  proposal: Omit<CampaignStrategyProposal, 'meta'>,
+  payload: CampaignPayload,
+): Omit<CampaignStrategyProposal, 'meta'> & { memoryKeys: string[] } {
+  const keys = new Set(payload.creativeMemory.map((memory) => memory.key));
+  const applied = new Set<string>();
+  const brief = fold(
+    [
+      payload.brief.objective,
+      payload.brief.description ?? '',
+      ...payload.brief.constraints,
+      ...payload.brief.mandatoryElements,
+      ...payload.brief.channels,
+    ].join(' '),
+  );
+  const strategy = { ...proposal.strategy };
+  if (keys.has('communication:urgency:avoid')) {
+    applied.add('communication:urgency:avoid');
+    const cta = strategy.callToAction;
+    const urgent = (text: string) => URGENT_CTA.test(fold(text)) || SHOUTED_CTA.test(text);
+    if (cta && urgent(cta) && !urgent(payload.brief.objective)) {
+      strategy.callToAction = 'Descúbrelo';
+    }
+  }
+  const avoided = (kind: 'format' | 'platform') =>
+    [...keys]
+      .map((key) => key.split(':'))
+      .filter(([dimension, , polarity]) => dimension === kind && polarity === 'avoid')
+      .map(([, subject]) => subject!);
+  const avoidFormats = avoided('format').filter((format) => !brief.includes(formatWord(format)));
+  const avoidPlatforms = avoided('platform').filter((platform) => !brief.includes(platform));
+  const kept = proposal.deliverables.filter((deliverable) => {
+    const format = fold(deliverable.format ?? '');
+    const platform = fold(deliverable.platform ?? '');
+    const hitFormat = avoidFormats.find((f) => format.includes(formatWord(f)));
+    const hitPlatform = avoidPlatforms.find((p) => platform.includes(p));
+    if (hitFormat) applied.add(`format:${hitFormat}:avoid`);
+    if (hitPlatform) applied.add(`platform:${hitPlatform}:avoid`);
+    return !hitFormat && !hitPlatform;
+  });
+  if (avoidPlatforms.length) {
+    strategy.channels = strategy.channels.filter(
+      (channel) => !avoidPlatforms.some((p) => fold(channel).includes(p)),
+    );
+    if (!strategy.channels.length) strategy.channels = proposal.strategy.channels;
+  }
+  const visualAvoid = [...keys]
+    .map((key) => key.split(':'))
+    .filter(([dimension, , polarity]) => dimension === 'visual' && polarity === 'avoid');
+  if (visualAvoid.length) {
+    const labels = payload.creativeMemory
+      .filter((memory) => memory.key.startsWith('visual:') && memory.key.endsWith(':avoid'))
+      .map((memory) => memory.statement);
+    strategy.visualDirection = {
+      ...strategy.visualDirection,
+      avoid: [...new Set([...strategy.visualDirection.avoid, ...labels])].slice(0, 12),
+    };
+    for (const memory of payload.creativeMemory) {
+      if (memory.key.startsWith('visual:') && memory.key.endsWith(':avoid'))
+        applied.add(memory.key);
+    }
+  }
+  return {
+    ...proposal,
+    strategy,
+    // Si la memoria dejaría la campaña sin piezas, se conservan: nunca se rompe la generación.
+    deliverables: kept.length ? kept : proposal.deliverables,
+    memoryKeys: [...applied],
+  };
+}
+
+const FORMAT_WORDS: Record<string, string> = {
+  story: 'stor',
+  reel: 'reel',
+  carousel: 'carrusel',
+  photo: 'foto',
+  short_video: 'video',
+  long_video: 'video',
+  article: 'articulo',
+  podcast: 'podcast',
+  newsletter: 'newsletter',
+};
+const formatWord = (format: string) => FORMAT_WORDS[format] ?? format;

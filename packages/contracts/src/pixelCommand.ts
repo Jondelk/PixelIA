@@ -23,6 +23,8 @@ export const PIXEL_COMMAND_INTENTS = [
   'create_tasks',
   'creative_advice',
   'work_status',
+  /** Prompt 16: recordar, olvidar o mostrar lo que Pixel ha aprendido (Creative Memory). */
+  'manage_memory',
   'unknown',
 ] as const;
 export const PixelCommandIntentSchema = z.enum(PIXEL_COMMAND_INTENTS);
@@ -37,6 +39,7 @@ const INTENT_FEATURES: Record<PixelCommandIntent, WorkspaceFeature | null> = {
   create_tasks: 'tasks',
   creative_advice: null,
   work_status: null,
+  manage_memory: 'creativeMemory',
   unknown: null,
 };
 
@@ -87,6 +90,12 @@ export const PixelCommandEntitiesSchema = z.object({
   taskTitles: z.array(z.string().trim().min(1).max(200)).max(20).default([]),
   /** La solicitud de campaña incluye también contenido (publicar, Reels, "moverla por Instagram"…). */
   includeContent: z.boolean().default(false),
+  /** manage_memory (Prompt 16): qué hacer con la memoria creativa. */
+  memoryAction: z.enum(['remember', 'forget', 'show']).nullable().default(null),
+  /** Lo que hay que recordar u olvidar, en palabras del usuario. */
+  memoryText: entityText(500),
+  /** Alcance que el usuario dijo: "para TINTO en general" o "solo para esta campaña". */
+  memoryScopeHint: z.enum(['workspace', 'campaign']).nullable().default(null),
 });
 export type PixelCommandEntities = z.infer<typeof PixelCommandEntitiesSchema>;
 
@@ -118,6 +127,8 @@ export const PixelActionStepTypeSchema = z.enum([
   'create_project',
   'create_tasks',
   'create_content_item',
+  'remember_memory',
+  'forget_memory',
 ]);
 export type PixelActionStepType = z.infer<typeof PixelActionStepTypeSchema>;
 
@@ -127,6 +138,7 @@ export const PixelResourceKindSchema = z.enum([
   'project',
   'task',
   'content_item',
+  'creative_memory',
 ]);
 export type PixelResourceKind = z.infer<typeof PixelResourceKindSchema>;
 
@@ -252,4 +264,5 @@ export const PIXEL_RESOURCE_LABELS: Record<PixelResourceKind, string> = {
   project: 'Proyecto',
   task: 'Tarea',
   content_item: 'Contenido',
+  creative_memory: 'Lo que Pixel ha aprendido',
 };

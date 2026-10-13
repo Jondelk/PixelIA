@@ -79,6 +79,7 @@ export function strategyFixture(overrides: Partial<CampaignStrategy> = {}): Camp
       mode: 'demo',
       discardedDeliverables: 0,
       discardedClaims: 0,
+      memoryKeys: [],
     },
     createdAt: NOW,
     ...overrides,

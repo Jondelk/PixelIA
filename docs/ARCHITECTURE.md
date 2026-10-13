@@ -193,7 +193,7 @@ apps/api/src/ai/
 ### 5.1 PixelContextBuilder (por estrategia)
 
 `apps/api/src/modules/conversations/context/`: `resolveContextBuilder(workspace.type)` elige
-`EnterpriseContextBuilder` (carga Company → BrandDNA → AvatarProfile → CreativeMemory del workspace) o
+`EnterpriseContextBuilder` (carga Company → BrandDNA → AvatarProfile → CreativeMemory activa y relevante vía CreativeMemoryResolver) o
 `PersonalContextBuilder` (carga PersonalProfile → PersonalDNA → AvatarProfile → CreativeMemory del
 workspace personal; compone con `buildPersonalPixelContext` el prompt del Director Creativo Personal,
 en segunda persona, con su brief en `<personal_context>`). Devuelven `ready` con el contexto, o
@@ -295,6 +295,7 @@ Prefijo `/api`. JSON. Errores con forma `ApiError { code, message, details? }`.
 | POST | `/workspaces/:workspaceId/content-plans/generate` | Content Planner: Pixel propone estrategia + propuestas (Personal: PersonalDNA; Enterprise: BrandDNA + `campaignId` opcional; sin ADN → 409) ✅ |
 | POST | `/workspaces/:workspaceId/pixel/commands` (+ `/:id/adjust`, `/:id/confirm`, `/:id/cancel`) | PixelCommand: solicitud natural → propuesta → una confirmación → servicios existentes (`docs/PIXEL-COMMAND.md`) ✅ |
 | POST | `/workspaces/:workspaceId/guardian/evaluate` (+ `GET /reports`, `/reports/:id`, `/override`, `/correct`, `/apply`) | Brand Guardian: revisión explicable contra el BrandDNA, solo Enterprise (`docs/BRAND-GUARDIAN.md`) ✅ |
+| GET, POST | `/workspaces/:workspaceId/creative-memories` (`GET /:id`, `POST /remember`, `/:id/confirm`, `/:id/dismiss`, `/:id/forget`, `/:id/replace`) | Creative Memory: lo que Pixel ha aprendido, Personal y Enterprise (`docs/CREATIVE-MEMORY.md`) ✅ |
 | CRUD | `/workspaces/:workspaceId/content-plans[/:planId]` | Planes de contenido (DELETE archiva) ✅ |
 | PATCH/POST | `/workspaces/:workspaceId/content-plans/:planId/items/:itemId[/accept · /reject]` | Editar, aceptar (→ ContentItem, idempotente) o rechazar una propuesta ✅ |
 | GET | `/workspaces/:workspaceId/daily-brief` | Daily Director: dirección vigente de hoy + `stale` (404 `daily_brief_not_generated`) ✅ |
@@ -452,3 +453,7 @@ Los tests de integración de la API arrancan un MongoDB efímero una vez por eje
 | 36 | Un solo GuardianEngine con evaluadores modulares (`supports`/`evaluate`): deterministas primero, una sola llamada semántica agrupada, referencias controladas validadas; la IA nunca bloquea ni borra hallazgos de reglas | Trazabilidad y coste contenido; ampliable a evaluadores visuales o de memoria sin rehacer el motor |
 | 37 | Score calculado en el backend con penalizaciones fijas sobre dimensiones aplicables; severidad ≠ bloqueo; BLOCK solo para integridad factual o restricción explícita; override registrado solo en lo creativo | Un número explicable y reproducible, nunca una "verdad científica"; el humano decide lo creativo |
 | 38 | Corrección automática de una sola pasada + una re-evaluación, que solo quita o suaviza y se descarta si añade afirmaciones; aplicar al recurso es otra acción explícita con su servicio | Pixel se corrige sin inventar ni sobrescribir nada a escondidas |
+| 39 | **Creative Memory is decision memory, not conversation storage.** Pixel remembers high-signal creative preferences, exceptions and recurring decision patterns. A single isolated action must not silently redefine the user's or brand's identity. | Dos capas: CreativeDecisionEvent (evidencia inmutable e idempotente) y CreativeMemory (candidata → confirmada / explícita); umbral 3 señales en 2 recursos; nunca hechos |
+| 40 | Reutilizar y extender el modelo CreativeMemory existente (sin segundo sistema); `status` sin default y migración a `legacy` sin inventar clasificaciones | Compatibilidad con documentos guardados y ningún dato reinterpretado |
+| 41 | `recordCreativeDecision` explícito desde los servicios, best-effort y después de la acción principal; runtime configurado una vez en `createApp` (logger + sintetizador) | Sin change streams ni middleware que adivine intenciones; la decisión del usuario nunca se deshace por la memoria |
+| 42 | CreativeMemoryResolver: una consulta, especificidad (plan > proyecto/campaña > workspace), excepciones que suspenden sin borrar, 8 + 8 memorias `MEMORY_n`; la solicitud actual siempre manda; las memorias nunca fundamentan claims | Retrieval explicable y acotado, sin base vectorial |

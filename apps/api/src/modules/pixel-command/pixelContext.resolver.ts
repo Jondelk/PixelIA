@@ -44,7 +44,12 @@ export interface PixelKnownContext {
 
 export const PIXEL_CONTEXT_LIMITS = { campaigns: 20, projects: 30 } as const;
 
-const NEEDS_CAMPAIGNS: PixelCommandIntent[] = ['plan_content', 'work_status', 'create_content'];
+const NEEDS_CAMPAIGNS: PixelCommandIntent[] = [
+  'plan_content',
+  'work_status',
+  'create_content',
+  'manage_memory',
+];
 const NEEDS_PROJECTS: PixelCommandIntent[] = ['organize_project', 'create_tasks'];
 
 export async function resolvePixelContext(

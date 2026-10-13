@@ -113,8 +113,14 @@ export const EnterprisePlanningPayloadSchema = z.object({
     preferredFormats: z.array(ContentFormatSchema),
     /** Prompt 14.1: si no está vacío, SOLO estos formatos. */
     requiredFormats: z.array(ContentFormatSchema).optional(),
+    /** Prompt 16: formatos que la memoria evita (la solicitud no los pidió). */
+    avoidedFormats: z.array(ContentFormatSchema).default([]),
+    /** Prompt 16: formatos que la memoria prefiere. */
+    memoryPreferredFormats: z.array(ContentFormatSchema).default([]),
     goal: z.string().nullable(),
   }),
+  /** Prompt 16: lo que Pixel ha aprendido (MEMORY_n). Preferencia por defecto, nunca un hecho. */
+  creativeMemory: z.array(z.object({ ref: z.string(), statement: z.string() })).default([]),
 });
 export type EnterprisePlanningPayload = z.infer<typeof EnterprisePlanningPayloadSchema>;
 

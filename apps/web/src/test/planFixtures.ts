@@ -38,6 +38,7 @@ export function planFixture(overrides: Partial<ContentPlan> = {}): ContentPlan {
       frequencySource: 'request',
       requestedGoal: 'posicionamiento',
       regeneratedFromPlanId: null,
+      memoryKeys: [],
     },
     itemCounts: { proposed: 1, accepted: 0, rejected: 1, converted: 1 },
     createdAt: NOW,

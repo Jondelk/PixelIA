@@ -17,6 +17,7 @@ describe('PixelCommand: intenciones por capacidades', () => {
       'create_tasks',
       'creative_advice',
       'work_status',
+      'manage_memory',
       'unknown',
     ]);
   });

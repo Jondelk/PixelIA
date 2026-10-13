@@ -18,6 +18,11 @@ import { createContentItem } from '../operations/content.service.js';
 import { createProject } from '../operations/projects.service.js';
 import { createTask } from '../operations/tasks.service.js';
 import type { WorkspaceDocument } from '../workspaces/workspace.model.js';
+import {
+  forgetCreativeMemory,
+  rememberCreativeMemory,
+  resolveMemoryScope,
+} from '../creative-memory/creativeMemory.service.js';
 import type { PixelCommandDocument, PixelStepAttrs } from './pixelCommand.model.js';
 
 /*
@@ -46,6 +51,7 @@ async function runStep(
   step: PixelStepAttrs,
   outputs: StepOutputs,
   deps: PixelExecutorDeps,
+  commandId: string,
 ): Promise<PixelCreatedResource[]> {
   switch (step.type) {
     case 'generate_campaign': {
@@ -98,6 +104,25 @@ async function runStep(
       });
       return [{ kind: 'content_item', id: item.id, label: item.title }];
     }
+    // Creative Memory (Prompt 16): la confirmación de PixelCommand ES la confirmación del usuario.
+    case 'remember_memory': {
+      const scopeType = step.params.scopeType === 'campaign' ? 'campaign' : 'workspace';
+      const scope = await resolveMemoryScope(
+        workspace,
+        scopeType === 'campaign'
+          ? { type: 'campaign', id: String(step.params.scopeId) }
+          : { type: 'workspace' },
+      );
+      const { memory } = await rememberCreativeMemory(workspace, String(step.params.text), scope, {
+        sourceEventKey: `pixel-command:${commandId}:remember`,
+        source: 'pixel_command',
+      });
+      return [{ kind: 'creative_memory', id: memory.id, label: memory.statement }];
+    }
+    case 'forget_memory': {
+      const memory = await forgetCreativeMemory(workspace, step.params.memoryId);
+      return [{ kind: 'creative_memory', id: memory.id, label: memory.statement }];
+    }
   }
 }
 
@@ -133,7 +158,7 @@ export async function executeCommand(
   for (const step of steps) {
     if (step.status === 'done') continue;
     try {
-      step.resources = await runStep(workspace, step, outputs, deps);
+      step.resources = await runStep(workspace, step, outputs, deps, command._id.toString());
       step.status = 'done';
       step.error = null;
       outputs.set(step.id, step.resources);
@@ -153,6 +178,18 @@ export async function executeCommand(
 
   const created = steps.flatMap((step) => step.resources);
   const names = created.map((resource) => `«${resource.label}»`);
+  if (!failure && steps.every((step) => step.type === 'remember_memory')) {
+    return {
+      status: 'completed',
+      reply: `Listo. Lo recordaré: ${names.join(', ')}. Puedes verlo u olvidarlo en «Lo que Pixel ha aprendido».`,
+    };
+  }
+  if (!failure && steps.every((step) => step.type === 'forget_memory')) {
+    return {
+      status: 'completed',
+      reply: `Listo. Ya no tendré en cuenta ${names.join(', ')}.`,
+    };
+  }
   if (!failure) {
     return {
       status: 'completed',

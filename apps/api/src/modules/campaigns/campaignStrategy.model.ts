@@ -41,6 +41,7 @@ export interface CampaignStrategyAttrs {
     mode: 'ai' | 'demo';
     discardedDeliverables: number;
     discardedClaims: number;
+    memoryKeys?: string[];
   };
   createdAt: Date;
   updatedAt: Date;
@@ -89,6 +90,7 @@ const campaignStrategySchema = new Schema<CampaignStrategyAttrs>(
       mode: { type: String, enum: ['ai', 'demo'], required: true },
       discardedDeliverables: { type: Number, default: 0 },
       discardedClaims: { type: Number, default: 0 },
+      memoryKeys: { type: [String], default: undefined },
     },
   },
   { timestamps: true },
@@ -146,6 +148,7 @@ export function toCampaignStrategyDTO(doc: CampaignStrategyDocument): CampaignSt
       mode: doc.generation.mode,
       discardedDeliverables: doc.generation.discardedDeliverables ?? 0,
       discardedClaims: doc.generation.discardedClaims ?? 0,
+      memoryKeys: doc.generation.memoryKeys ?? [],
     },
     createdAt: doc.createdAt.toISOString(),
   });

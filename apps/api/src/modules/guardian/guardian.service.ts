@@ -39,6 +39,15 @@ import {
   type GuardianReportAttrs,
   type GuardianReportDocument,
 } from './guardianReport.model.js';
+import { recordCreativeDecision } from '../creative-memory/memory.detector.js';
+import { resolveCreativeMemories } from '../creative-memory/memory.resolver.js';
+import { GUARDIAN_MEMORY_DIMENSIONS } from './guardian.memory.js';
+import {
+  COPY_EDIT_KEY,
+  dedupe,
+  guardianOverrideSignals,
+  textEditSignals,
+} from '../creative-memory/memory.signals.js';
 
 /*
  * Brand Guardian (docs/BRAND-GUARDIAN.md): read → evaluate → report. Nunca modifica el recurso al
@@ -73,7 +82,13 @@ async function brandInput(
   loaded: Pick<LoadedResource, 'snapshot' | 'resourceId' | 'campaign' | 'strategy'>,
   userSupplied: string[],
 ): Promise<GuardianEvaluationInput> {
-  const { company, brandDna } = await loadBrandContext(workspace);
+  const [{ company, brandDna }, memory] = await Promise.all([
+    loadBrandContext(workspace),
+    resolveCreativeMemories(workspace, {
+      dimensions: [...GUARDIAN_MEMORY_DIMENSIONS],
+      campaignId: loaded.campaign?.id ?? null,
+    }),
+  ]);
   return {
     workspaceId: workspace._id.toString(),
     mode,
@@ -84,6 +99,7 @@ async function brandInput(
     campaign: loaded.campaign,
     campaignStrategy: loaded.strategy,
     resource: loaded.snapshot,
+    memories: memory.memories,
     userSupplied,
   };
 }
@@ -270,7 +286,63 @@ export async function overrideGuardianFinding(
     { new: true },
   );
   const recomputed = await recomputeStatus(updated!);
+  await recordOverride(workspace, recomputed, [finding], `finding:${findingId}`);
   return toGuardianReportDTO(recomputed, await isStale(workspace, recomputed));
+}
+
+/* ---------- Creative Memory (Prompt 16): decisiones, nunca memorias directas ---------- */
+
+/**
+ * "Continuar de todas formas" sobre hallazgos creativos: una decisión con señal media. Un override
+ * aislado nunca crea una memoria; los factuales no producen ninguna señal.
+ */
+async function recordOverride(
+  workspace: WorkspaceDocument,
+  report: GuardianReportDocument,
+  findings: { code: string; title: string; message: string; evidence: string[] }[],
+  key: string,
+) {
+  const signals = dedupe(findings.flatMap((finding) => guardianOverrideSignals(finding)));
+  await recordCreativeDecision(workspace, {
+    eventType: 'guardian_override',
+    resourceType: 'guardian_report',
+    resourceId: report.resourceId ?? report._id,
+    campaignId: report.campaignId,
+    signals,
+    before: findings.slice(0, 3).map((finding) => ({ field: 'Hallazgo', value: finding.title })),
+    sourceEventKey: `guardian-report:${report._id.toString()}:override:${key}`,
+    description: `Decidiste continuar pese a «${findings[0]?.title ?? 'un aviso'}» en «${report.resourceLabel}»`,
+    metadata: { source: 'brand_guardian', dimension: signals[0]?.dimension ?? null },
+  });
+}
+
+/** Corrección aplicada: el antes/después de cada texto (solo señales del léxico, nunca factuales). */
+async function recordCorrectionApplied(
+  workspace: WorkspaceDocument,
+  report: GuardianReportDocument,
+) {
+  const fields = report.correction?.fields ?? [];
+  const signals = dedupe(
+    fields
+      .flatMap((field) => textEditSignals(field.original, field.corrected, 'high'))
+      .filter((signal) => signal.normalizedKey !== COPY_EDIT_KEY),
+  );
+  await recordCreativeDecision(workspace, {
+    eventType: 'guardian_correction_applied',
+    resourceType: 'guardian_report',
+    resourceId: report.resourceId ?? report._id,
+    campaignId: report.campaignId,
+    signals,
+    before: fields
+      .slice(0, 3)
+      .map((field) => ({ field: field.label.slice(0, 60), value: field.original.slice(0, 300) })),
+    after: fields
+      .slice(0, 3)
+      .map((field) => ({ field: field.label.slice(0, 60), value: field.corrected.slice(0, 300) })),
+    sourceEventKey: `guardian-report:${report._id.toString()}:apply`,
+    description: `Aplicaste la corrección del Guardian en «${report.resourceLabel}»`,
+    metadata: { source: 'brand_guardian', dimension: signals[0]?.dimension ?? null },
+  });
 }
 
 /** Tras un override, el estado se recalcula con las mismas reglas (el score no cambia). */
@@ -416,7 +488,8 @@ export async function applyGuardianCorrection(
   }
   for (const [targetId, fields] of edits) {
     if (report.resourceType === 'content_item') {
-      await updateContentItem(workspace, targetId, fields);
+      // La decisión se registra como corrección aplicada (no como otra edición).
+      await updateContentItem(workspace, targetId, fields, new Date(), { recordDecision: false });
     } else {
       const item = await ContentPlanItemModel.findOne({
         _id: new Types.ObjectId(targetId),
@@ -431,6 +504,7 @@ export async function applyGuardianCorrection(
   }
   report.set({ correction: { ...report.correction, appliedAt: new Date() } });
   await report.save();
+  await recordCorrectionApplied(workspace, report);
   return toGuardianReportDTO(report);
 }
 
@@ -561,6 +635,7 @@ export async function overridePreflight(
   report.markModified('findings');
   await report.save();
   const recomputed = await recomputeStatus(report);
+  await recordOverride(workspace, recomputed, blocking, 'preflight');
   return recomputed.findings.map((finding) => ({
     id: finding.id,
     severity: finding.severity,

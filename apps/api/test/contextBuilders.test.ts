@@ -44,6 +44,30 @@ describe('resolveContextBuilder', () => {
   });
 });
 
+/** Memoria activa con el modelo del Prompt 16 (las anteriores, sin estado, son legacy). */
+function activeMemory(
+  workspaceId: Types.ObjectId,
+  memoryScope: 'enterprise' | 'personal',
+  content: string,
+  subject: string,
+) {
+  return {
+    workspaceId,
+    memoryScope,
+    kind: 'preference' as const,
+    content,
+    active: true,
+    status: 'active' as const,
+    origin: 'explicit' as const,
+    dimension: 'other' as const,
+    normalizedKey: `other:${subject}:prefer`,
+    polarity: 'prefer' as const,
+    scope: { type: 'workspace' as const, id: null, label: null },
+    confidence: 0.95,
+    confirmedByUser: true,
+  };
+}
+
 describe('EnterpriseContextBuilder', () => {
   it('recupera el BrandDNA de la empresa del workspace', async () => {
     const jhon = await registerUser(app, 'Jhon');
@@ -66,17 +90,22 @@ describe('EnterpriseContextBuilder', () => {
     const jhon = await registerUser(app, 'Jhon');
     const tinto = await enterpriseWorkspace(jhon, cafeTinto);
     const inventia = await enterpriseWorkspace(jhon, novaLabs);
-    const memory = (workspaceId: Types.ObjectId, content: string) => ({
-      workspaceId,
-      memoryScope: 'enterprise' as const,
-      kind: 'decision' as const,
-      content,
-      source: { type: 'manual' as const, conversationId: null, messageId: null },
+    const memory = (workspaceId: Types.ObjectId, content: string, subject: string) => ({
+      ...activeMemory(workspaceId, 'enterprise', content, subject),
       createdByUserId: new Types.ObjectId(jhon.user.id),
     });
     await CreativeMemoryModel.create([
-      memory(tinto.workspace._id, 'Las fotos siempre con luz natural de la finca'),
-      memory(inventia.workspace._id, 'Nada de capturas de pantalla sin contexto'),
+      memory(tinto.workspace._id, 'Las fotos siempre con luz natural de la finca', 'luz_natural'),
+      memory(inventia.workspace._id, 'Nada de capturas de pantalla sin contexto', 'capturas'),
+      // Anterior al Prompt 16 (sin estado): legacy, fuera del contexto.
+      {
+        workspaceId: tinto.workspace._id,
+        memoryScope: 'enterprise',
+        kind: 'decision',
+        content: 'Memoria antigua sin clasificar',
+        source: { type: 'manual', conversationId: null, messageId: null },
+        createdByUserId: new Types.ObjectId(jhon.user.id),
+      },
     ]);
 
     const a = await ask(tinto.workspace);
@@ -89,6 +118,7 @@ describe('EnterpriseContextBuilder', () => {
     expect(b.context.system).toContain('capturas de pantalla');
     expect(b.context.system).not.toContain('luz natural de la finca');
     expect(b.context.system).not.toMatch(/Café Tinto|Huila/);
+    expect(a.context.system).not.toContain('Memoria antigua sin clasificar');
     expect(a.context.stats.memories).toBe(1);
   });
 
@@ -181,17 +211,14 @@ describe('PersonalContextBuilder', () => {
       workspaceId: Types.ObjectId,
       memoryScope: 'enterprise' | 'personal',
       content: string,
+      subject: string,
     ) => ({
-      workspaceId,
-      memoryScope,
-      kind: 'decision' as const,
-      content,
-      source: { type: 'manual' as const, conversationId: null, messageId: null },
+      ...activeMemory(workspaceId, memoryScope, content, subject),
       createdByUserId: new Types.ObjectId(jhon.user.id),
     });
     await CreativeMemoryModel.create([
-      memory(personal._id, 'personal', 'Nada de fondos blancos de estudio'),
-      memory(enterprise._id, 'enterprise', 'Campaña de cosecha aprobada'),
+      memory(personal._id, 'personal', 'Nada de fondos blancos de estudio', 'fondos_blancos'),
+      memory(enterprise._id, 'enterprise', 'Campaña de cosecha aprobada', 'cosecha'),
     ]);
     const result = await ask(personal);
     if (result.status !== 'ready') throw new Error('contexto no listo');

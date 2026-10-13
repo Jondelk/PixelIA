@@ -8,6 +8,7 @@ import { errorMessage } from '../../lib/api';
 import { PixelThinking } from '../content-planner/PixelThinking';
 import {
   commandPhase,
+  confirmLabel,
   createdResources,
   resourceLink,
   THINKING_COPY,
@@ -216,7 +217,7 @@ export function PixelCommandPanel({
                   {command.guardian && <GuardianPreflight guardian={command.guardian} />}
                   <div className="flex flex-wrap items-center gap-3">
                     <Button onClick={onConfirm} disabled={preflightBlocks(command.guardian)}>
-                      <Icon name="check" className="size-4" /> Organizar
+                      <Icon name="check" className="size-4" /> {confirmLabel(command.plan)}
                     </Button>
                     {command.guardian &&
                       preflightOverridable(command.guardian) &&

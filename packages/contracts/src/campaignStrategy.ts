@@ -63,6 +63,8 @@ export const CampaignStrategySchema = z.object({
     discardedDeliverables: z.number().int().min(0),
     /** Textos o elementos descartados o recortados por afirmaciones sin base. */
     discardedClaims: z.number().int().min(0),
+    /** Prompt 16: memorias creativas aplicadas (claves). Lo decidido sobre esto no cuenta como señal independiente. */
+    memoryKeys: z.array(z.string()).default([]),
   }),
   createdAt: IsoDateSchema,
 });

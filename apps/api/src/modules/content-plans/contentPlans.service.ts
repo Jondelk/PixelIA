@@ -1,4 +1,5 @@
 import {
+  CONTENT_FORMAT_LABELS,
   CONTENT_PLAN_ITEM_STATUS_LABELS,
   type AcceptContentPlanItemResponse,
   type ContentPlanItemCounts,
@@ -44,6 +45,15 @@ import {
   ENTERPRISE_PLANNING_LIMITS,
   type EnterprisePlanningStrategy,
 } from './enterprisePlanning.strategy.js';
+import { planningMemoryFor } from './planningMemory.js';
+import { recordCreativeDecision } from '../creative-memory/memory.detector.js';
+import {
+  compact,
+  dedupe,
+  formatSignal,
+  placementChangeSignals,
+  textEditSignals,
+} from '../creative-memory/memory.signals.js';
 
 /*
  * Content Planner de un Workspace. Todas las funciones reciben el workspace ya autorizado
@@ -245,6 +255,7 @@ interface GeneratedPlanRecord {
       frequencySource: 'request' | 'personal_dna' | 'default';
       requestedGoal: string | null;
       regeneratedFromPlanId: Types.ObjectId | null;
+      memoryKeys: string[];
     };
   };
   items: Record<string, unknown>[];
@@ -354,7 +365,7 @@ async function generatePersonalPlan(
     : null;
 
   // Contexto limitado: proyectos vivos, contenido reciente y propuestas recientes (para no repetir).
-  const [projects, recentContent, previousProposals] = await Promise.all([
+  const [projects, recentContent, previousProposals, creativeMemory] = await Promise.all([
     ProjectModel.find({ workspaceId: workspace._id, status: { $in: ['active', 'planned'] } })
       .sort({ updatedAt: -1, _id: -1 })
       .limit(PLANNING_CONTEXT_LIMITS.activeProjects),
@@ -362,6 +373,7 @@ async function generatePersonalPlan(
       .sort({ updatedAt: -1, _id: -1 })
       .limit(PLANNING_CONTEXT_LIMITS.recentContent),
     previousProposalsFor(workspace, previousPlan, PLANNING_CONTEXT_LIMITS.previousProposals),
+    planningMemoryFor(workspace, null),
   ]);
 
   const proposal = await runPlanner(deps, () =>
@@ -377,6 +389,7 @@ async function generatePersonalPlan(
       requiredFormats: input.formats,
       requestedGoal: input.goal,
       tzOffset: input.tzOffset,
+      creativeMemory,
     }),
   );
 
@@ -403,6 +416,7 @@ async function generatePersonalPlan(
         frequencySource: proposal.frequencySource,
         requestedGoal: input.goal?.trim() || null,
         regeneratedFromPlanId: previousPlan?._id ?? null,
+        memoryKeys: proposal.memoryKeys ?? [],
       },
     },
     items: proposal.items.map((item) => ({
@@ -430,7 +444,7 @@ async function generateEnterprisePlan(
     ? await findPlan(workspace, input.regenerateFrom)
     : null;
 
-  const [projects, recentContent, previousProposals] = await Promise.all([
+  const [projects, recentContent, previousProposals, creativeMemory] = await Promise.all([
     ProjectModel.find({
       workspaceId: workspace._id,
       status: { $in: ['active', 'planned'] },
@@ -442,6 +456,7 @@ async function generateEnterprisePlan(
       .sort({ updatedAt: -1, _id: -1 })
       .limit(ENTERPRISE_PLANNING_LIMITS.recentContent),
     previousProposalsFor(workspace, previousPlan, ENTERPRISE_PLANNING_LIMITS.previousProposals),
+    planningMemoryFor(workspace, campaign?.campaign._id.toString() ?? null),
   ]);
   const campaignKey = campaign?.campaign._id.toString();
   const orderedProjects = [...projects]
@@ -477,6 +492,7 @@ async function generateEnterprisePlan(
       requiredFormats: input.formats,
       requestedGoal: input.goal,
       tzOffset: input.tzOffset,
+      creativeMemory,
     }),
   );
 
@@ -511,6 +527,7 @@ async function generateEnterprisePlan(
         frequencySource: proposal.frequencySource,
         requestedGoal: input.goal?.trim() || null,
         regeneratedFromPlanId: previousPlan?._id ?? null,
+        memoryKeys: proposal.memoryKeys ?? [],
       },
     },
     items: proposal.items.map((item) => ({
@@ -588,7 +605,7 @@ async function updateUnconverted(
   workspace: WorkspaceDocument,
   planId: unknown,
   itemId: unknown,
-  set: Record<string, unknown>,
+  set: Record<string, unknown> | ((item: ContentPlanItemDocument) => Record<string, unknown>),
 ) {
   const plan = await findPlan(workspace, planId);
   const item = await findItem(workspace, plan, itemId);
@@ -600,12 +617,14 @@ async function updateUnconverted(
       contentPlanId: plan._id,
       convertedContentItemId: null,
     },
-    { $set: set },
+    { $set: typeof set === 'function' ? set(item) : set },
     { returnDocument: 'after', runValidators: true },
   );
   if (!updated) assertNotConverted(await findItem(workspace, plan, itemId));
-  return { item: toContentPlanItemDTO(updated ?? item) };
+  return { item: toContentPlanItemDTO(updated ?? item), plan, doc: updated ?? item };
 }
+
+const PROPOSAL_FIELDS = ['title', 'hook', 'format', 'platform'] as const;
 
 export async function updateContentPlanItem(
   workspace: WorkspaceDocument,
@@ -614,13 +633,26 @@ export async function updateContentPlanItem(
   input: UpdateContentPlanItemInput,
 ) {
   const { scheduledFor, status, ...rest } = input;
-  return updateUnconverted(workspace, planId, itemId, {
+  const { item } = await updateUnconverted(workspace, planId, itemId, (current) => ({
     ...rest,
     ...(scheduledFor !== undefined
       ? { scheduledFor: scheduledFor ? new Date(scheduledFor) : null }
       : {}),
     ...(status === 'proposed' ? { status: 'proposed', rejectionReason: null } : {}),
-  });
+    // Creative Memory: la propuesta de Pixel se guarda en la primera edición que la cambia.
+    ...(!current.originalProposal &&
+    PROPOSAL_FIELDS.some((field) => field in rest && rest[field] !== current[field])
+      ? {
+          originalProposal: {
+            title: current.title,
+            hook: current.hook,
+            format: current.format,
+            platform: current.platform,
+          },
+        }
+      : {}),
+  }));
+  return { item };
 }
 
 export async function rejectContentPlanItem(
@@ -629,9 +661,82 @@ export async function rejectContentPlanItem(
   itemId: unknown,
   reason: string | null | undefined,
 ) {
-  return updateUnconverted(workspace, planId, itemId, {
+  const { item, plan, doc } = await updateUnconverted(workspace, planId, itemId, {
     status: 'rejected',
     rejectionReason: reason ?? null,
+  });
+  // Evidencia (no memoria): rechazar una pieza es una señal media contra su formato.
+  await recordCreativeDecision(workspace, {
+    eventType: 'content_plan_item_rejected',
+    resourceType: 'content_plan_item',
+    resourceId: doc._id,
+    contentPlanId: plan._id,
+    campaignId: plan.campaignId,
+    projectId: doc.projectId,
+    signals: formatSignal(doc.format, 'avoid', 'reject', 'medium'),
+    before: compact('Pieza', doc.title),
+    sourceEventKey: `content-plan-item:${doc._id.toString()}:reject`,
+    description: `Quitaste una pieza${doc.format ? ` (${CONTENT_FORMAT_LABELS[doc.format]})` : ''} de «${plan.name}»`,
+    metadata: { source: 'content_planner', dimension: 'format', reason: reason ?? null },
+  });
+  return { item };
+}
+
+/** Aceptar una propuesta: tal cual (señal débil) o tras editarla (señal fuerte con su antes/después). */
+async function recordAcceptance(
+  workspace: WorkspaceDocument,
+  plan: ContentPlanDocument,
+  item: ContentPlanItemDocument,
+) {
+  const original = item.originalProposal;
+  const base = {
+    resourceType: 'content_plan_item',
+    resourceId: item._id,
+    contentPlanId: plan._id,
+    campaignId: plan.campaignId,
+    projectId: item.projectId,
+  };
+  if (original) {
+    const signals = dedupe([
+      ...placementChangeSignals(original, { format: item.format, platform: item.platform }, 'high'),
+      ...textEditSignals(
+        `${original.title}\n${original.hook ?? ''}`,
+        `${item.title}\n${item.hook ?? ''}`,
+        'high',
+      ),
+    ]);
+    await recordCreativeDecision(workspace, {
+      ...base,
+      eventType: 'content_plan_item_edited_then_accepted',
+      signals,
+      before: [
+        ...compact('Título', original.title),
+        ...compact('Hook', original.hook),
+        ...compact('Formato', original.format),
+      ],
+      after: [
+        ...compact('Título', item.title),
+        ...compact('Hook', item.hook),
+        ...compact('Formato', item.format),
+      ],
+      sourceEventKey: `content-plan-item:${item._id.toString()}:edited_accept`,
+      description: `Editaste y aceptaste «${item.title}» en «${plan.name}»`,
+      metadata: { source: 'content_planner' },
+    });
+    return;
+  }
+  // Tal cual: si Pixel ya lo eligió por una memoria, aceptarlo no la vuelve a confirmar.
+  const keys = plan.generation?.memoryKeys ?? [];
+  await recordCreativeDecision(workspace, {
+    ...base,
+    eventType: 'content_plan_item_accepted',
+    signals: formatSignal(item.format, 'prefer', 'approve', 'low'),
+    sourceEventKey: `content-plan-item:${item._id.toString()}:accept`,
+    description: `Aceptaste «${item.title}» de «${plan.name}»`,
+    metadata: {
+      source: 'content_planner',
+      influencedByMemory: Boolean(item.format && keys.includes(`format:${item.format}:prefer`)),
+    },
   });
 }
 
@@ -712,6 +817,7 @@ export async function acceptContentPlanItem(
       },
       { source: 'pixel', id: contentItemId },
     );
+    await recordAcceptance(workspace, plan, claimed);
     return { item: toContentPlanItemDTO(claimed), contentItem, created: true };
   } catch (err) {
     await ContentPlanItemModel.updateOne(

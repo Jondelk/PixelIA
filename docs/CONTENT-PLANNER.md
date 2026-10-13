@@ -164,6 +164,13 @@ Fuera de estos casos (plan Personal, plan Enterprise y estrategia de campaña), 
 salidas estructuradas. Una salida demo que no cumple el schema es `invalid_output` (502), como con
 un proveedor real.
 
+### 2 bis. Creative Memory (Prompt 16)
+
+Personal también usa lo que Pixel ha aprendido («prefiero carruseles educativos»): formatos
+preferidos primero, `avoidedFormats` fuera y plataformas evitadas (nunca vacías), salvo lo que pida
+la solicitud. `respectAvoidedFormats` se aplica después de validar, con IA o demo. Detalle en
+`docs/CREATIVE-MEMORY.md` §11.
+
 ## 3. Conversión PlanItem → ContentItem
 
 `POST …/items/:itemId/accept` es explícito e **idempotente**:

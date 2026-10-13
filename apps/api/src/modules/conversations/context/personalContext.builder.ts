@@ -1,6 +1,6 @@
 import { DEFAULT_TIMEZONE } from '@pixel/contracts';
 import { AvatarProfileModel, toAvatarProfileDTO } from '../../avatars/avatarProfile.model.js';
-import { CreativeMemoryModel } from '../../creative-memory/creativeMemory.model.js';
+import { memoryLines, resolveCreativeMemories } from '../../creative-memory/memory.resolver.js';
 import { loadPersonalDna } from '../../personal/personal.service.js';
 import { currentBriefForContext } from '../../daily-director/dailyBrief.current.js';
 import { toPersonalDnaDTO } from '../../personal/personalDna.model.js';
@@ -9,9 +9,6 @@ import { notConfigured, type ContextBuilder } from './contextBuilder.js';
 
 export const PERSONAL_CONTEXT_NOT_CONFIGURED =
   'Pixel aún no te conoce: completa tu onboarding personal para conversar con tu Pixel Personal.';
-
-/** Memorias activas más recientes que entran al contexto. */
-const MEMORY_LIMIT = 10;
 
 /**
  * Personal: Workspace → PersonalProfile → PersonalDNA (+ AvatarProfile y CreativeMemory del
@@ -36,11 +33,9 @@ export const personalContextBuilder: ContextBuilder = {
       profile.avatarVersion
         ? AvatarProfileModel.findOne({ workspaceId: workspace._id, version: profile.avatarVersion })
         : null,
-      CreativeMemoryModel.find({ workspaceId: workspace._id, active: true })
-        .sort({ createdAt: -1 })
-        .limit(MEMORY_LIMIT)
-        .select({ content: 1 })
-        .lean(),
+      // Prompt 16: solo memorias ACTIVAS y relevantes del workspace (CreativeMemoryResolver), nunca
+      // historial de conversaciones ni memorias candidatas, olvidadas o legacy.
+      resolveCreativeMemories(workspace),
       // Solo la dirección vigente de HOY (nunca el historial), marcada si quedó desactualizada.
       currentBriefForContext(workspace, defaultTimezone ?? DEFAULT_TIMEZONE),
     ]);
@@ -49,7 +44,7 @@ export const personalContextBuilder: ContextBuilder = {
     const context = buildPersonalPixelContext({
       personalDna,
       avatar,
-      memories: memories.map((memory) => memory.content),
+      memories: memoryLines(memories).map((line) => line.statement),
       dailyBrief: daily
         ? {
             localDate: daily.brief.localDate,

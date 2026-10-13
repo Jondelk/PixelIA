@@ -48,6 +48,11 @@ function featureItems(workspaceId: string): [WorkspaceFeature, NavItem][] {
     ['tasks', { to: `${base}/tasks`, label: 'Tareas', icon: 'tasks' }],
     ['content', { to: `${base}/content`, label: 'Contenido', icon: 'content' }],
     ['brandGuardian', { to: `${base}/guardian`, label: 'Brand Guardian', icon: 'guardian' }],
+    [
+      'creativeMemory',
+      // Etiqueta corta en la barra lateral; la página se titula "Lo que Pixel ha aprendido".
+      { to: `${base}/memory`, label: 'Lo aprendido', icon: 'memory' },
+    ],
   ];
 }
 
@@ -74,7 +79,7 @@ function workNav(workspaceId: string, type: WorkspaceType): NavGroup {
 /**
  * Navegación de un workspace según su tipo:
  * - personal: Inicio · Trabajo (Proyectos, Tareas, Contenido, Plan de contenido) · Pixel (Mi ADN,
- *   Mi Pixel, Chat).
+ *   Mi Pixel, Lo que Pixel ha aprendido, Chat).
  * - enterprise con empresa: la de la empresa (enterpriseNav).
  * - enterprise sin empresa (o tipo aún desconocido): solo el resumen.
  */
@@ -94,6 +99,8 @@ export function workspaceNav(
         items: [
           { to: `${base}/personal/dna`, label: 'Mi ADN', icon: 'brand' },
           { to: `${base}/pixel`, label: 'Mi Pixel', icon: 'character' },
+          // Creative Memory vive junto a Mi Pixel (sin otro grupo de navegación).
+          ...navGroup('Pixel', workspaceId, type, ['creativeMemory']).items,
           { to: `${base}/chat`, label: 'Chat', icon: 'chat' },
         ],
       },
@@ -120,6 +127,7 @@ const SEGMENT_FEATURES: Record<string, WorkspaceFeature> = {
   content: 'content',
   'content-planner': 'contentPlanner',
   guardian: 'brandGuardian',
+  memory: 'creativeMemory',
 };
 
 /**
@@ -183,11 +191,12 @@ export function enterpriseNav(companyId: string, workspaceId: string | null): Na
       : []),
     {
       label: 'Marca',
-      // Brand Guardian vive en Marca (bajo /workspace) para no añadir otro grupo de navegación.
+      // Brand Guardian y Lo que Pixel ha aprendido viven en Marca (bajo /workspace) para no añadir
+      // otro grupo de navegación.
       items: [
         ...brand,
         ...(workspaceId
-          ? navGroup('Marca', workspaceId, 'enterprise', ['brandGuardian']).items
+          ? navGroup('Marca', workspaceId, 'enterprise', ['brandGuardian', 'creativeMemory']).items
           : []),
       ],
     },

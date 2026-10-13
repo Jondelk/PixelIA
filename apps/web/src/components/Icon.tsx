@@ -83,6 +83,13 @@ const paths = {
       <path d="m8.5 12.2 2.4 2.4 4.6-4.8" />
     </>
   ),
+  /** Lo que Pixel ha aprendido: un cuaderno con sus notas (nada de cerebros ni destellos). */
+  memory: (
+    <>
+      <rect x="4.5" y="3.5" width="15" height="17" rx="1" />
+      <path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4" />
+    </>
+  ),
   x: <path d="M6 6l12 12M18 6 6 18" />,
   /** Crear / generar: un píxel que aparece en una esquina libre. */
   create: (

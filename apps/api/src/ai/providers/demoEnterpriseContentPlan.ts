@@ -490,11 +490,20 @@ function formatFor(
   platform: ContentPlatform,
   used: Map<string, number>,
   required: readonly ContentFormat[] = [],
+  avoided: readonly ContentFormat[] = [],
+  memoryPreferred: readonly ContentFormat[] = [],
 ): ContentFormat {
   const fitting = FORMATS[platform].filter(
     (format) => !required.length || required.includes(format),
   );
-  const options = fitting.length ? fitting : required.length ? [...required] : FORMATS[platform];
+  const allowed = fitting.length ? fitting : required.length ? [...required] : FORMATS[platform];
+  // Prompt 16: sin los formatos que la memoria evita y con los que prefiere primero.
+  const kept = allowed.filter((format) => !avoided.includes(format));
+  const base = kept.length ? kept : allowed;
+  const options = [
+    ...base.filter((format) => memoryPreferred.includes(format)),
+    ...base.filter((format) => !memoryPreferred.includes(format)),
+  ];
   const wanted = source.format?.toLocaleLowerCase('es') ?? '';
   const fromSource = options.find(
     (format) =>
@@ -541,7 +550,14 @@ export function composeDemoEnterpriseContentPlan(payload: Payload): GeneratedEnt
       )
         continue;
       if (history.some((other) => tooSimilar(other, t.hook))) continue;
-      const format = formatFor(source, platform, used, request.requiredFormats);
+      const format = formatFor(
+        source,
+        platform,
+        used,
+        request.requiredFormats,
+        request.avoidedFormats,
+        request.memoryPreferredFormats,
+      );
       const material = materials.length ? materials[index % materials.length] : null;
       const message = messages.length ? messages[index % messages.length]! : null;
       items.push({

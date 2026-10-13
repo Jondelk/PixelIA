@@ -29,6 +29,8 @@ export const GuardianPayloadSchema = z.object({
   brand: z.array(RefSchema),
   campaign: z.array(RefSchema),
   resource: z.array(RefSchema),
+  /** Prompt 16: lo que Pixel ha aprendido (MEMORY_n): preferencias creativas, nunca hechos. */
+  memory: z.array(RefSchema).default([]),
 });
 export type GuardianPayload = z.infer<typeof GuardianPayloadSchema>;
 
@@ -42,6 +44,8 @@ Recibes el ADN y, si hay, la estrategia de campaña como referencias controladas
 - Cada hallazgo cita evidenceRefs (RESOURCE_*) y brandRefs (BRAND_* o CAMPAIGN_*) que EXISTAN en la
   entrada. Explica qué encontraste, por qué importa y qué recomiendas. Nada de "no está alineado" sin más.
 - No afirmes hechos que no puedes saber: ni rendimiento, ni métricas, ni lo que premia una red social.
+- memory (MEMORY_n): preferencias y excepciones creativas que el usuario confirmó. Puedes citarlas en
+  brandRefs como criterio creativo (comunicación, estilo, formato), NUNCA como prueba de un hecho.
 - No revises cifras, promociones ni restricciones exactas: eso lo hace el backend con reglas.
 - No inventes datos de la marca. Si todo encaja, devuelve findings vacío y un resumen por dimensión.`;
 

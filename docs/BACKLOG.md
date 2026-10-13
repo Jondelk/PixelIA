@@ -28,6 +28,7 @@ Estado: ⬜ pendiente · 🟨 en curso · ✅ terminado
 | EC | Enterprise Content Planner (Prompt 14) | ✅ (prueba con Claude real pendiente) |
 | Z | Zero-entry UX: PixelCommand (Prompt 14.1) | ✅ (prueba con Claude real pendiente) |
 | G | Brand Guardian Core (Prompt 15) | ✅ implementado y confirmado (sin push; prueba con Claude real pendiente) |
+| CM | Creative Memory: decision learning, preferencias, excepciones y recuerdo contextual (Prompt 16) | ✅ implementado, sin commit (prueba con Claude real pendiente) |
 | — | Experiencia de entrada pública: bienvenida, Explorar y acceso (solo web) | ✅ (video final pendiente) |
 | 9 | CreativeMemory básica | ⬜ |
 | 10 | Cierre end-to-end del MVP | ⬜ |
@@ -437,10 +438,34 @@ Ver `docs/BRAND-GUARDIAN.md`.
   contenido, preflight compacto en la propuesta.
 - [x] Tests (contracts, motor, API, web) y smoke de navegador (TINTO, INVENTIA, Personal).
 - [ ] Probar `GUARDIAN_SYSTEM` y la corrección con Claude real (requiere `ANTHROPIC_API_KEY`).
-- [ ] Visual Guardian multimodal, Memory Guardian, aprobaciones y equipo (no construir sin pedirlo).
+- [ ] Visual Guardian multimodal, aprobaciones y equipo (no construir sin pedirlo). La memoria de
+  decisiones (overrides y correcciones como evidencia) llegó en la Etapa CM (Prompt 16).
 - [x] Commit autorizado por el usuario el 2026-10-10 (sin push).
 
-## Etapa 9 — CreativeMemory básica
+## Etapa CM — Creative Memory ✅ (implementado, sin commit; Prompt 16)
+
+Ver `docs/CREATIVE-MEMORY.md`. Sustituye a la antigua Etapa 9 (abajo, conservada como referencia).
+
+- [x] Contratos: CreativeMemory extendida (estado, alcance, clave, polaridad, evidencia), CreativeSignal,
+  eventos, API y salida del sintetizador; capacidad `creativeMemory` (Personal y Enterprise);
+  intención `manage_memory` y pasos `remember_memory` / `forget_memory` en PixelCommand.
+- [x] CreativeDecisionEvent inmutable e idempotente; `recordCreativeDecision` best-effort en Guardian
+  (override, preflight, corrección aplicada), PixelCommand (ajustes), Content Planner (aceptar, rechazar,
+  editar y aceptar), Campaign Manager (piezas) y Contenido (editar lo generado).
+- [x] Léxico determinista, PatternDetector (3 señales en 2 recursos → candidata), anti-reaprendizaje,
+  sin duplicados, protección contra auto-refuerzo, filtros factual / credenciales / privacidad.
+- [x] Sintetizador (IA, una llamada con evidencia suficiente, refs EVENT_n validadas) + demo.
+- [x] Resolver + ConflictResolver (alcance, excepciones, supersesión, ranking, 8 + 8).
+- [x] Integraciones: PixelCommand, CampaignStrategyEngine, Content Planner Personal y Enterprise,
+  Daily Director (solo workflow), chat y Brand Guardian (MEMORY_n creativa, excepciones).
+- [x] API `/creative-memories`, migración a `legacy`, web «Lo que Pixel ha aprendido».
+- [x] Tests (contracts, unitarios, integración, web) y smoke de navegador.
+- [ ] Probar el sintetizador y los motores con memoria con Claude real (requiere `ANTHROPIC_API_KEY`).
+- [ ] Decay, alcances `project` / `content_plan` desde la conversación, equipo y aprendizaje por
+  métricas (no construir sin pedirlo).
+- [ ] Commit (pendiente de revisión del usuario).
+
+## Etapa 9 — CreativeMemory básica (sustituida por la Etapa CM)
 
 - [ ] `GET/POST/DELETE /memories` (bajo el workspace).
 - [ ] Acción "Recordar esto" en mensajes y `MemoryPanel`.

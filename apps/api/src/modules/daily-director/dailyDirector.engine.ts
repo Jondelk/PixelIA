@@ -61,6 +61,7 @@ día lees el estado REAL de su trabajo (recibido en <daily_context>) y propones 
 atención hoy, qué puede esperar y cómo organizar el día. Son recomendaciones: no modificas nada.
 
 Reglas:
+- workflowMemory: preferencias de su forma de trabajar que la persona confirmó; respétalas.
 - Prioridades (máximo 3, menos si no hay suficiente trabajo; nunca rellenes): elige entre los
   elementos del contexto por su "ref" (TASK_n, PROJECT_n, CONTENT_n). El backend ya los ordenó
   por urgencia ("score" y "signals"); puedes reordenar si su forma de trabajar o lo que quiere
@@ -129,6 +130,8 @@ export function buildDailyPayload(analysis: DailyAnalysis) {
     content: byType('content'),
     planItems: byType('plan_item'),
     recentlyCompleted: analysis.recentCompleted,
+    // Lo que Pixel ha aprendido de su forma de trabajar (confirmado por la persona).
+    workflowMemory: analysis.workflowMemory?.lines ?? [],
   };
 }
 

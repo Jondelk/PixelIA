@@ -199,6 +199,27 @@ demanda. Un BLOCK (promoción o claim sin fundamento, restricción explícita) d
 formas" (`POST …/:commandId/guardian-override`, registrado). Personal y las consultas no pasan por el
 Guardian.
 
+## 8 ter. Creative Memory (Prompt 16)
+
+- **Antes de proponer**, las propuestas de campaña, plan o pieza consultan el
+  CreativeMemoryResolver y lo dicen («Tengo en cuenta lo que he aprendido: «Evitar Stories…»»). Si
+  la solicitud pide justo lo que la memoria evita, manda la solicitud («Esta vez incluyo Stories
+  porque lo pediste»). Los motores aplican la memoria después (`docs/CREATIVE-MEMORY.md` §11).
+- **`manage_memory`** (capacidad `creativeMemory`, Personal y Enterprise), un solo flujo:
+  - *remember*: «De ahora en adelante evita los CTA de urgencia» → «Voy a recordar para TINTO: …»
+    → **una** confirmación («Recordar», paso `remember_memory`). Si el alcance es ambiguo y hay
+    campañas, UNA pregunta («¿solo para esta campaña o para TINTO en general?»). «Solo en la campaña
+    X podemos usar neón» crea una excepción de esa campaña. Lo factual, sensible o con credenciales
+    se explica y no se guarda. Una contradicción reemplaza a la anterior (se dice en la propuesta).
+  - *forget*: «Olvida lo de evitar Stories» → «Voy a dejar de usar esta preferencia: …» →
+    «Olvidar» (paso `forget_memory`); con varias coincidencias, UNA pregunta.
+  - *show*: «¿Qué has aprendido de TINTO?» → responde en el acto con las activas y, aparte, las
+    candidatas (nunca reconstruye una personalidad desde la actividad).
+- Solo expresiones inequívocamente persistentes activan la intención; «hoy no quiero Stories» o
+  «esta vez…» son la solicitud actual.
+- **Ajustes como evidencia**: «sin Stories» sobre una propuesta registra un
+  `pixel_command_adjusted` (idempotente por revisión), nunca una memoria directa.
+
 ## 9. Voz (futuro)
 
 El texto es la única entrada hoy. `PixelRequestInput` entrega `onSubmit(text, source)` y la API acepta
@@ -213,6 +234,8 @@ funcione.
 - Coincidencia de campañas y proyectos por palabras clave (sin búsqueda semántica).
 - "Esta semana" un viernes son 3 días: con la frecuencia por defecto, 1 pieza (la propuesta lo dice).
 - `organize_project` no inventa tareas: si no se dicen, las pregunta.
+- Creative Memory: léxico de memoria en español; el intérprete con Claude real para `manage_memory`
+  **sin probar** (`creativeMemory.live.test.ts`, SKIPPED sin `ANTHROPIC_API_KEY`).
 - La ejecución es síncrona; un comando que se queda en `executing` por una caída del proceso no se
   recupera solo.
 - Sin historial de solicitudes en la interfaz (el modelo las guarda).

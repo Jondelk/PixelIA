@@ -42,6 +42,13 @@ import {
   groundedPlanningText,
   isGrounded,
 } from './enterprisePlanning.grounding.js';
+import {
+  memoryFormats,
+  memoryPlatforms,
+  NO_PLANNING_MEMORY,
+  respectAvoidedFormats,
+  type PlanningMemory,
+} from './planningMemory.js';
 
 /*
  * EnterprisePlanningStrategy: la estrategia del Content Planner para un Pixel de EMPRESA. Comparte
@@ -94,6 +101,8 @@ export interface EnterprisePlanningInput {
   requiredFormats?: ContentFormat[];
   requestedGoal?: string;
   tzOffset: number;
+  /** Prompt 16: lo que Pixel ha aprendido de la marca (y las excepciones de la campaña). */
+  creativeMemory?: PlanningMemory;
 }
 
 export interface ProposedEnterpriseItem {
@@ -129,6 +138,8 @@ export interface EnterprisePlanProposal {
   discardedItems: number;
   frequencyPerWeek: number;
   frequencySource: 'request' | 'default';
+  /** Prompt 16: memorias que orientaron el plan. */
+  memoryKeys?: string[];
   meta: { provider: string; model: string; mode: 'ai' | 'demo' };
 }
 
@@ -147,6 +158,9 @@ export interface EnterprisePlanningRequest {
   preferredFormats: ContentFormat[];
   /** Formatos obligatorios del pedido (vacío = cualquiera). */
   requiredFormats: ContentFormat[];
+  avoidedFormats: ContentFormat[];
+  memoryPreferredFormats: ContentFormat[];
+  memoryKeys: string[];
 }
 
 /**
@@ -163,9 +177,13 @@ export function resolveEnterpriseRequest(
           .map((platform) => (platform === 'other' ? null : platform)),
       )
     : [];
-  const allowedPlatforms = input.requestedPlatforms?.length
-    ? uniqueValues(input.requestedPlatforms)
-    : fromCampaign;
+  const memory = input.creativeMemory ?? NO_PLANNING_MEMORY;
+  const platformChoice = memoryPlatforms(
+    input.requestedPlatforms?.length ? uniqueValues(input.requestedPlatforms) : undefined,
+    fromCampaign,
+    memory,
+  );
+  const allowedPlatforms = platformChoice.platforms;
   if (allowedPlatforms.length === 0) {
     throw new ContentPlanningError(
       'platforms_missing',
@@ -187,10 +205,33 @@ export function resolveEnterpriseRequest(
     frequencyPerWeek,
     frequencySource,
     allowedPlatforms,
-    preferredFormats: uniqueValues(
-      (input.campaign?.deliverables ?? []).map((d) => (d.format ? formatFromText(d.format) : null)),
+    ...enterpriseFormats(
+      uniqueValues(
+        (input.campaign?.deliverables ?? []).map((d) =>
+          d.format ? formatFromText(d.format) : null,
+        ),
+      ),
+      uniqueValues(input.requiredFormats ?? []),
+      memory,
+      platformChoice.keys,
     ),
-    requiredFormats: uniqueValues(input.requiredFormats ?? []),
+  };
+}
+
+/** La memoria orienta los formatos solo si la solicitud no los fijó (lo pedido manda). */
+function enterpriseFormats(
+  preferred: ContentFormat[],
+  required: ContentFormat[],
+  memory: PlanningMemory,
+  platformKeys: string[],
+) {
+  const formats = memoryFormats(preferred, required, memory);
+  return {
+    preferredFormats: formats.preferred,
+    requiredFormats: required,
+    avoidedFormats: formats.avoided,
+    memoryPreferredFormats: formats.memoryPreferred,
+    memoryKeys: [...platformKeys, ...formats.keys],
   };
 }
 
@@ -322,8 +363,11 @@ export function buildEnterprisePayload(
       allowedPlatforms: request.allowedPlatforms,
       preferredFormats: request.preferredFormats,
       requiredFormats: request.requiredFormats,
+      avoidedFormats: request.avoidedFormats,
+      memoryPreferredFormats: request.memoryPreferredFormats,
       goal: input.requestedGoal?.trim() || null,
     },
+    creativeMemory: (input.creativeMemory ?? NO_PLANNING_MEMORY).lines,
   };
   return { payload, refs };
 }
@@ -350,12 +394,16 @@ Criterio:
 - No repitas títulos, hooks ni ideas de recentContent ni de previousProposals.
 - Pilares propios de esta marca (2 a 5), nunca una lista genérica.
 - platform: SOLO una de request.allowedPlatforms. format: el más adecuado de la plataforma (prioriza
-  request.preferredFormats; si request.requiredFormats no está vacío, SOLO esos). Exactamente request.itemCount piezas; suggestedDate dentro de request.days.
+  request.preferredFormats; si request.requiredFormats no está vacío, SOLO esos; evita
+  request.avoidedFormats). Exactamente request.itemCount piezas; suggestedDate dentro de request.days.
 - Cada pieza: objective concreto (nunca "generar engagement"), rationale (por qué está en el plan) y
   brandRationale (por qué esta ejecución pertenece a ESTA marca, citando rasgos del ADN).
 - strategicMessage sale de keyMessage/supportingMessages o del ADN. strategicRole y funnelStage solo
   si aportan.
 - distributionRationale: cómo se reparte la narrativa en el periodo (sin porcentajes).
+- creativeMemory: lo que Pixel ha aprendido de la marca y el usuario confirmó (y las excepciones de
+  esta campaña). Úsalo como preferencia por defecto; lo que pide request siempre manda. Nunca es un
+  hecho: no fundamenta precios, cifras, promociones ni claims.
 
 Honestidad (obligatorio):
 - No inventes precios, descuentos, promociones, métricas, seguidores, crecimiento, testimonios,
@@ -565,7 +613,21 @@ export function createEnterprisePlanningStrategy(deps: {
       if (!parsed.success) {
         throw new ContentPlanningError('failed', 'El plan generado no cumple el esquema');
       }
-      const grounded = groundEnterprisePlan(parsed.data, payload, refs, request, input.tzOffset);
+      const groundedPlan = groundEnterprisePlan(
+        parsed.data,
+        payload,
+        refs,
+        request,
+        input.tzOffset,
+      );
+      const grounded = {
+        ...groundedPlan,
+        items: respectAvoidedFormats(
+          groundedPlan.items,
+          request.avoidedFormats,
+          request.preferredFormats,
+        ),
+      };
       deps.logger.info('Content Planner: plan generado', {
         workspaceId: input.workspaceId,
         workspaceType: 'enterprise',
@@ -585,6 +647,7 @@ export function createEnterprisePlanningStrategy(deps: {
         targetAudience: [input.brandDna.audience.summary].filter(Boolean),
         frequencyPerWeek: request.frequencyPerWeek,
         frequencySource: request.frequencySource,
+        memoryKeys: request.memoryKeys,
         meta: { provider: result.provider, model: result.model, mode: result.mode },
       };
     },

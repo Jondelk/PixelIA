@@ -23,7 +23,10 @@ import type { ContentPlanningEngine } from './content-plans/contentPlanning.engi
 import type { EnterprisePlanningStrategy } from './content-plans/enterprisePlanning.strategy.js';
 import { createConversationsRouter } from './conversations/conversations.routes.js';
 import type { ChatDeps } from './conversations/chat.service.js';
-import { creativeMemoryRouter } from './creative-memory/creative-memory.routes.js';
+import {
+  createCreativeMemoryRouter,
+  creativeMemoryRouter,
+} from './creative-memory/creative-memory.routes.js';
 import { createGuardianRouter } from './guardian/guardian.routes.js';
 import type { GuardianEngine } from './guardian/guardian.engine.js';
 import { createHealthRouter } from './health/health.routes.js';
@@ -116,6 +119,8 @@ export function createApiRouter(deps: ApiDependencies): Router {
     '/guardian',
     createGuardianRouter({ engine: deps.guardianEngine, ai: deps.chat.ai, logger: deps.logger }),
   );
+  // Creative Memory: Personal y Enterprise (capacidad `creativeMemory`, la comprueba el servicio).
+  workspace.use('/creative-memories', createCreativeMemoryRouter());
   workspace.use('/', createDailyBriefRouter(deps));
   api.use('/workspaces/:workspaceId', workspace);
 

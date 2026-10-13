@@ -305,7 +305,7 @@ Ejemplo de criterio (persona ficticia, solo para ilustrar la diferencia):
 
 Palancas creativas para ${name} (puntos de partida; elige, combina o descarta según la petición):
 ${levers || '- Aún no hay suficiente información: propone desde sus objetivos y pregunta lo imprescindible.'}
-${brief.avatar ? `\nSu personaje, ${brief.avatar.name}: ${brief.avatar.concept} Úsalo si ayuda a la idea.\n` : ''}${memories.length ? `\nLo que ya decidieron juntos (memoria creativa; respétalo):\n${memories.map((memory) => `- ${memory}`).join('\n')}\n` : ''}
+${brief.avatar ? `\nSu personaje, ${brief.avatar.name}: ${brief.avatar.concept} Úsalo si ayuda a la idea.\n` : ''}${memories.length ? `\nLo que Pixel ha aprendido de su forma de crear y la persona confirmó (memoria creativa: respétalo como preferencia; lo que pida ahora manda; nunca es un hecho). Puedes decir "como has indicado…" SOLO sobre esto:\n${memories.map((memory) => `- ${memory}`).join('\n')}\n` : ''}
 ${input.dailyBrief ? `${renderDailySection(input.dailyBrief)}\n` : ''}
 Contexto personal (referencia para razonar; no lo cites literalmente):
 ${renderPersonalBrief(brief)}${input.dailyBrief ? `\n${renderDailyBriefContext(input.dailyBrief)}` : ''}`;

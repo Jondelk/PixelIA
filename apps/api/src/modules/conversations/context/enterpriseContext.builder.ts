@@ -1,15 +1,12 @@
 import { DEFAULT_TIMEZONE } from '@pixel/contracts';
 import { toAvatarProfileDTO, AvatarProfileModel } from '../../avatars/avatarProfile.model.js';
 import { BrandDnaModel, toBrandDnaDTO } from '../../brand-dna/brandDna.model.js';
-import { CreativeMemoryModel } from '../../creative-memory/creativeMemory.model.js';
+import { memoryLines, resolveCreativeMemories } from '../../creative-memory/memory.resolver.js';
 import { workspaceTimezone } from '../../daily-director/dailyTime.js';
 import { getOperationsStatus } from '../../operations/summary.service.js';
 import { findWorkspaceCompany } from '../../workspaces/workspace.service.js';
 import { buildPixelContext } from '../pixelContext.builder.js';
 import { notConfigured, type ContextBuilder } from './contextBuilder.js';
-
-/** Memorias activas más recientes que entran al contexto. */
-const MEMORY_LIMIT = 10;
 
 /**
  * Enterprise: Workspace → Company → BrandDNA (+ AvatarProfile, CreativeMemory y el estado operativo
@@ -48,11 +45,9 @@ export const enterpriseContextBuilder: ContextBuilder = {
       company.avatarVersion
         ? AvatarProfileModel.findOne({ workspaceId: workspace._id, version: company.avatarVersion })
         : null,
-      CreativeMemoryModel.find({ workspaceId: workspace._id, active: true })
-        .sort({ createdAt: -1 })
-        .limit(MEMORY_LIMIT)
-        .select({ content: 1 })
-        .lean(),
+      // Prompt 16: solo memorias ACTIVAS y relevantes del workspace (CreativeMemoryResolver), nunca
+      // historial de conversaciones ni memorias candidatas, olvidadas o legacy.
+      resolveCreativeMemories(workspace),
       getOperationsStatus(workspace, {
         timezone: workspaceTimezone(workspace, defaultTimezone ?? DEFAULT_TIMEZONE),
       }),
@@ -63,7 +58,7 @@ export const enterpriseContextBuilder: ContextBuilder = {
       company: { name: company.name },
       brandDna,
       avatar,
-      memories: memories.map((memory) => memory.content),
+      memories: memoryLines(memories).map((line) => line.statement),
       operations,
       history,
       userMessage,

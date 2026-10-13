@@ -40,6 +40,8 @@ import {
   GUARDIAN_EVALUATION_SCHEMA_NAME,
 } from '../guardianPayload.js';
 import { composeDemoGuardianCorrection, composeDemoGuardianEvaluation } from './demoGuardian.js';
+import { extractMemoryPayload, MEMORY_SYNTHESIS_SCHEMA_NAME } from '../creativeMemoryPayload.js';
+import { composeDemoMemorySynthesis } from './demoCreativeMemory.js';
 
 /**
  * Proveedor local sin IA, para desarrollo sin credenciales y para tests deterministas.
@@ -344,7 +346,7 @@ export class DemoProvider implements AIProvider {
   }
 
   /**
-   * Solo los planes de contenido (Personal y Enterprise), la estrategia de campaña, el intérprete de PixelCommand y el Brand Guardian (evaluación y corrección) tienen versión demo (compuesta con reglas a partir del contexto real,
+   * Solo los planes de contenido (Personal y Enterprise), la estrategia de campaña, el intérprete de PixelCommand, el Brand Guardian (evaluación y corrección) y el sintetizador de Creative Memory tienen versión demo (compuesta con reglas a partir del contexto real,
    * marcada `mode: demo`). Cualquier otra salida estructurada exige un modelo real.
    */
   async generateStructuredOutput<T>(
@@ -400,6 +402,11 @@ export class DemoProvider implements AIProvider {
         data: validated(input, composeDemoCampaignStrategy(campaign)),
         ...this.meta(start),
       };
+    }
+    const memory =
+      input.schemaName === MEMORY_SYNTHESIS_SCHEMA_NAME ? extractMemoryPayload(input.prompt) : null;
+    if (memory) {
+      return { data: validated(input, composeDemoMemorySynthesis(memory)), ...this.meta(start) };
     }
     throw new AIProviderError(
       'misconfigured',

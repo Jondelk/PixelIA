@@ -312,25 +312,41 @@ Colección `messages` (plugin `tenantScoped`). Contrato: `MessageSchema`.
 
 Índices: `{ workspaceId: 1, conversationId: 1, createdAt: -1 }`.
 
-## 7. CreativeMemory
+## 7. CreativeMemory y CreativeDecisionEvent ✅ (Prompt 16)
 
-Conocimiento creativo acumulado del workspace (preferencias, decisiones, rechazos). Hoy existen el
-contrato (`CreativeMemorySchema`) y el modelo (`creative_memories`), sin endpoints; se creará **solo de
-forma explícita** por el usuario y la extracción automática queda para después.
+Lo que Pixel **aprende** de cómo decide de verdad una persona o una marca (no lo que declaró: eso
+es el ADN). Diseño completo en [`CREATIVE-MEMORY.md`](./CREATIVE-MEMORY.md).
+
+**CreativeDecisionEvent** (`creative_decision_events`, nuevo): evidencia **inmutable** de una decisión
+(override o corrección del Guardian, ajuste de PixelCommand, aceptar/rechazar/editar piezas, editar
+contenido generado, confirmar o descartar una candidata, instrucción explícita). Campos:
+`workspaceId`, `contextType`, `eventType`, recurso y su campaña/proyecto/plan, `actorUserId`,
+`signals[]` (`dimension`, `subject`, `action`, `normalizedKey`, `strength`), `before`/`after`
+compactos, `sourceEventKey`, `description` humana, `metadata.influencedByMemory`, `occurredAt`.
+Índices: `{ workspaceId, sourceEventKey }` único (idempotencia) y
+`{ workspaceId, signals.normalizedKey, occurredAt }` (detector). Sin CRUD público.
+
+**CreativeMemory** (`creative_memories`, el modelo existente extendido de forma compatible):
 
 | Campo | Tipo | Reglas |
 |---|---|---|
-| `workspaceId` | ObjectId | Requerido, indexado (clave de aislamiento) |
-| `memoryScope` | `enterprise \| personal` | |
-| `companyId` | ObjectId | Enterprise (opcional) |
-| `kind` | `preference \| decision \| insight \| rejection` | |
-| `content` | string | 1–1000 caracteres |
-| `source` | `{ type: 'message' \| 'manual', conversationId?, messageId? }` | Referencias del mismo `workspaceId` |
-| `createdByUserId` | ObjectId → User | |
-| `active` | boolean | `DELETE` = desactivar |
+| `workspaceId` | ObjectId | Requerido (`tenantScoped`) |
+| `memoryScope` | `enterprise \| personal` | Es el `contextType` (DTO `contextType`) |
+| `kind` | preference · avoid · approved_pattern · rejected_pattern · exception · workflow_preference · communication_preference · visual_preference · strategic_preference (+ decision · insight · rejection, legacy) | No estrechar |
+| `content` | string | El enunciado (DTO `statement`) |
+| `status` | candidate · active · superseded · dismissed · forgotten · legacy | **Sin default** en Mongoose |
+| `origin` | explicit · decision_pattern · guardian · pixel_command · legacy | `source {message\|manual}` se conserva |
+| `dimension`, `normalizedKey`, `polarity`, `value` | | Clave `dimension:tema:prefer\|avoid\|allow` |
+| `scope` | `{ type: workspace\|campaign\|project\|content_plan, id, label }` | El recurso es siempre de este workspace |
+| `confidence`, `occurrenceCount`, `evidenceCount`, `evidenceEventIds` (≤ 20), `evidenceSummary` | | Interno / evidencia |
+| `confirmedByUser`, `confirmedAt`, `supersedesMemoryId`, `supersededByMemoryId`, `forgottenAt`, `dismissedAt`, `lastObservedAt` | | Historial auditable; nunca se borra |
+| `active` | boolean | Anterior; se mantiene igual a `status === active` |
 
-Índices: `{ workspaceId: 1, active: 1, createdAt: -1 }`.
+Índices: `{ workspaceId, active, createdAt }` (anterior), `{ workspaceId, status, updatedAt }`,
+`{ workspaceId, normalizedKey, status }` y dos únicos parciales (una `active` y una `candidate` por
+`{ workspaceId, normalizedKey, scope.type, scope.id }`).
 
-Uso en chat: `EnterpriseContextBuilder` y `PersonalContextBuilder` incluyen las memorias activas más
-recientes del workspace (máx. 10) en el system prompt, siempre filtradas por `workspaceId`. Hoy no se
-crea ninguna desde la app.
+Migración: las memorias sin `status` (anteriores al Prompt 16) quedan `legacy`, conservadas y fuera
+del retrieval (`creativeMemory.migration.ts`, al arrancar y con `npm run migrate:creative-memories`).
+Los context builders del chat ya no las leen: usan `CreativeMemoryResolver` (solo activas y
+relevantes, acotadas).

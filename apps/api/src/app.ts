@@ -15,6 +15,7 @@ import {
 import { createApiRouter } from './modules/index.js';
 import { createCampaignStrategyEngine } from './modules/campaigns/campaignStrategy.engine.js';
 import { createGuardianEngine } from './modules/guardian/guardian.engine.js';
+import { configureCreativeMemory } from './modules/creative-memory/creativeMemory.runtime.js';
 import { createPixelIntentResolver } from './modules/pixel-command/pixelIntent.resolver.js';
 import { createContentPlanningEngine } from './modules/content-plans/contentPlanning.engine.js';
 import { createEnterprisePlanningStrategy } from './modules/content-plans/enterprisePlanning.strategy.js';
@@ -57,6 +58,9 @@ export function createApp({ env, logger, getDatabaseStatus, ai }: AppOptions): E
     }),
   );
   app.use(originGuard(env.CORS_ORIGINS));
+  // Creative Memory registra decisiones dentro de otros servicios (best-effort): logger y sintetizador.
+  configureCreativeMemory({ ai, logger });
+
   app.use(express.json({ limit: '1mb' }));
   app.use(cookieParser());
 

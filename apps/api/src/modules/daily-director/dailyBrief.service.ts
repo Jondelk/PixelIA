@@ -18,6 +18,7 @@ import { collectDailyData } from './dailyData.collector.js';
 import type { DailyDirectorEngine } from './dailyDirector.engine.js';
 import { workspaceTimezone } from './dailyTime.js';
 import { currentBriefDoc, isBriefStale } from './dailyBrief.current.js';
+import { memoryLines, resolveCreativeMemories } from '../creative-memory/memory.resolver.js';
 
 export { currentBriefForContext, isBriefStale } from './dailyBrief.current.js';
 
@@ -86,6 +87,17 @@ const PersistedPartsSchema = DailyBriefSchema.pick({
 
 const inFlight = new Map<string, Promise<DailyBriefResponse>>();
 
+/** Creative Memory en el Daily Director: solo la dimensión `workflow` (forma de trabajar). */
+async function workflowMemory(workspace: WorkspaceDocument) {
+  const resolved = await resolveCreativeMemories(workspace, { dimensions: ['workflow'] });
+  const priorities = resolved.memories.find((memory) => memory.subject === 'max_priorities');
+  const value = priorities?.value ? Number(priorities.value) : NaN;
+  return {
+    lines: memoryLines(resolved),
+    maxPriorities: Number.isInteger(value) && value >= 1 ? value : null,
+  };
+}
+
 async function runGeneration(
   workspace: WorkspaceDocument,
   timezone: string,
@@ -102,8 +114,22 @@ async function runGeneration(
         reason: 'personal_context_not_configured',
       });
     }
-    const analysis = analyzeDay(raw, timezone, now);
-    const { draft, mode, generation } = await deps.dailyDirector.generate(analysis);
+    const analysis = {
+      ...analyzeDay(raw, timezone, now),
+      workflowMemory: await workflowMemory(workspace),
+    };
+    const generated = await deps.dailyDirector.generate(analysis);
+    const { mode, generation } = generated;
+    // "Prefiere máximo N prioridades": se respeta igual con IA o en modo determinista.
+    const max = analysis.workflowMemory.maxPriorities;
+    const draft = max
+      ? {
+          ...generated.draft,
+          priorities: generated.draft.priorities
+            .slice(0, max)
+            .map((priority, index) => ({ ...priority, rank: index + 1 })),
+        }
+      : generated.draft;
     const generatedAt = new Date();
 
     // Valida el resultado completo ANTES de persistir: nunca se guarda un brief corrupto.

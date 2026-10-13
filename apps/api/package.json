@@ -10,7 +10,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "migrate:workspaces": "tsx scripts/migrate-companies-to-workspaces.ts",
-    "migrate:content-plans": "tsx scripts/migrate-content-plans.ts"
+    "migrate:content-plans": "tsx scripts/migrate-content-plans.ts",
+    "migrate:creative-memories": "tsx scripts/migrate-creative-memories.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

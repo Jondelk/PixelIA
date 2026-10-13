@@ -28,6 +28,7 @@ Director Creativo asistido por IA. Producto de **PIXELES — Tecnología creativ
   editorial desde el BrandDNA y, opcionalmente, la estrategia de una campaña.
   Revisa lo que propone y lo que ya existe con el Brand Guardian (`docs/BRAND-GUARDIAN.md`): juicio
   creativo explicable contra el BrandDNA, antes de organizar y bajo demanda.
+  Aprende cómo decide la marca con Creative Memory (`docs/CREATIVE-MEMORY.md`), también en Personal.
 - **Personal:** el director creativo de una persona. Onboarding personal (8 pasos) → `PersonalDNA`
   → "Así te entiende Pixel" → avatar personal → chat (`docs/PERSONAL.md`), más Operations, Content
   Planner y Daily Director.
@@ -49,7 +50,7 @@ SaaS, panel administrativo complejo y analytics avanzados.
 Referencia (leer lo relevante antes de trabajar): `docs/WORKSPACES.md`, `docs/PERSONAL.md`,
 `docs/WORKSPACE-MIGRATION.md`, `docs/OPERATIONS.md`, `docs/ENTERPRISE-OPERATIONS.md`,
 `docs/CAMPAIGNS.md`, `docs/CONTENT-PLANNER.md`, `docs/ENTERPRISE-CONTENT.md`, `docs/DAILY-DIRECTOR.md`,
-`docs/PIXEL-COMMAND.md` y `docs/BRAND-GUARDIAN.md` describen el diseño vigente; `docs/MVP.md`,
+`docs/PIXEL-COMMAND.md`, `docs/BRAND-GUARDIAN.md` y `docs/CREATIVE-MEMORY.md` describen el diseño vigente; `docs/MVP.md`,
 `docs/ARCHITECTURE.md`, `docs/ENTITIES.md` y `docs/BACKLOG.md` tienen deriva importante (detalle en
 `PIXEL_ESTADO.md` §12). Ante un conflicto, manda el código.
 
@@ -63,7 +64,8 @@ Referencia (leer lo relevante antes de trabajar): `docs/WORKSPACES.md`, `docs/PE
 ```
 User → Workspace ─┬─ enterprise → Company → BrandDNA
                   ├─ personal   → PersonalProfile → PersonalDNA
-                  ├─ compartidos: AvatarProfile · Conversation (→ Message) · CreativeMemory
+                  ├─ compartidos: AvatarProfile · Conversation (→ Message)
+                  ├─ creative memory: CreativeDecisionEvent (evidencia inmutable) → CreativeMemory (candidata → activa)
                   ├─ operations: Project (→ Task, ContentItem) · Task · ContentItem
                   ├─ campaigns (enterprise): Campaign → CampaignStrategy (versiones) · CampaignDeliverable
                   │                          (→ Project o ContentItem con campaignId al aceptar)
@@ -80,7 +82,7 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
      `personal`.
    - AvatarProfile, Conversation, Message, CreativeMemory, PersonalProfile, PersonalDNA, Project,
      Task, ContentItem, ContentPlan, ContentPlanItem, DailyBrief, Campaign, CampaignStrategy,
-     CampaignDeliverable, PixelCommand y GuardianReport llevan `workspaceId` obligatorio e
+     CampaignDeliverable, PixelCommand, GuardianReport y CreativeDecisionEvent llevan `workspaceId` obligatorio e
      indexado. BrandDNA se aísla por `companyId`, y la empresa pertenece a su workspace
      (`Company.workspaceId`).
    - Toda consulta a un modelo aislado (los que usan `tenantScoped`: BrandDNA y todos los anteriores)
@@ -168,7 +170,19 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
    - El Guardian nunca modifica el recurso: corrige una sola vez (solo quita o suaviza, nunca inventa)
      y aplicar es otra acción explícita con el servicio del recurso. El preflight de PixelCommand
      (Enterprise) revisa la propuesta antes de "Organizar".
-9. **No sobrearquitectar.** Monolito modular: sin microservicios, colas externas, GraphQL, state
+9. **Creative Memory is decision memory, not conversation storage.** Pixel remembers high-signal
+   creative preferences, exceptions and recurring decision patterns. A single isolated action must
+   not silently redefine the user's or brand's identity.
+   - Dos capas (`docs/CREATIVE-MEMORY.md`): CreativeDecisionEvent (inmutable, idempotente por
+     `sourceEventKey`, registrado con `recordCreativeDecision` desde los servicios, best-effort) y
+     CreativeMemory. Un patrón (≥ 3 señales en ≥ 2 recursos) crea solo una **candidata**; activa =
+     confirmada o instrucción explícita con una confirmación. Nunca se reescribe el ADN.
+   - La solicitud actual siempre manda; excepción con alcance > memoria con alcance > workspace > ADN
+     blando. Una memoria nunca es un hecho ni fundamenta claims; nunca credenciales ni (Personal)
+     datos sensibles. Olvidar no borra; lo olvidado no se reaprende con evidencia anterior.
+   - Recuperación solo con `CreativeMemoryResolver` (una consulta, acotada); nunca enviar todas las
+     memorias ni conversaciones a la IA.
+10. **No sobrearquitectar.** Monolito modular: sin microservicios, colas externas, GraphQL, state
    managers globales ni librerías "por si acaso".
 
 ## Convenciones de código
@@ -178,7 +192,7 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
 - **API:** un módulo de dominio por carpeta (`apps/api/src/modules/<módulo>/` con `*.model`,
   `*.service`, `*.routes`), registrado solo en `modules/index.ts`: `auth`, `health`, `workspaces`,
   `companies`, `brand-dna`, `personal`, `avatars`, `conversations`, `creative-memory`, `operations`,
-  `content-plans`, `daily-director`, `campaigns`, `pixel-command`, `guardian`. Errores con `AppError` o `lib/errors.ts` (el `errorHandler`
+  `content-plans`, `daily-director`, `campaigns`, `pixel-command`, `guardian`, `creative-memory`. Errores con `AppError` o `lib/errors.ts` (el `errorHandler`
   responde con `ApiError`). Logs con `lib/logger.ts`, nunca `console.log`.
 - **Fechas:** el "hoy" de un workspace se calcula en su zona horaria IANA (`Workspace.timezone` o
   `DEFAULT_TIMEZONE`), nunca en UTC; no inferir la zona desde texto libre.
@@ -189,7 +203,7 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
   `companyApiBase` / `workspaceApiBase`, `lib/apiPaths.ts`). La entrada de cada Pixel es
   `/workspace/:workspaceId/...` y **toda funcionalidad nueva es workspace-first**, también en
   Enterprise: Inicio, `campaigns`, `projects`, `tasks`, `content`, `content-planner`,
-  `personal/onboarding`, `personal/dna`, `pixel`, `chat`, `guardian` (Enterprise). Las Campañas, el Plan de contenido y las
+  `personal/onboarding`, `personal/dna`, `pixel`, `chat`, `guardian` (Enterprise), `memory`. Las Campañas, el Plan de contenido y las
   Operations Enterprise viven en `/workspace/:workspaceId/{campaigns,content-planner,projects,tasks,content}`
   (`enterpriseStaysInWorkspace`); las pantallas
   de marca anteriores siguen en `/company/:companyId/...` (el workspace enterprise redirige allí)
@@ -202,6 +216,9 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
 - **Brand Guardian en la web** (`features/guardian/`): vive en Marca (`/workspace/:id/guardian`), sin
   grupo nuevo de navegación; "Revisar con Guardian" en campaña, plan y contenido; en la propuesta de
   PixelCommand, una línea compacta con el detalle bajo demanda.
+- **Creative Memory en la web** (`features/creative-memory/`): «Lo que Pixel ha aprendido» en
+  `/workspace/:id/memory`, dentro de Marca (Enterprise, etiqueta «Lo aprendido») o junto a Mi Pixel
+  (Personal), sin grupos nuevos. Recordar y olvidar se hacen sobre todo hablando con Pixel.
 - **Entrada pública** (`features/public/`): `/` (solo visitantes), `/explore` y su detalle, con el
   acceso como modal en la URL (`?auth=…&next=…`). Todo `next` pasa por `safeNextPath`; visitar no
   crea workspaces (`/pixels/start?intent=` actúa solo tras el acceso). Imágenes y video solo se

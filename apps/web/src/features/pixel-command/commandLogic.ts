@@ -1,4 +1,4 @@
-import type { PixelCommand, PixelCreatedResource } from '@pixel/contracts';
+import type { PixelActionPlan, PixelCommand, PixelCreatedResource } from '@pixel/contracts';
 
 /*
  * Lógica pura de la entrada de Pixel (sin React): en qué fase está la conversación y adónde lleva
@@ -52,7 +52,20 @@ export function resourceLink(base: string, resource: PixelCreatedResource): stri
       return `${base}/tasks`;
     case 'content_item':
       return `${base}/content`;
+    case 'creative_memory':
+      return `${base}/memory`;
   }
+}
+
+/** La confirmación dice lo que hará: recordar u olvidar (Creative Memory) u organizar. */
+export function confirmLabel(plan: PixelActionPlan): string {
+  if (plan.steps.length && plan.steps.every((step) => step.type === 'remember_memory')) {
+    return 'Recordar';
+  }
+  if (plan.steps.length && plan.steps.every((step) => step.type === 'forget_memory')) {
+    return 'Olvidar';
+  }
+  return 'Organizar';
 }
 
 /** Recursos creados por el comando, sin repetir enlaces (varias tareas → una sola "Ver tareas"). */

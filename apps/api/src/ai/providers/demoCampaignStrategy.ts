@@ -385,7 +385,7 @@ export function composeDemoCampaignStrategy(payload: CampaignPayload): Generated
     ]),
     deliverables: deliverablesFor(channels, lever, payload),
     rationale: fit(
-      `La campaña se apoya en ${lever.reason} porque forma parte del ADN de ${brand.name} y permite diferenciar la marca sin recurrir a ${brand.dislikes[0] ? lower(brand.dislikes[0]) : 'una comunicación promocional agresiva'}.${suggested ? ` El brief no indica canales: sugerimos ${channels.join(' y ')} por el tono y la formalidad de la marca.` : ''}`,
+      `La campaña se apoya en ${lever.reason} porque forma parte del ADN de ${brand.name} y permite diferenciar la marca sin recurrir a ${brand.dislikes[0] ? lower(brand.dislikes[0]) : 'una comunicación promocional agresiva'}.${suggested ? ` El brief no indica canales: sugerimos ${channels.join(' y ')} por el tono y la formalidad de la marca.` : ''}${payload.creativeMemory.length ? ` Tiene en cuenta lo que Pixel ha aprendido de la marca: ${payload.creativeMemory.map((memory) => lower(memory.statement)).join('; ')}.` : ''}`,
       1200,
     ),
   };

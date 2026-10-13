@@ -4,14 +4,16 @@
 > en el repositorio**, no lo que dicen los prompts ni el resto de `docs/`, que tienen deriva (§12).
 > Si el código y este documento no coinciden, **manda el código**: corrige este documento.
 >
-> - Última revisión: **2026-10-10**, rama `feat/prompts-9-11` en `1593576` (contiene
->   `feat/etapa-0-foundation` en `c846956`) y el commit del Prompt 13 (Campaign Manager, `a65e28c`, ya en `origin`),
+> - Última revisión: **2026-10-13**, rama `feat/prompts-9-11` en `79b97e7` (Prompt 15), **al día con
+>   `origin`** (los commits de los Prompts 14 + 14.1 y 15 ya están subidos; contiene `feat/etapa-0-foundation` en `c846956`) y el commit del Prompt 13 (Campaign Manager, `a65e28c`, ya en `origin`),
 >   hecho con autorización del usuario el 2026-10-09 en su equipo (Windows, Claude Code en VS Code),
 >   Encima, el **Prompt 14 (Enterprise Content Planner) y el Prompt 14.1 (Zero-entry UX:
 >   PixelCommand), implementados, verificados y confirmados en un único commit** (`1593576`) ("Add Prompt 14: Enterprise Content Planner and zero-entry Pixel Command"),
->   autorizado por el usuario el 2026-10-10. **Sin push** (§0, §1, §13).
-> - Encima, el **Prompt 15 (Brand Guardian Core)**, implementado y confirmado en el commit "Add Prompt 15: Pixel Brand Guardian Core" (autorizado el 2026-10-10, **sin push**), verificado el
+>   autorizado por el usuario el 2026-10-10; ya en `origin` (§0, §1, §13).
+> - Encima, el **Prompt 15 (Brand Guardian Core)**, implementado y confirmado en el commit "Add Prompt 15: Pixel Brand Guardian Core" (`79b97e7`, autorizado el 2026-10-10, ya en `origin`), verificado el
 >   2026-10-10 (§13).
+> - Encima, **sin commit**: el **Prompt 16 (Creative Memory)**, implementado y verificado el 2026-10-13
+>   (§13). El usuario pidió revisarlo antes de cualquier commit.
 > - Leyenda: ✅ implementado y verificado (tests automáticos; si solo hubo revisión manual, se dice) ·
 >   🟨 parcial · 📝 solo planificado (docs o prompts, sin código) · ❓ pendiente de verificación ·
 >   ⛔ bloqueado.
@@ -20,13 +22,13 @@
 
 | Tema | Estado |
 |---|---|
-| Última etapa verificada | **Etapa G — Brand Guardian Core (Prompt 15)**, implementada y verificada el 2026-10-10 (§13) en el equipo del usuario, confirmada en el commit "Add Prompt 15: Pixel Brand Guardian Core" (sin push). Debajo, en `1593576` (sin push): Etapa Z (Prompt 14.1) y Etapa EC (Prompt 14). Antes: Etapa M (Prompt 13, `a65e28c`), Etapas O, C, D y E (`e59757d`) y la entrada pública (`24e300a`). |
-| Prompts | Prompt 9 = Operations, 10 = Content Planner, 11 = Daily Director, **12** = Shared Operations + Enterprise Projects (Etapa E; confirmado: el texto del Prompt 12 se recibió e implementó en la sesión del equipo del usuario el 2026-10-08), **13 = Enterprise Campaign Manager** (Etapa M; el usuario envió el texto "PROMPT 13 — ENTERPRISE CAMPAIGN MANAGER" el 2026-10-09), **14 = Enterprise Content Planner** (Etapa EC; recibido el 2026-10-09), **14.1 = Zero-entry UX / PixelCommand** (Etapa Z; recibido el 2026-10-09: "PROMPT 14.1 — ZERO-ENTRY UX"), **15 = Brand Guardian Core** (Etapa G; recibido el 2026-10-10: "PIXEL BRAND GUARDIAN CORE"). La entrada pública no tiene número. |
+| Última etapa verificada | **Etapa CM — Creative Memory (Prompt 16)**, implementada y verificada el 2026-10-13 (§13) en el equipo del usuario, **sin commit**. Debajo: Etapa G (Prompt 15, `79b97e7`), Etapas Z y EC (Prompts 14.1 y 14, `1593576`), Etapa M (Prompt 13, `a65e28c`), Etapas O, C, D y E (`e59757d`) y la entrada pública (`24e300a`); todo en `origin`. |
+| Prompts | Prompt 9 = Operations, 10 = Content Planner, 11 = Daily Director, **12** = Shared Operations + Enterprise Projects (Etapa E; confirmado: el texto del Prompt 12 se recibió e implementó en la sesión del equipo del usuario el 2026-10-08), **13 = Enterprise Campaign Manager** (Etapa M; el usuario envió el texto "PROMPT 13 — ENTERPRISE CAMPAIGN MANAGER" el 2026-10-09), **14 = Enterprise Content Planner** (Etapa EC; recibido el 2026-10-09), **14.1 = Zero-entry UX / PixelCommand** (Etapa Z; recibido el 2026-10-09: "PROMPT 14.1 — ZERO-ENTRY UX"), **15 = Brand Guardian Core** (Etapa G; recibido el 2026-10-10: "PIXEL BRAND GUARDIAN CORE"), **16 = Creative Memory** (Etapa CM; recibido el 2026-10-13: "PROMPT 16 — PIXEL CREATIVE MEMORY"; el mensaje llegó truncado en §142). La entrada pública no tiene número. |
 | Ramas | `feat/prompts-9-11` (nueva, en `origin`) = `feat/etapa-0-foundation` + este trabajo. `feat/etapa-0-foundation` sigue en `c846956`: **todavía no se ha fusionado**. |
-| Última etapa | **Brand Guardian Core** (Prompt 15, Etapa G): GuardianEngine con 8 evaluadores explicables, score calculado en el backend, BLOCK conservador, override registrado, corrección de una pasada, preflight antes de "Organizar" en PixelCommand Enterprise, informe en `/workspace/:id/guardian` (grupo Marca) y "Revisar con Guardian" en campaña, plan y contenido (`docs/BRAND-GUARDIAN.md`). Anterior: Zero-entry UX (Prompt 14.1, `docs/PIXEL-COMMAND.md`). |
-| Siguiente paso | Usuario: decidir el push de `1593576` (Prompts 14 + 14.1) y del commit del Prompt 15, y la siguiente etapa (§14). No empezar el Prompt 16 sin pedirlo. |
+| Última etapa | **Creative Memory** (Prompt 16, Etapa CM): CreativeDecisionEvent inmutable e idempotente, CreativeMemory extendida (candidata → confirmada; explícita con una confirmación), detector de patrones (3 señales en 2 recursos), sintetizador con refs EVENT_n, resolver con alcance y excepciones, integración en PixelCommand (`manage_memory`), campañas, planners, Daily Director, chat y Guardian, y «Lo que Pixel ha aprendido» en la web (`docs/CREATIVE-MEMORY.md`). Anterior: Brand Guardian Core (Prompt 15). |
+| Siguiente paso | Usuario: revisar el Prompt 16 y decidir su commit (y push). No empezar el Prompt 17 sin pedirlo (§14). |
 | Problema a conocer ya | Copiar `apps/api/.env.example` tal cual **impide arrancar la API** (`JWT_SECRET=` y `AI_PROVIDER=` vacíos no validan). Sigue igual en `e59757d`. Ver §11 y §15. |
-| Cambios sin commit | Ninguno. El Prompt 15 está en un único commit ("Add Prompt 15: Pixel Brand Guardian Core") sobre `1593576`, autorizado por el usuario el 2026-10-10; los Prompts 14 y 14.1 están en `1593576` (autorizado el 2026-10-10). Ninguno de los dos tiene push; el Prompt 13 (`a65e28c`) ya está en `origin`. |
+| Cambios sin commit | **Sí: todo el Prompt 16** (contracts `creativeMemory.ts` y PixelCommand, módulo `creative-memory`, integraciones en campañas, planners, Daily Director, chat, Guardian y Operations, feature web `creative-memory`, migración, tests y docs). Los Prompts 13–15 están en `origin`. |
 
 ## 1. Rama, commits y git
 
@@ -45,8 +47,9 @@
 
 | Commit | Fecha (UTC) | Autor | Mensaje |
 |---|---|---|---|
-| (este commit) | 2026-10-10 | Claude | Add Prompt 15: Pixel Brand Guardian Core (autorizado; sin push) |
-| `1593576` | 2026-10-10 | Claude | Add Prompt 14: Enterprise Content Planner and zero-entry Pixel Command (Prompts 14 y 14.1, autorizado; sin push) |
+| (sin commit) | 2026-10-13 | Claude | Prompt 16: Creative Memory (pendiente de revisión y autorización del usuario) |
+| `79b97e7` | 2026-10-10 | Claude | Add Prompt 15: Pixel Brand Guardian Core (autorizado; en `origin`) |
+| `1593576` | 2026-10-10 | Claude | Add Prompt 14: Enterprise Content Planner and zero-entry Pixel Command (Prompts 14 y 14.1, autorizado; en `origin`) |
 | `a65e28c` | 2026-10-09 | Claude | Add Prompt 13: Enterprise Campaign Manager (en `origin`) |
 | (el que añade este documento) | 2026-10-09 | Claude | Add continuity docs and record the public entry stage (`CLAUDE.md`, `README.md`, `docs/BACKLOG.md`, `docs/PIXEL_ESTADO.md`) |
 | `24e300a` | 2026-10-09 | Claude | Add public entry experience: welcome, explore and auth modal (solo `apps/web`) |
@@ -97,7 +100,8 @@ en este repositorio.
 | 13 | Enterprise Campaign Manager | M | `a65e28c` (2026-10-09, en `origin`) | ✅ verificado el 2026-10-09 (§13); sin prueba con Claude real |
 | 14 | Enterprise Content Planner | EC | `1593576` (2026-10-10, sin push) | ✅ implementado y verificado el 2026-10-09 (§13), incluido el navegador; sin prueba con Claude real |
 | 14.1 | Zero-entry UX: PixelCommand | Z | `1593576`, el mismo commit que el Prompt 14 (2026-10-10, sin push) | ✅ implementado y verificado el 2026-10-09 (§13), incluido el navegador; sin prueba con Claude real |
-| 15 | Brand Guardian Core | G | "Add Prompt 15: Pixel Brand Guardian Core" (2026-10-10, sin push) | ✅ implementado y verificado el 2026-10-10 (§13), incluido el navegador; sin prueba con Claude real (sin `ANTHROPIC_API_KEY`) |
+| 15 | Brand Guardian Core | G | `79b97e7` (2026-10-10, en `origin`) | ✅ implementado y verificado el 2026-10-10 (§13), incluido el navegador; sin prueba con Claude real (sin `ANTHROPIC_API_KEY`) |
+| 16 | Creative Memory | CM | sin commit (pendiente de revisión) | ✅ implementado y verificado el 2026-10-13 (§13), incluido el navegador; sin prueba con Claude real (sin `ANTHROPIC_API_KEY`) |
 
 En la sesión remota del 2026-10-08, el Prompt 11 se recibió antes de que existieran sus
 prerrequisitos en `origin`; aquí solo se comprobó que faltaban. Lo implementado es lo que llegó en
@@ -120,7 +124,8 @@ Modelo de dominio:
 ```
 User → Workspace ─┬─ enterprise → Company → BrandDNA
                   ├─ personal   → PersonalProfile → PersonalDNA
-                  ├─ compartidos: AvatarProfile · Conversation → Message · CreativeMemory (solo modelo)
+                  ├─ compartidos: AvatarProfile · Conversation → Message
+                  ├─ creative memory: CreativeDecisionEvent (evidencia inmutable) → CreativeMemory (candidata → activa; alcance workspace|campaña)   (Personal y Enterprise)
                   ├─ operations: Project (→ Task, ContentItem) · Task · ContentItem   (Personal y Enterprise)
                   ├─ campaigns: Campaign → CampaignStrategy (versiones) · CampaignDeliverable (→ Project | ContentItem)   (solo Enterprise)
                   ├─ content planner: ContentPlan (contextType) → ContentPlanItem (→ ContentItem al aceptar)   (Personal y Enterprise; Enterprise: BrandDNA + Campaign opcional)
@@ -132,7 +137,7 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
 Qué funcionalidad tiene cada tipo lo decide `packages/contracts/src/capabilities.ts`
 (`workspaceSupportsFeature`): Personal tiene `projects`, `tasks`, `content`, `contentPlanner` y
 `dailyDirector`; Enterprise, `projects`, `tasks`, `content`, `contentPlanner` (desde el Prompt 14)
-y `campaigns` y `brandGuardian` (Prompt 15).
+y `campaigns` , `brandGuardian` (Prompt 15) y `creativeMemory` (Prompt 16, ambos tipos).
 
 - **Cadena de una petición:**
   - Global: `requestLogger` → `cors` → `originGuard` (403 si un método no seguro llega con un
@@ -154,11 +159,11 @@ y `campaigns` y `brandGuardian` (Prompt 15).
   mensajes (el de Pixel con `meta`: proveedor, modelo, modo, latencia y versiones de ADN/avatar). Un
   fallo de la IA responde 422/503 sin guardar nada; sin contexto, 409 antes de llamarla.
 - **Dónde se usa IA hoy:** el chat (`generateText`, también para el consejo creativo de PixelCommand)
-  y ocho salidas estructuradas (`generateStructuredOutput`): el enriquecimiento opcional del
+  y nueve salidas estructuradas (`generateStructuredOutput`): el enriquecimiento opcional del
   PersonalDNA, el `ContentPlanningEngine`, la `EnterprisePlanningStrategy`, el intérprete de
   PixelCommand (con reglas de respaldo si falla), el `DailyDirectorEngine`, el
   `CampaignStrategyEngine` y, en el Brand Guardian, la evaluación semántica (una llamada por
-  revisión, con respaldo por reglas) y la corrección de una pasada. El director cae a
+  revisión, con respaldo por reglas) y la corrección de una pasada, y el sintetizador de Creative Memory (solo con evidencia suficiente). El director cae a
   un resultado determinístico si la IA falla; el planner y el Campaign Manager responden 503 sin
   resultado falso con un proveedor real caído y tienen versión determinista solo en modo demo. BrandDNA y avatares son **reglas
   deterministas versionadas**.
@@ -186,12 +191,12 @@ apps/api/src
   config/env.ts  db/{connection,tenantScoped.plugin}.ts  lib/{errors,logger,mongo}.ts
   middleware/    requireAuth, requireWorkspaceAccess, requireCompanyAccess, originGuard, errorHandler…
   modules/       auth · health · workspaces · companies · brand-dna · personal · avatars · conversations · creative-memory
-                 · operations · content-plans · daily-director · campaigns · pixel-command · guardian
-apps/api/scripts/{migrate-companies-to-workspaces,migrate-content-plans}.ts      apps/api/test/  (40 archivos + support/ + fixtures/)
+                 · operations · content-plans · daily-director · campaigns · pixel-command · guardian · creative-memory
+apps/api/scripts/{migrate-companies-to-workspaces,migrate-content-plans,migrate-creative-memories}.ts      apps/api/test/  (43 archivos + support/ + fixtures/)
 apps/web/src
   app/           router, AppShell, Sidebar, Header, navigation, theme
   features/      auth · dashboard · workspaces · companies · onboarding · brand · personal · pixel · chat · avatar3d · system
-                 · operations · content-planner · daily-director · campaigns · pixel-command · guardian
+                 · operations · content-planner · daily-director · campaigns · pixel-command · guardian · creative-memory
   components/    Button, Field, Alert, EmptyState, DnaBlocks, Reveal, BrandLogo, Pixi, rise…
   lib/           api.ts (fetch + validación Zod), apiPaths.ts, forms.ts, useResource.ts
   styles/theme.css  ← único archivo de tokens
@@ -212,7 +217,7 @@ packages/contracts/src   25 módulos reexportados por index.ts (se consume solo 
 | `personal` | PersonalProfile (onboarding de 8 pasos), PersonalDNA `personal-rules-1` (+`+ai` opcional verificado), versiones, `overrides`, dedupe | ✅ |
 | `avatars` | `rulesAvatarEngine` (`avatar-rules-1`) y `personalAvatarEngine` (`personal-avatar-rules-1`); un router (workspace y legacy) resuelto por tipo; versiones e `isStale` | ✅ |
 | `conversations` | Conversaciones y mensajes por workspace; chat Enterprise y Personal; IA real o demo | ✅ |
-| `creative-memory` | Modelo y contrato; los context builders leen memorias activas | 🟨 router vacío: sin endpoints ni forma de crearlas |
+| `creative-memory` | CreativeMemory (`creative_memories`, extendida de forma compatible; migración a `legacy`) y CreativeDecisionEvent (`creative_decision_events`, inmutable, idempotente); léxico determinista, `recordCreativeDecision` (best-effort), PatternDetector (3 señales en 2 recursos → candidata, anti-reaprendizaje, sin duplicados, sin auto-refuerzo), sintetizador (IA con EVENT_n validadas; demo), resolver + conflictos (alcance, excepciones, 8 + 8), API `/creative-memories` (lista, detalle con evidencia, remember, confirm, dismiss, forget, replace) | ✅ Personal y Enterprise (2026-10-13, sin commit); sin prueba con Claude real |
 | `operations` | Project, Task y ContentItem por workspace (Personal y Enterprise); `DELETE` de proyecto **archiva**; `DELETE` de tarea o contenido borra; resumen `/operations/summary` | ✅ |
 | `content-plans` | ContentPlan (`contextType`) + ContentPlanItem; Personal: `ContentPlanningEngine`; Enterprise: `EnterprisePlanningStrategy` (BrandDNA + campaña opcional, refs controladas, grounding promocional y de campaña, versión exacta de la estrategia); migración de `contextType`; aceptar un ítem crea su ContentItem (idempotente, con `campaignId`); editar/rechazar condicionados; `DELETE` archiva | ✅ Personal y Enterprise (Enterprise 2026-10-09); sin prueba con Claude real (`CONTENT-PLANNER.md` §10, `ENTERPRISE-CONTENT.md` §9) |
 | `campaigns` | Campaign, CampaignStrategy (versionada) y CampaignDeliverable; `CampaignStrategyEngine` (IA con contexto controlado + validación de fundamento de marca; 503 sin IA; demo determinista); aceptar una pieza crea su ContentItem o Project con `campaignId` (idempotente); `DELETE` archiva | ✅ solo Enterprise (2026-10-09); sin prueba con Claude real |
@@ -234,6 +239,7 @@ packages/contracts/src   25 módulos reexportados por index.ts (se consume solo 
 | `content-planner` Enterprise ("Plan de contenido de {marca}", selector y resumen de campaña, `?campaign=`, plan con estrategia editorial → alineación → pilares → plan, tarjetas con campaña y porqué de marca) | ✅ (2026-10-09; verificado en navegador) |
 | `pixel-command` (`PixelCommand`, `PixelCommandPanel`, `PixelProposalCard`, `PixelRequestInput`): "¿Qué necesitas hacer?" dominante en los Inicios Enterprise (con ADN) y Personal; "¿Qué quieres lograr?" en Campañas y "¿Qué quieres comunicar?" en Plan de contenido, con los formularios como opciones avanzadas; navegación Enterprise Inicio · Trabajo · Marca | ✅ (2026-10-09; verificado en navegador) |
 | `guardian` (Brand Guardian en Marca: revisar campaña, plan, pieza o texto pegado; informe con estado, score heurístico, dimensiones aplicables, hallazgos explicados, override, "Corregir con Pixel" y "Aplicar"; historial) · "Revisar con Guardian" en el detalle de campaña, el plan de contenido y Contenido · preflight compacto en la propuesta de PixelCommand (`GuardianPreflight`) | ✅ (2026-10-10; verificado en navegador) |
+| `creative-memory` («Lo que Pixel ha aprendido»: candidatas con su patrón y «¿Por qué Pixel piensa esto?», activas con alcance y origen, editar = reemplazar, olvidar con confirmación, historial plegado; en Marca «Lo aprendido» o junto a Mi Pixel) · PixelCommand confirma con «Recordar» / «Olvidar» | ✅ (2026-10-13; verificado en navegador) |
 
 Tests web: entorno `node`, sin DOM. Además de funciones puras, los de Operations, Content Planner y
 Daily Director renderizan vistas con `renderToStaticMarkup`; no hay tests de interacción.
@@ -270,13 +276,13 @@ sin tests automáticos) · Workspaces y migración Company → Workspace · Pixe
 PersonalDNA, avatar, chat) · Operations para Personal y Enterprise (Etapas O y E) · Content Planner
 Personal (Etapa C) · Daily Director Personal (Etapa D) · Campaign Manager Enterprise (Etapa M,
 Prompt 13) · Content Planner Enterprise (Etapa EC, Prompt 14) · PixelCommand /
-zero-entry (Etapa Z, Prompt 14.1) · Brand Guardian (Etapa G, Prompt 15). Las siete últimas, verificadas con tests y en modo
+zero-entry (Etapa Z, Prompt 14.1) · Brand Guardian (Etapa G, Prompt 15) · Creative Memory (Etapa CM, Prompt 16, sin commit). Las ocho últimas, verificadas con tests y en modo
 demo (EC, Z y G también en navegador); con Claude real, sin probar (❓). Experiencia de entrada pública (solo web,
 verificada en navegador el 2026-10-09; falta el video final).
 
 ### Parciales o abiertas 🟨
 
-- **CreativeMemory (Etapa 9):** solo modelo, contrato y lectura en los context builders.
+- **Creative Memory (Etapa CM):** sin decay; los alcances `project` y `content_plan` existen en contrato y resolver pero no se crean desde la conversación; `creative_resource_rejected` aún no se emite.
 - **IA en BrandDNA y avatar (Etapa 6):** hoy solo reglas deterministas.
 - **Avatar 3D (Etapa 7):** afinar otros sujetos; `surfaceDetail` `grain` y `veins` solo en la vista 2D.
 - **Convergencia Enterprise → `/workspace`:** planificada (`WORKSPACES.md`); no existe
@@ -292,7 +298,7 @@ verificada en navegador el 2026-10-09; falta el video final).
 - **Análisis asíncrono de marca** (`onboarding/submit`, `analysis/retry`, polling, estados
   `analyzing`/`failed`, `ANALYSIS_TIMEOUT_MS`, ADR 6): descrito en `MVP.md` y `ARCHITECTURE.md`,
   **no existe**. El flujo real es síncrono (§8, D8).
-- Endpoints de memorias y "Recordar esto" (Etapa 9). Cierre end-to-end con seed (Etapa 10).
+- Cierre end-to-end con seed (Etapa 10).
 - Streaming de respuestas (SSE) y voz (Etapa 8; la voz en tiempo real está fuera del alcance del MVP).
 - Etapa W pendiente: pasar los clientes web Enterprise de avatar y chat a `/api/workspaces/...` y
   retirar las rutas legacy; retirar `companyId` legacy y `Company.ownerId`; miembros y roles por
@@ -315,6 +321,8 @@ verificada en navegador el 2026-10-09; falta el video final).
 - El Brand Guardian (`GUARDIAN_SYSTEM` y `GUARDIAN_CORRECTION_SYSTEM`) con Claude real: solo demo,
   reglas y proveedores de prueba (uno que cita refs inválidas, otro que inventa en la corrección).
   Sin `ANTHROPIC_API_KEY` el 2026-10-10: prueba en vivo SKIPPED.
+- Creative Memory con Claude real (sintetizador e intérprete de `manage_memory`): solo demo y reglas;
+  `creativeMemory.live.test.ts` SKIPPED sin `ANTHROPIC_API_KEY` (2026-10-13).
 - ~~La interfaz de Campañas en un navegador~~: recorrida en el smoke del Prompt 14 (detalle,
   pestaña "Plan de contenido" y su CTA).
 - El enriquecimiento IA del PersonalDNA (`personal-rules-1+ai`) con Claude real:
@@ -373,6 +381,11 @@ verificada en navegador el 2026-10-09; falta el video final).
 | D44 | Score calculado en el backend: penalizaciones fijas (info 0 · low 5 · medium 12 · high 25 · critical 40), pesos simples por dimensión, solo dimensiones aplicables; la UI lo presenta como heurístico | Reproducible y explicable, nunca una "verdad" | `BRAND-GUARDIAN.md` §5 |
 | D45 | Corrección de una sola pasada + una re-evaluación; solo quita o suaviza; se descarta si añade afirmaciones; aplicar es otra acción explícita con el servicio del recurso y exige que el informe no esté `stale` | Pixel se corrige sin inventar ni sobrescribir a escondidas | `BRAND-GUARDIAN.md` §6–§8 |
 | D46 | Preflight solo en Enterprise y solo en intenciones que crean campaña, plan o pieza; el texto del propio usuario cuenta como fundamento; BLOCK deja `guardianBlocked` y confirmar responde 409 hasta ajustar o hacer override | "Organizar" nunca ejecuta algo que el Guardian bloqueó sin decisión explícita | `PIXEL-COMMAND.md` §8 bis |
+| D47 | **Creative Memory is decision memory, not conversation storage.** Pixel remembers high-signal creative preferences, exceptions and recurring decision patterns. A single isolated action must not silently redefine the user's or brand's identity. | Dos capas (evento inmutable / memoria); patrón → solo candidata | `CREATIVE-MEMORY.md` §1–§2 |
+| D48 | Reutilizar el modelo CreativeMemory: `content` = enunciado, `memoryScope` = contextType, procedencia nueva en `origin`, `status` sin default; lo anterior → `legacy` sin clasificar | Ningún segundo sistema; nada reinterpretado ni inventado | `CREATIVE-MEMORY.md` §4, §14 |
+| D49 | Umbral 3 señales independientes (media/alta, sin `influencedByMemory`) en ≥ 2 recursos; anti-reaprendizaje por `forgottenAt`/`dismissedAt`; débiles solo refuerzan | Sin sobreaprendizaje ni auto-refuerzo | `CREATIVE-MEMORY.md` §6–§7 |
+| D50 | Excepción con alcance suspende (no borra) la preferencia general; la solicitud actual siempre manda; la memoria nunca es un hecho ni fundamenta claims; Daily Director solo `workflow` | Precedencia explicable y segura | `CREATIVE-MEMORY.md` §9, §11–§12 |
+| D51 | Etiqueta corta «Lo aprendido» en la barra lateral (la página se titula «Lo que Pixel ha aprendido»); «historia» no cuenta como Stories (solo «stories» / «historias de Instagram») | Sin líneas partidas en la navegación; menos falsos positivos | `CREATIVE-MEMORY.md` §3, §16 |
 
 ## 9. Contratos que no deben romperse
 
@@ -402,6 +415,7 @@ verificada en navegador el 2026-10-09; falta el video final).
 | `/workspaces/:id/pixel/commands` · `/:commandId` · `/adjust` · `/confirm` · `/cancel` | POST (201) · GET · POST · POST (`{ command, executed }`) · POST | Personal y Enterprise; sin ADN → 409; confirmar exige la `revision` vista; segunda confirmación → 200 `executed: false` |
 | `/workspaces/:id/pixel/commands/:commandId/guardian-override` | POST | solo Enterprise; todos los hallazgos bloqueantes deben admitir override (si no, 409 `guardian_not_overridable`) |
 | `/workspaces/:id/guardian/evaluate` · `/reports` · `/reports/:reportId` · `/override` · `/correct` · `/apply` | POST (201) · GET (paginado, `?resourceType=&resourceId=`) · GET (`{ report }` con `stale`) · POST · POST (201) · POST | solo Enterprise (Personal → 400 `feature_not_available`); sin ADN → 409 `brand_dna_missing`; recurso ajeno → 404 |
+| `/workspaces/:id/creative-memories` · `/:memoryId` · `/remember` · `/:memoryId/confirm` · `/dismiss` · `/forget` · `/replace` | GET (`?view=`) · GET (`{ memory, evidence, related }`) · POST (201/200) · POST · POST · POST · POST (201) | Personal y Enterprise; recurso ajeno → 404; hechos/credenciales/sensible → 400 `creative_memory_not_allowed` |
 | `/workspaces/:id/daily-briefs` · `/:briefId` | GET (paginado) · GET | solo Personal |
 | `/companies` · `/companies/:id` | GET, POST (201) · GET, PATCH | legacy Enterprise; `POST` crea también su workspace. `/companies/:id/memories` está montado pero vacío (404) |
 | `/companies/:id/brand-dna` | GET, PUT | PUT = `{ step, data }` |
@@ -430,7 +444,7 @@ con `INVALID_RESPONSE`.
   `pixel_command_revision_changed`, `pixel_command_changed`, `pixel_command_not_cancellable`,
   `pixel_command_reply_unavailable` (Prompt 14.1), `guardian_preflight_blocked`, `guardian_not_overridable`,
   `guardian_single_correction_pass`, `guardian_nothing_to_fix`, `guardian_no_safe_correction`,
-  `guardian_report_stale` (409) y `guardian_apply_not_supported` (400) (Prompt 15). No tienen schema en
+  `guardian_report_stale` (409) y `guardian_apply_not_supported` (400) (Prompt 15), `creative_memory_not_allowed`, `creative_memory_unclear` (400), `creative_memory_not_candidate`, `creative_memory_not_active`, `creative_memory_duplicate` (409) (Prompt 16). No tienen schema en
   contracts. `ChatStudio` reacciona a
   `personal_context_not_configured`, `brand_dna_missing` y `enterprise_company_missing`.
 
@@ -442,7 +456,7 @@ con `INVALID_RESPONSE`.
 (arquetipos, `LanguageCode`, roles de paleta…); `generator.kind`; claves de paso de ambos
 onboardings (un paso guardado que deja de validar se descarta en silencio); `CreativeMemory.kind`,
 `memoryScope` y `source.type`; `ContentPlan.contextType`, `ContentPlanItem.strategicRole` y
-`funnelStage` (Prompt 14); `PixelCommand.status`, `intent` y los tipos de paso (Prompt 14.1); `GuardianReport.mode`, `resourceType`, `status`, las dimensiones, severidades y códigos de hallazgo (Prompt 15). Al leer, la API valida con `Schema.parse` BrandDNA, PersonalDNA,
+`funnelStage` (Prompt 14); `PixelCommand.status`, `intent` y los tipos de paso (Prompt 14.1); `GuardianReport.mode`, `resourceType`, `status`, las dimensiones, severidades y códigos de hallazgo (Prompt 15); `CreativeMemory.status`, `kind`, `origin`, `polarity`, `dimension`, `scope.type` y `CreativeDecisionEvent.eventType` / señales (Prompt 16); la intención `manage_memory` y los pasos `remember_memory` / `forget_memory`. Al leer, la API valida con `Schema.parse` BrandDNA, PersonalDNA,
 AvatarProfile, Conversation, Message y CreativeMemory; Workspace y Company no se validan al leer,
 pero la web valida cada respuesta (un valor fuera del enum rompe la UI con `INVALID_RESPONSE`). En
 ambos casos: **no estrechar enums**.
@@ -452,7 +466,7 @@ ambos casos: **no estrechar enums**.
 `users`, `workspaces`, `companies`, `brand_dnas`, `personal_profiles`, `personal_dnas`,
 `avatar_profiles`, `conversations`, `messages`, `creative_memories`, `projects`, `tasks`,
 `content_items`, `content_plans`, `content_plan_items`, `daily_briefs`, `campaigns`,
-`campaign_strategies`, `campaign_deliverables`, `pixel_commands`, `guardian_reports`. Índices con nombre:
+`campaign_strategies`, `campaign_deliverables`, `pixel_commands`, `guardian_reports`, `creative_decision_events`. Índices con nombre:
 `one_personal_per_owner` (workspaces), `brand_company_version` y `brand_company_dna_version`
 (avatar_profiles, parciales). Únicos relevantes: `users.email`, `{ownerId, slug}` en workspaces y
 companies, `workspaces.migratedFromCompanyId` (parcial; mantiene idempotente la migración),
@@ -488,15 +502,15 @@ createdAt: -1}` en el Prompt 14).
   0 empresas → `/companies/new`, 1 → su workspace, varias → `/dashboard`).
 - **Rutas web:** `/login`, `/register`, `/dashboard`, `/pixels/new`, `/companies`, `/companies/new`
   (`?workspace=`), `/company/:companyId/{,onboarding,brand,pixel,chat}`,
-  `/workspace/:workspaceId/{,chat,pixel,personal/onboarding,personal/dna,campaigns,campaigns/:campaignId,projects,projects/:projectId,tasks,content,content-planner,content-planner/:planId,guardian,guardian/reports/:reportId}` (las dos últimas, solo Enterprise).
+  `/workspace/:workspaceId/{,chat,pixel,personal/onboarding,personal/dna,campaigns,campaigns/:campaignId,projects,projects/:projectId,tasks,content,content-planner,content-planner/:planId,guardian,guardian/reports/:reportId,memory}` (las dos últimas, solo Enterprise).
 - **Tests guardianes de invariantes:** `tenantScoped`, `contextBuilders`, `enterpriseWorkspace`,
   `workspaces`, `migration`, `avatarIndexes`, `personal*`, `chat`, el aislamiento por empresa de
   `companies`, `brandDna` y `avatar` (recurso ajeno → 404), `auth` (cookie, 401),
   `operationsIsolation`, `enterpriseOperations`, `projects`, `tasks`, `content`, `contentPlans`,
   `dailyBrief`, `dailyDirector.unit`, `contentPlanning.engine`, `campaigns`,
   `campaignStrategy.engine`, `enterpriseContentPlanner`, `enterprisePlanning.strategy`,
-  `pixelCommand`, `pixelCommand.rules`, `guardian` y `guardian.engine`, en `apps/api/test/`; `enterpriseContentPlan`,
-  `pixelCommand` y `guardian` en contracts.
+  `pixelCommand`, `pixelCommand.rules`, `guardian`, `guardian.engine`, `creativeMemory` y `creativeMemory.unit`, en `apps/api/test/`; `enterpriseContentPlan`,
+  `pixelCommand`, `guardian` y `creativeMemory` en contracts.
 
 ## 10. Decisiones que no estaban documentadas (se registran aquí)
 
@@ -616,6 +630,20 @@ a "no convertida") y **R11** (el rollback borra también los ítems). El resto s
 | `docs/WORKSPACES.md`, `WORKSPACE-MIGRATION.md`, `PERSONAL.md` | Correctos salvo detalles: `WORKSPACES.md` presenta `/api/companies/:id/memories` como ruta legacy que usa la web (el router está vacío y la web no la llama) y su plan de convergencia no menciona `brand-dna` (§10.10). `WORKSPACE-MIGRATION.md` §4 dice que el modo normal del script «no elimina índices», pero siempre llama a `upgradeAvatarProfileIndexes()` y retira los dos índices legacy de `avatar_profiles` (su propio §2 lo explica; el log del script también dice «sin eliminar los legacy») |
 
 ## 13. Última verificación
+
+### 2026-10-13: Prompt 16 (Creative Memory), equipo del usuario, sin commit
+
+| Comprobación | Resultado |
+|---|---|
+| `npm run typecheck` | 0 errores |
+| `npm run lint` | sin errores ni avisos |
+| Prettier | OK en los archivos tocados (`contextBuilders.test.ts` es CRLF y se mantuvo CRLF); el CRLF del repo no se normalizó |
+| `npm run test` | contracts 79/79 · API 479 + 4 omitidos (`chat.live`, `contentPlanning.live` y los 2 de `creativeMemory.live`) · web 230/230 |
+| `npm run build` | OK (Vite avisa de un chunk grande: aviso, no error) |
+| Navegador (API :4100 y web :5180 temporales, modo demo, base `pixel_smoke_p16` borrada al terminar) | 29/29: recordar por conversación (una confirmación «Recordar») → la campaña la aplica → página con la memoria → olvidar → la siguiente campaña ya no la aplica; candidata por 3 rechazos en 2 planes → «¿Por qué Pixel piensa esto?» → confirmar; excepción de neón en una campaña (Guardian la explica allí y avisa en otra); INVENTIA sin rastro de TINTO; Personal «prefiero carruseles educativos» → plan en carruseles; tableta y móvil sin desbordes; consola limpia |
+| Claude real | SKIPPED: no hay `ANTHROPIC_API_KEY` en el entorno ni `apps/api/.env` |
+
+Los servidores del usuario (:4000) no se tocaron.
 
 ### 2026-10-10: Prompt 15 (Brand Guardian Core), equipo del usuario
 
@@ -739,10 +767,10 @@ Verificación anterior: `c846956` (2026-10-08): contracts 27 · API 185 + 1 · w
 
 ## 14. Siguiente paso (no implementado)
 
-0. **Usuario: decidir el push** de `1593576` (Prompts 14 + 14.1) y del commit del Prompt 15
-   (autorizado el 2026-10-10), y la siguiente etapa. No empezar
-   el Prompt 16 sin pedirlo. Probar `CAMPAIGN_SYSTEM`, `ENTERPRISE_PLANNING_SYSTEM`,
-   `PIXEL_COMMAND_SYSTEM`, `GUARDIAN_SYSTEM` y `GUARDIAN_CORRECTION_SYSTEM` con Claude real
+0. **Usuario: revisar el Prompt 16 (Creative Memory) y autorizar (o no) su commit**; después, el push y
+   la siguiente etapa. No empezar
+   el Prompt 17 sin pedirlo. Probar `CAMPAIGN_SYSTEM`, `ENTERPRISE_PLANNING_SYSTEM`,
+   `PIXEL_COMMAND_SYSTEM`, `GUARDIAN_SYSTEM`, `GUARDIAN_CORRECTION_SYSTEM` y `MEMORY_SYSTEM` con Claude real
    cuando haya `ANTHROPIC_API_KEY`.
 
 1. **Usuario: aportar el video final de la bienvenida** (el recibido es un teaser de otro estudio y
@@ -758,7 +786,7 @@ Verificación anterior: `c846956` (2026-10-08): contracts 27 · API 185 + 1 · w
 5. Resolver la colisión "Prompt 9/10" ↔ "Etapa 9/10" en `BACKLOG.md`.
 6. ~~Prompt 13 — Campaign Manager~~: hecho (Etapa M, §13). ~~Prompt 14 — Enterprise Content
    Planner~~ y ~~Prompt 14.1 — Zero-entry UX~~: hechos (Etapas EC y Z, §13), en `1593576`, sin push. ~~Prompt 15 — Brand Guardian
-   Core~~: hecho (Etapa G, §13), en el commit "Add Prompt 15: Pixel Brand Guardian Core", sin push.
+   Core~~: hecho (Etapa G, §13), en `79b97e7`. ~~Prompt 16 — Creative Memory~~: hecho (Etapa CM, §13), sin commit.
 7. Opcional, previa petición: corregir la deriva de §12.
 
 ## 15. Comandos reales

@@ -19,6 +19,7 @@
     "format": "prettier --write .",
     "migrate:workspaces": "npm run build -w @pixel/contracts && npm run migrate:workspaces -w @pixel/api --",
     "migrate:content-plans": "npm run build -w @pixel/contracts && npm run migrate:content-plans -w @pixel/api --",
+    "migrate:creative-memories": "npm run build -w @pixel/contracts && npm run migrate:creative-memories -w @pixel/api --",
     "format:check": "prettier --check ."
   },
   "devDependencies": {

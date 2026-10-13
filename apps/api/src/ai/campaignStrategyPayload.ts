@@ -93,6 +93,13 @@ export const CampaignPayloadSchema = z.object({
       format: z.string().nullable(),
     }),
   ),
+  /**
+   * Prompt 16: lo que Pixel ha aprendido y el usuario confirmó (MEMORY_n), solo lo relevante. Es
+   * preferencia por defecto (el brief manda) y nunca un hecho: no fundamenta cifras ni claims.
+   */
+  creativeMemory: z
+    .array(z.object({ ref: z.string(), statement: z.string(), key: z.string() }))
+    .default([]),
 });
 export type CampaignPayload = z.infer<typeof CampaignPayloadSchema>;
 

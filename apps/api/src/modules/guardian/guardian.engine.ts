@@ -18,6 +18,7 @@ import {
 import type { Logger } from '../../lib/logger.js';
 import { buildVocabulary } from '../content-plans/contentPlanning.grounding.js';
 import { GUARDIAN_EVALUATORS } from './evaluators/index.js';
+import { applyMemoriesToFindings } from './guardian.memory.js';
 import { buildReferenceIndex, describe, type ReferenceIndex } from './guardian.references.js';
 import { aggregate, severityRank } from './guardian.score.js';
 import type {
@@ -71,7 +72,13 @@ export function validateSemanticFindings(
       .map((ref) => refs.byRef.get(ref))
       .filter((entry) => entry !== undefined);
     const brand = finding.brandRefs
-      .filter((ref) => ref.startsWith('BRAND_') || ref.startsWith('CAMPAIGN_'))
+      .filter(
+        (ref) =>
+          ref.startsWith('BRAND_') ||
+          ref.startsWith('CAMPAIGN_') ||
+          // Una memoria es criterio creativo, nunca fundamento de un claim.
+          (ref.startsWith('MEMORY_') && finding.dimension !== 'claims'),
+      )
       .filter((ref) => refs.byRef.has(ref));
     // Explicabilidad: un hallazgo relevante debe decir qué parte del ADN o de la campaña contradice.
     if (severityRank(finding.severity) >= severityRank('medium') && brand.length === 0) continue;
@@ -190,6 +197,7 @@ export function createGuardianEngine(deps: { ai: AIProvider; logger: Logger }): 
         input.brandDna,
         input.campaignStrategy,
         input.resource.texts,
+        input.memories ?? [],
       );
       const vocabulary = buildVocabulary(groundingSources(input));
       const context: GuardianContext = { input, refs, vocabulary };
@@ -223,6 +231,7 @@ export function createGuardianEngine(deps: { ai: AIProvider; logger: Logger }): 
           brand: refs.brand,
           campaign: refs.campaign,
           resource: refs.resource,
+          memory: refs.memory,
         };
         let raw: GeneratedGuardianEvaluation;
         try {
@@ -258,9 +267,12 @@ export function createGuardianEngine(deps: { ai: AIProvider; logger: Logger }): 
         }
       }
 
-      // 3. Hallazgos finales: sin duplicados, con evidencia legible e ids estables.
+      // 3. Lo que Pixel ha aprendido: excepciones con alcance y preferencias (nunca hechos).
+      const remembered = applyMemoriesToFindings(drafts, input);
+
+      // 4. Hallazgos finales: sin duplicados, con evidencia legible e ids estables.
       const seen = new Set<string>();
-      const findings = drafts
+      const findings = remembered
         .filter((draft) => {
           const key = `${draft.dimension}:${draft.code}:${draft.message}:${draft.evidence.join('|')}`;
           if (seen.has(key)) return false;

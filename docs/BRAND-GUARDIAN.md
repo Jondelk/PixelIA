@@ -145,6 +145,20 @@ solicitud → propuesta → Guardian preflight → (corrección automática + 1 
   bloquea lo admite, "Continuar de todas formas" (`POST …/pixel/commands/:id/guardian-override`, que
   queda registrado en el informe).
 
+## 6 bis. Creative Memory (Prompt 16)
+
+- El Guardian recibe las memorias activas relevantes (comunicación, visual, estrategia, contenido,
+  campaña, formato, plataforma) como referencias `MEMORY_n`: evidencia **creativa**, nunca factual.
+  No entran al vocabulario que fundamenta cifras, precios, promociones o claims, y la IA no puede
+  citarlas en un hallazgo de claims: «somos el #1» sigue bloqueado aunque exista como texto.
+- **Excepción con alcance** («solo en la campaña X se permite neón»): en esa campaña se suspenden los
+  avisos creativos del tema (restricción visual, choque de estilo, rechazo, restricción explícita) y
+  queda un hallazgo informativo `memory_exception_applied`. En la campaña Y manda el BrandDNA.
+- **Preferencia aprendida contradicha** (una Story cuando se evitan): `memory_preference_conflict`,
+  leve y con override.
+- Overrides (manuales y del preflight) y correcciones aplicadas se registran como
+  CreativeDecisionEvent idempotentes; nunca crean una memoria activa (`docs/CREATIVE-MEMORY.md`).
+
 ## 7. Corrección: Pixel se corrige a sí mismo
 
 `GuardianCorrectionService` (`guardian.correction.ts`):
@@ -225,5 +239,5 @@ una corrección por propuesta.
 
 - **Visual Guardian** (multimodal): logo, tipografía, paleta medida y composición sobre imágenes
   reales, como evaluadores nuevos del mismo motor.
-- **Memory Guardian**: aprender de los overrides y las correcciones aceptadas (CreativeMemory).
+- ~~Memory Guardian~~: overrides y correcciones ya son evidencia de Creative Memory (Prompt 16).
 - Personal Identity Guardian, cuando se pida.

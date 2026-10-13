@@ -76,13 +76,14 @@ La API arranca aunque MongoDB no esté disponible: `/api/health` responde `503` 
 | `npm run format` | Prettier |
 | `npm run migrate:workspaces` | Migra empresas anteriores a los workspaces (`-- --dry-run` para simular). Ver `docs/WORKSPACE-MIGRATION.md` |
 | `npm run migrate:content-plans` | Asigna `contextType` a los planes de contenido anteriores al Prompt 14 (`-- --dry-run` para simular; también corre al arrancar la API). Ver `docs/ENTERPRISE-CONTENT.md` |
+| `npm run migrate:creative-memories` | Marca como `legacy` las memorias anteriores al Prompt 16 (`-- --dry-run` para simular; también corre al arrancar la API). Ver `docs/CREATIVE-MEMORY.md` |
 | `npm run start -w @pixel/api` | API compilada (`dist/`) tras `npm run build` |
 
 ## Estructura
 
 ```
 apps/web            React + Vite + Tailwind (shell y pantallas)
-apps/api            Express + Mongoose (módulos: health, auth, workspaces, companies, brand-dna, personal, avatars, conversations, creative-memory, operations, content-plans, daily-director, campaigns, pixel-command, guardian)
+apps/api            Express + Mongoose (módulos: health, auth, workspaces, companies, brand-dna, personal, avatars, conversations, creative-memory, operations, content-plans, daily-director, campaigns, pixel-command, guardian, creative-memory)
 packages/contracts  Schemas Zod y tipos compartidos
 docs/               Estado real (PIXEL_ESTADO), MVP, arquitectura, entidades, backlog, workspaces, migración, Pixel Personal, Operations, Campaign Manager, Content Planner (Personal y Enterprise) y Daily Director
 ```
@@ -105,4 +106,5 @@ docs/               Estado real (PIXEL_ESTADO), MVP, arquitectura, entidades, ba
 - [`docs/DAILY-DIRECTOR.md`](./docs/DAILY-DIRECTOR.md) — Daily Director: la dirección del día en Inicio.
 - [`docs/PIXEL-COMMAND.md`](./docs/PIXEL-COMMAND.md) — PixelCommand: Pixel como interfaz principal (zero-entry-first): una frase → propuesta → una confirmación.
 - [`docs/BRAND-GUARDIAN.md`](./docs/BRAND-GUARDIAN.md) — Brand Guardian: revisión explicable de propuestas, campañas, planes, contenido y textos contra el BrandDNA (solo Enterprise).
+- [`docs/CREATIVE-MEMORY.md`](./docs/CREATIVE-MEMORY.md) — Creative Memory: lo que Pixel aprende de tus decisiones (preferencias, excepciones y patrones), confirmado por ti.
 - [`docs/WORKSPACE-MIGRATION.md`](./docs/WORKSPACE-MIGRATION.md) — migración Company → Workspace.

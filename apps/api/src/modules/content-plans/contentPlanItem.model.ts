@@ -52,6 +52,16 @@ export interface ContentPlanItemAttrs {
   convertedContentItemId: Types.ObjectId | null;
   /** Orden dentro del plan (el del modelo, tras la validación). */
   position: number;
+  /**
+   * Prompt 16: la propuesta tal como la hizo Pixel, guardada en la PRIMERA edición del usuario
+   * (interna, no sale de la API). Al aceptar, el antes/después es una decisión creativa.
+   */
+  originalProposal?: {
+    title: string;
+    hook: string | null;
+    format: ContentFormat | null;
+    platform: ContentPlatform | null;
+  } | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -98,6 +108,18 @@ const contentPlanItemSchema = new Schema<ContentPlanItemAttrs>(
     rejectionReason: { type: String, default: null, maxlength: 300 },
     convertedContentItemId: { type: Schema.Types.ObjectId, ref: 'ContentItem', default: null },
     position: { type: Number, required: true, default: 0 },
+    originalProposal: {
+      type: new Schema(
+        {
+          title: { type: String, required: true },
+          hook: { type: String, default: null },
+          format: { type: String, default: null },
+          platform: { type: String, default: null },
+        },
+        { _id: false },
+      ),
+      default: null,
+    },
   },
   { timestamps: true },
 );

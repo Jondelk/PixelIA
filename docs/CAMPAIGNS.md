@@ -196,6 +196,15 @@ Personal no ve la navegación ni las rutas (`FeatureOnly feature="campaigns"`).
 visual escrita) contra el BrandDNA y abre el informe (`docs/BRAND-GUARDIAN.md`). Revisar no cambia la
 campaña; una estrategia no se corrige en sitio: se regenera con su mecanismo versionado.
 
+## 6 ter. Creative Memory (Prompt 16)
+
+El CampaignStrategyEngine recibe las memorias relevantes (`creativeMemory`, MEMORY_n: comunicación,
+estrategia, visual, campañas, plataformas y formatos; con la campaña, también sus excepciones). Tras la
+validación de fundamento, `applyCampaignMemories` las aplica de forma determinista (demo o IA): sin CTA
+de urgencia si se evitan, sin piezas de un formato o plataforma evitados salvo que el brief los pida, lo
+visual evitado en `visualDirection.avoid`. `generation.memoryKeys` guarda lo aplicado (evita el
+auto-refuerzo). Aceptar o rechazar piezas registra CreativeDecisionEvent (`docs/CREATIVE-MEMORY.md`).
+
 ## 7. Limitaciones (no implementado)
 
 Creative Workflow y aprobaciones formales, equipo, roles y responsables, Brand Guardian visual (multimodal),

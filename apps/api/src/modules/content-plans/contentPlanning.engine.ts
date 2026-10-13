@@ -33,6 +33,13 @@ import {
   uniqueValues,
   type Vocabulary,
 } from './contentPlanning.grounding.js';
+import {
+  memoryFormats,
+  memoryPlatforms,
+  NO_PLANNING_MEMORY,
+  respectAvoidedFormats,
+  type PlanningMemory,
+} from './planningMemory.js';
 
 /*
  * ContentPlanningEngine: PersonalDNA + Projects + historial de contenido + plan previo → propuesta
@@ -69,6 +76,8 @@ export interface ContentPlanningInput {
   requiredFormats?: ContentFormat[];
   requestedGoal?: string;
   tzOffset: number;
+  /** Prompt 16: lo que Pixel ha aprendido (formatos, plataformas, contenido, comunicación). */
+  creativeMemory?: PlanningMemory;
 }
 
 export interface ProposedPlanItem {
@@ -96,6 +105,8 @@ export interface ContentPlanProposal {
   discardedItems: number;
   frequencyPerWeek: number;
   frequencySource: 'request' | 'personal_dna' | 'default';
+  /** Prompt 16: memorias que orientaron el plan. */
+  memoryKeys?: string[];
   meta: { provider: string; model: string; mode: 'ai' | 'demo' };
 }
 
@@ -127,13 +138,20 @@ export interface PlanningRequest {
   preferredFormats: ContentFormat[];
   /** Formatos obligatorios del pedido (vacío = cualquiera). */
   requiredFormats: ContentFormat[];
+  avoidedFormats: ContentFormat[];
+  memoryPreferredFormats: ContentFormat[];
+  memoryKeys: string[];
 }
 
 export function resolvePlanningRequest(input: ContentPlanningInput): PlanningRequest {
   const content = input.personalDna.contentIdentity;
-  const allowedPlatforms = input.requestedPlatforms?.length
-    ? uniqueValues(input.requestedPlatforms)
-    : uniqueValues(content.platforms.map(platformFromText));
+  const memory = input.creativeMemory ?? NO_PLANNING_MEMORY;
+  const platformChoice = memoryPlatforms(
+    input.requestedPlatforms?.length ? uniqueValues(input.requestedPlatforms) : undefined,
+    uniqueValues(content.platforms.map(platformFromText)),
+    memory,
+  );
+  const allowedPlatforms = platformChoice.platforms;
   if (allowedPlatforms.length === 0) {
     throw new ContentPlanningError(
       'platforms_missing',
@@ -157,10 +175,31 @@ export function resolvePlanningRequest(input: ContentPlanningInput): PlanningReq
     frequencyPerWeek,
     frequencySource,
     allowedPlatforms,
-    preferredFormats: input.requiredFormats?.length
-      ? uniqueValues(input.requiredFormats)
-      : uniqueValues(content.preferredFormats.map(formatFromText)),
-    requiredFormats: uniqueValues(input.requiredFormats ?? []),
+    ...formatsWithMemory(
+      input.requiredFormats?.length
+        ? uniqueValues(input.requiredFormats)
+        : uniqueValues(content.preferredFormats.map(formatFromText)),
+      uniqueValues(input.requiredFormats ?? []),
+      memory,
+      platformChoice.keys,
+    ),
+  };
+}
+
+/** La memoria orienta los formatos solo si la solicitud no los fijó. */
+function formatsWithMemory(
+  preferred: ContentFormat[],
+  required: ContentFormat[],
+  memory: PlanningMemory,
+  platformKeys: string[],
+) {
+  const formats = memoryFormats(preferred, required, memory);
+  return {
+    preferredFormats: formats.preferred,
+    requiredFormats: required,
+    avoidedFormats: formats.avoided,
+    memoryPreferredFormats: formats.memoryPreferred,
+    memoryKeys: [...platformKeys, ...formats.keys],
   };
 }
 
@@ -224,8 +263,11 @@ export function buildPlanningPayload(
       allowedPlatforms: request.allowedPlatforms,
       preferredFormats: request.preferredFormats,
       requiredFormats: request.requiredFormats,
+      avoidedFormats: request.avoidedFormats,
+      memoryPreferredFormats: request.memoryPreferredFormats,
       goal: input.requestedGoal?.trim() || null,
     },
+    creativeMemory: (input.creativeMemory ?? NO_PLANNING_MEMORY).lines,
   };
 }
 
@@ -244,6 +286,9 @@ Criterio:
   comparison, storytelling) cuando sean coherentes con ella.
 - platform: SOLO una de request.allowedPlatforms. format: prioriza request.preferredFormats; otro
   formato solo con una razón clara. Si request.requiredFormats no está vacío, SOLO esos formatos.
+  Evita request.avoidedFormats.
+- creativeMemory: lo que Pixel ha aprendido de esta persona y ella confirmó. Tenlo en cuenta como
+  preferencia por defecto; lo que pide request siempre manda. Nunca es un hecho ni fundamenta cifras.
 - suggestedDate: un día de request.days (AAAA-MM-DD). Exactamente request.itemCount propuestas.
 - No repitas temas, hooks ni ángulos de recentContent ni de previousProposals.
 - rationale: por qué Pixel lo recomienda, conectando la pieza con un objetivo, su audiencia o un
@@ -449,10 +494,18 @@ export function createContentPlanningEngine(deps: {
       if (!parsed.success) {
         throw new ContentPlanningError('failed', 'El plan generado no cumple el esquema');
       }
-      const grounded = groundGeneratedPlan(
+      const groundedPlan = groundGeneratedPlan(
         parsed.data,
         groundingContextFor(input, request, payload),
       );
+      const grounded = {
+        ...groundedPlan,
+        items: respectAvoidedFormats(
+          groundedPlan.items,
+          request.avoidedFormats,
+          request.preferredFormats,
+        ),
+      };
       if (grounded.discardedItems > 0) {
         deps.logger.info('Content Planner: propuestas descartadas por la validación', {
           discarded: grounded.discardedItems,
@@ -467,6 +520,7 @@ export function createContentPlanningEngine(deps: {
         ),
         frequencyPerWeek: request.frequencyPerWeek,
         frequencySource: request.frequencySource,
+        memoryKeys: request.memoryKeys,
         meta: { provider: result.provider, model: result.model, mode: result.mode },
       };
     },

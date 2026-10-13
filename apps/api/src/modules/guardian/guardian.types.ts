@@ -9,6 +9,7 @@ import type {
   GuardianSeverity,
 } from '@pixel/contracts';
 import type { Vocabulary } from '../content-plans/contentPlanning.grounding.js';
+import type { ResolvedMemory } from '../creative-memory/memory.resolver.js';
 import type { ReferenceIndex } from './guardian.references.js';
 
 /*
@@ -68,6 +69,11 @@ export interface GuardianEvaluationInput {
   campaign: { id: string; name: string } | null;
   campaignStrategy: CampaignStrategy | null;
   resource: GuardianResourceSnapshot;
+  /**
+   * Prompt 16: memorias creativas activas y relevantes (MEMORY_n). Evidencia creativa, NUNCA
+   * factual: no fundamentan cifras, precios, promociones ni claims.
+   */
+  memories?: ResolvedMemory[];
   /** Textos que el usuario aportó (su solicitud en el preflight, datos confirmados en una revisión). */
   userSupplied: string[];
 }

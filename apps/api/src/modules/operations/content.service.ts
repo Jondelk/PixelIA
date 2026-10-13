@@ -24,6 +24,13 @@ import {
   toDate,
   searchFilter,
 } from './operations.scope.js';
+import { recordCreativeDecision } from '../creative-memory/memory.detector.js';
+import {
+  compact,
+  dedupe,
+  placementChangeSignals,
+  textEditSignals,
+} from '../creative-memory/memory.signals.js';
 
 /*
  * ContentItems de un Workspace: piezas en proceso, no posts reales (no hay integración con redes).
@@ -119,8 +126,16 @@ export async function updateContentItem(
   rawId: unknown,
   input: UpdateContentItemData,
   now = new Date(),
+  options: { recordDecision?: boolean } = {},
 ): Promise<ContentItem> {
   const item = await findContentItem(workspace, rawId);
+  const before = {
+    title: item.title,
+    hook: item.hook,
+    caption: item.caption,
+    format: item.format,
+    platform: item.platform,
+  };
   const { projectId, campaignId, scheduledFor, publishedAt, status, ...rest } = input;
   item.set(rest);
   if (projectId !== undefined) {
@@ -134,7 +149,55 @@ export async function updateContentItem(
   item.publishedAt = publishedAtFor(nextStatus, toDate(publishedAt), item.publishedAt, now);
   item.status = nextStatus;
   await item.save();
+  if (item.source === 'pixel' && options.recordDecision !== false) {
+    await recordGeneratedEdit(workspace, item, before);
+  }
   return toContentItemDTO(item);
+}
+
+/**
+ * Creative Memory (Prompt 16): editar una pieza que propuso Pixel y conservarla es una decisión
+ * fuerte (su antes/después). Solo texto y formato; nunca el estado ni las fechas.
+ */
+async function recordGeneratedEdit(
+  workspace: WorkspaceDocument,
+  item: ContentItemDocument,
+  before: {
+    title: string;
+    hook: string | null;
+    caption: string | null;
+    format: ContentItemDocument['format'];
+    platform: ContentItemDocument['platform'];
+  },
+) {
+  const textBefore = [before.title, before.hook, before.caption].filter(Boolean).join('\n');
+  const textAfter = [item.title, item.hook, item.caption].filter(Boolean).join('\n');
+  const signals = dedupe([
+    ...placementChangeSignals(before, { format: item.format, platform: item.platform }, 'high'),
+    ...(textBefore !== textAfter ? textEditSignals(textBefore, textAfter, 'high') : []),
+  ]);
+  if (!signals.length) return;
+  await recordCreativeDecision(workspace, {
+    eventType: 'generated_content_edited_then_kept',
+    resourceType: 'content_item',
+    resourceId: item._id,
+    campaignId: item.campaignId,
+    projectId: item.projectId,
+    signals,
+    before: [
+      ...compact('Título', before.title),
+      ...compact('Hook', before.hook),
+      ...compact('Formato', before.format),
+    ],
+    after: [
+      ...compact('Título', item.title),
+      ...compact('Hook', item.hook),
+      ...compact('Formato', item.format),
+    ],
+    sourceEventKey: `content-item:${item._id.toString()}:edit:${item.updatedAt.getTime()}`,
+    description: `Editaste «${item.title}», una pieza que propuso Pixel`,
+    metadata: { source: 'content' },
+  });
 }
 
 export async function deleteContentItem(

@@ -211,6 +211,13 @@ contra el BrandDNA y su campaña (alineación por pieza, encaje plataforma–for
 con Pixel" propone cambios en las piezas no convertidas y "Aplicar" usa `updateContentPlanItem`
 (`docs/BRAND-GUARDIAN.md` §8).
 
+## 8 ter. Creative Memory (Prompt 16)
+
+El planner Enterprise usa las memorias de la marca (y las excepciones de la campaña elegida) como
+preferencia por defecto: formatos preferidos primero, formatos y plataformas evitados fuera, salvo que
+la solicitud los pida (manda). `generation.memoryKeys` guarda lo aplicado. Aceptar, rechazar o editar
+y aceptar piezas registra decisiones (`docs/CREATIVE-MEMORY.md`).
+
 ## 9. Limitaciones
 
 - Validación heurística (como el resto del planner); estricta a propósito.

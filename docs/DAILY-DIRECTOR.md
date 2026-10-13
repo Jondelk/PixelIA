@@ -137,6 +137,12 @@ Usa `goals`, `workStyle`, `supportNeeds`, `contentIdentity`, `preferences` y `re
 - Los mismos hechos producen las mismas prioridades y urgencias. La dirección, en cambio, cambia
   con la persona: los bloques, la sugerencia de contenido y el resumen (cubierto por tests).
 
+### 7 bis. Creative Memory (Prompt 16)
+
+Solo entran memorias de **forma de trabajar** (`workflow`): p. ej. «prefiero máximo 2 prioridades
+al día» limita las prioridades del brief (con IA o en modo determinista). Las memorias visuales o de
+comunicación nunca entran al Daily Director.
+
 ## 8. DailyDirectorEngine y salida estructurada
 
 `createDailyDirectorEngine({ ai, logger }).generate(analysis)`:

@@ -80,6 +80,15 @@ export {
   type StyleFamily,
 } from './guardianLexicon.js';
 export {
+  extractMemoryPayload,
+  MEMORY_SYNTHESIS_SCHEMA_NAME,
+  MEMORY_SYSTEM,
+  MemoryPayloadSchema,
+  memoryPrompt,
+  type MemoryPayload,
+} from './creativeMemoryPayload.js';
+export { composeDemoMemorySynthesis } from './providers/demoCreativeMemory.js';
+export {
   composeDemoGuardianCorrection,
   composeDemoGuardianEvaluation,
 } from './providers/demoGuardian.js';

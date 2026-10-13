@@ -61,6 +61,7 @@ function sanitizeEntities(entities: PixelCommandEntities, source: string): Pixel
     campaignHint: grounded(entities.campaignHint, source),
     projectHint: grounded(entities.projectHint, source),
     topic: grounded(entities.topic, source),
+    memoryText: grounded(entities.memoryText, source),
     taskTitles: entities.taskTitles.filter((title) => grounded(title, source)),
   });
 }
@@ -101,6 +102,9 @@ export function mergeEntities(
     topic: next.topic ?? previous.topic,
     taskTitles: unique([...previous.taskTitles, ...next.taskTitles]).slice(0, 20),
     includeContent: previous.includeContent || next.includeContent,
+    memoryAction: next.memoryAction ?? previous.memoryAction,
+    memoryText: previous.memoryText ?? next.memoryText,
+    memoryScopeHint: next.memoryScopeHint ?? previous.memoryScopeHint,
   });
 }
 
