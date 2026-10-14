@@ -173,6 +173,7 @@ export function companyNav(companyId: string): NavItem[] {
     { to: base, label: 'Resumen', icon: 'overview', end: true },
     { to: `${base}/brand`, label: 'ADN de marca', icon: 'brand' },
     { to: `${base}/pixel`, label: 'Personaje', icon: 'character' },
+    { to: `${base}/manual`, label: 'Manual de marca', icon: 'manual' },
     { to: `${base}/chat`, label: 'Chat', icon: 'chat' },
   ];
 }

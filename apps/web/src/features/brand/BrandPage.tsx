@@ -34,6 +34,7 @@ export function BrandPage() {
       <BrandDnaView
         dna={brandDna}
         editHref={onboardingHref}
+        manualHref={`${companyBasePath(company.id)}/manual`}
         justLearned={searchParams.has('learned')}
       />
     );

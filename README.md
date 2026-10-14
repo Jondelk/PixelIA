@@ -32,7 +32,7 @@ cp apps/web/.env.example apps/web/.env
 #    b) Docker:           docker run -d --name pixel-mongo -p 27017:27017 mongo:7
 #    c) Atlas:            pon la URI mongodb+srv://... en apps/api/.env
 
-# 4. Desarrollo: contracts (watch) + API + web
+# 4. Desarrollo: contracts y sculpt (watch) + API + web
 npm run dev
 ```
 
@@ -61,6 +61,21 @@ probado con Claude real.
 **Zona horaria**: `DEFAULT_TIMEZONE` (IANA, por defecto `America/Bogota`) define el "hoy" del Daily
 Director para los Pixels que aún no tienen una propia.
 
+**Personaje 3D**: cada concepto nuevo se esculpe en 3D con **Pixel Sculpt**, el motor propio de
+`packages/sculpt` (sin Blender ni programas externos, sin GPU y sin consumir tokens): un `.glb`
+animable para la web y renders de estudio para el manual de marca. Pruébalo con
+`npm run avatar:demo`. Detalles en [`docs/AVATAR-3D.md`](./docs/AVATAR-3D.md).
+
+**Onboarding desde documentos**: en el onboarding, «Subir documentos» lee brochures, presentaciones,
+manuales o el logo (PDF, Word, PowerPoint, texto, imágenes) y llena lo que encuentre; el usuario
+revisa y completa. **Sin IA y sin costo** (por defecto): lee el texto de PDF, Word, PowerPoint y
+.txt por secciones con título (Misión, Valores, ¿Quiénes somos?…) y toma los colores del diseño del
+PDF y de los logos (medidos en el navegador). Con `ANTHROPIC_API_KEY` entiende además documentos
+libres y PDF escaneados; `DOCUMENT_READER=local` mantiene la lectura sin IA aunque haya clave.
+
+**Manual de marca**: en cuanto existe el ADN, la sección «Manual de marca» de cada empresa muestra el
+manual completo y lo descarga en PDF (A4 horizontal).
+
 La API arranca aunque MongoDB no esté disponible: `/api/health` responde `503` con
 `"status": "degraded"` y reintenta la conexión cada 5 s. El header de la web muestra ese estado.
 
@@ -68,11 +83,12 @@ La API arranca aunque MongoDB no esté disponible: `/api/health` responde `503` 
 
 | Comando | Qué hace |
 |---|---|
-| `npm run dev` | Compila contracts y levanta contracts (watch), API (`tsx watch`) y web (Vite) |
+| `npm run dev` | Compila contracts y sculpt y levanta ambos (watch), API (`tsx watch`) y web (Vite) |
 | `npm run typecheck` | TypeScript en todos los workspaces |
 | `npm run lint` | ESLint |
 | `npm run test` | Vitest en contracts, API y web. La API levanta un MongoDB efímero (mongodb-memory-server): el binario se descarga en `npm install`, o en la primera ejecución si aquella descarga falló. Sin red: `MONGOMS_SYSTEM_BINARY=/ruta/a/mongod` o `MONGODB_URI_TEST=<uri>` (`docs/PIXEL_ESTADO.md` §15) |
-| `npm run build` | Build de producción: contracts → api → web |
+| `npm run build` | Build de producción: contracts → sculpt → api → web |
+| `npm run avatar:demo` | Esculpe en 3D los personajes de las marcas de demostración (`-- cafe` para una sola) |
 | `npm run format` | Prettier |
 | `npm run migrate:workspaces` | Migra empresas anteriores a los workspaces (`-- --dry-run` para simular). Ver `docs/WORKSPACE-MIGRATION.md` |
 | `npm run migrate:content-plans` | Asigna `contextType` a los planes de contenido anteriores al Prompt 14 (`-- --dry-run` para simular; también corre al arrancar la API). Ver `docs/ENTERPRISE-CONTENT.md` |
@@ -85,6 +101,7 @@ La API arranca aunque MongoDB no esté disponible: `/api/health` responde `503` 
 apps/web            React + Vite + Tailwind (shell y pantallas)
 apps/api            Express + Mongoose (módulos: health, auth, workspaces, companies, brand-dna, personal, avatars, conversations, creative-memory, operations, content-plans, daily-director, campaigns, pixel-command, guardian, creative-memory)
 packages/contracts  Schemas Zod y tipos compartidos
+packages/sculpt     Pixel Sculpt: modelado 3D del personaje, glTF y renders de estudio
 docs/               Estado real (PIXEL_ESTADO), MVP, arquitectura, entidades, backlog, workspaces, migración, Pixel Personal, Operations, Campaign Manager, Content Planner (Personal y Enterprise), Daily Director, PixelCommand, Brand Guardian, Creative Memory, Pixel Presence y Action Foundation
 ```
 
@@ -115,3 +132,4 @@ docs/               Estado real (PIXEL_ESTADO), MVP, arquitectura, entidades, ba
 - [`docs/PERSONAL-WEEK-PLANNER.md`](./docs/PERSONAL-WEEK-PLANNER.md) — organizar la semana con tu disponibilidad real: proponer, guardar con una confirmación, ajustar y replanificar.
 - [`docs/AVATAR-ASSET-CONTRACT.md`](./docs/AVATAR-ASSET-CONTRACT.md) — contrato del avatar GLB futuro (escala, rig, clips y materiales).
 - [`docs/WORKSPACE-MIGRATION.md`](./docs/WORKSPACE-MIGRATION.md) — migración Company → Workspace.
+- [`docs/AVATAR-3D.md`](./docs/AVATAR-3D.md) — producción 3D del personaje con Pixel Sculpt.

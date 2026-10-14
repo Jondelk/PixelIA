@@ -10,16 +10,18 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "dev": "npm run build -w @pixel/contracts && concurrently -k -n contracts,api,web -c gray,cyan,blue \"npm:dev -w @pixel/contracts\" \"npm:dev -w @pixel/api\" \"npm:dev -w @pixel/web\"",
-    "build": "npm run build -w @pixel/contracts && npm run build -w @pixel/api && npm run build -w @pixel/web",
-    "typecheck": "npm run build -w @pixel/contracts && npm run typecheck --workspaces --if-present",
+    "dev": "npm run build:packages && concurrently -k -n contracts,sculpt,api,web -c gray,magenta,cyan,blue \"npm:dev -w @pixel/contracts\" \"npm:dev -w @pixel/sculpt\" \"npm:dev -w @pixel/api\" \"npm:dev -w @pixel/web\"",
+    "build:packages": "npm run build -w @pixel/contracts && npm run build -w @pixel/sculpt",
+    "build": "npm run build:packages && npm run build -w @pixel/api && npm run build -w @pixel/web",
+    "typecheck": "npm run build:packages && npm run typecheck --workspaces --if-present",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test": "npm run build -w @pixel/contracts && npm run test --workspaces --if-present",
+    "test": "npm run build:packages && npm run test --workspaces --if-present",
     "format": "prettier --write .",
     "migrate:workspaces": "npm run build -w @pixel/contracts && npm run migrate:workspaces -w @pixel/api --",
     "migrate:content-plans": "npm run build -w @pixel/contracts && npm run migrate:content-plans -w @pixel/api --",
     "migrate:creative-memories": "npm run build -w @pixel/contracts && npm run migrate:creative-memories -w @pixel/api --",
+    "avatar:demo": "npm run build:packages && npm run avatar:demo -w @pixel/api --",
     "format:check": "prettier --check ."
   },
   "devDependencies": {

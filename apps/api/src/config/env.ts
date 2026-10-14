@@ -58,6 +58,25 @@ const EnvSchema = z
     GOOGLE_TOKEN_ENCRYPTION_KEY: optionalText,
     /** Solo pruebas en vivo: un calendario de PRUEBA (nunca el principal). */
     GOOGLE_CALENDAR_TEST_CALENDAR_ID: optionalText,
+    /**
+     * Lectura de documentos del onboarding: "auto" usa la IA si hay ANTHROPIC_API_KEY;
+     * "local" lee siempre sin IA (sin costo), aunque la clave exista para el chat.
+     */
+    DOCUMENT_READER: z.enum(['auto', 'local']).default('auto'),
+    /** Carpeta donde la API guarda archivos generados (modelos y renders). */
+    STORAGE_DIR: z.string().min(1).default('storage'),
+    /** Producción 3D del personaje con Pixel Sculpt: "off" la desactiva. */
+    AVATAR_3D: z.enum(['on', 'off']).default('on'),
+    /** Lado en píxeles de los renders de estudio del personaje. */
+    AVATAR_RENDER_SIZE: z.coerce.number().int().min(256).max(2048).default(1024),
+    /** draft (rápido) | standard | high (más detalle, más lento y pesado). */
+    AVATAR_QUALITY: z.enum(['draft', 'standard', 'high']).default('standard'),
+    AVATAR_TIMEOUT_MS: z.coerce.number().int().min(30_000).max(3_600_000).default(300_000),
+    /** Esculpir el modelo automáticamente cada vez que se genera un concepto. */
+    AVATAR_AUTO_BUILD: z
+      .enum(['true', 'false'])
+      .default('true')
+      .transform((value) => value === 'true'),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV === 'production' && !env.JWT_SECRET) {

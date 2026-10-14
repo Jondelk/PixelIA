@@ -583,6 +583,64 @@ Ver `docs/PERSONAL-AGENDA.md`.
 - [ ] Decidir con producto el modelo "60 % Pixi / 40 % ADN" del manual frente al avatar 100 %
   derivado del ADN que genera hoy el Avatar Concept Engine (cambio de lógica, no visual).
 
+## Producción 3D (Pixel Sculpt) ✅
+
+Ver [`AVATAR-3D.md`](./AVATAR-3D.md). Sustituye a la primera versión con Blender: ya no depende de
+programas externos.
+
+- [x] Contrato `AvatarModel` (`@pixel/contracts`): motor, estado, URLs de archivos.
+- [x] `profileToCharacterSpec()` puro: sujeto, forma, rostro, colores derivados, utilería desde el
+  texto de los accesorios; tests con las tres marcas de demostración.
+- [x] `packages/sculpt`: modelado con campos de distancia (cuerpo por sujeto, rostro en relieve que
+  sigue la superficie, extremidades fundidas, utilería), Surface Nets disperso, pintura por vértice,
+  oclusión horneada, glTF 2.0 con materiales PBR y rig, renders de estudio por software.
+- [x] Runner en `worker_threads` (no bloquea la API) con respaldo en línea y tiempo máximo.
+- [x] Colección `avatar_builds` aislada por workspace, cola en proceso, reemplazo atómico de
+  archivos, recuperación de construcciones interrumpidas; construcción automática al generar.
+- [x] `GET/POST /avatar/model`, `GET /avatar/model/files/:archivo` con descarga.
+- [x] Web: visor del `.glb` animado con las mismas poses (respaldo automático al paramétrico),
+  panel de estado y descargas, renders de estudio, modelo también en el chat y el manual.
+- [ ] Probar el `.glb` en el visor web de la app con las tres marcas y ajustar exposición del
+  entorno de three.js si hace falta (los renders del servidor ya están verificados).
+- [ ] Concepto con IA: que Claude elija sujeto, forma y accesorios dentro del catálogo para marcas
+  que el catálogo de reglas no cubre bien.
+- [ ] Almacenamiento externo (S3 o similar) si la API se despliega en varias instancias.
+
+## Onboarding desde documentos ✅
+
+- [x] `POST /api/companies/:id/brand-dna/extract`: hasta 5 documentos y 15 MB (JSON en base64; límite
+  de cuerpo propio solo en esta ruta). No guarda archivos ni respuestas: devuelve una propuesta.
+- [x] Lectura: PDF e imágenes van directo a Claude (bloques `document`/`image`); `.docx` y `.pptx`
+  se leen con un lector ZIP propio (sin dependencias, con tope contra zip bombs); `.txt`/`.md`.
+  El tipo se decide por la firma del archivo, no por lo que diga el navegador.
+- [x] Claude devuelve `OnboardingExtraction` (salida estructurada) con evidencia por campo; la API
+  la limpia (longitudes, listas, hex, niveles 1–5). Prompt: no inventar, citar la fuente e ignorar
+  instrucciones escritas dentro de los documentos.
+- [x] Lectura sin IA (sin `ANTHROPIC_API_KEY` o con `DOCUMENT_READER=local`): secciones con título
+  ("Misión:", "¿Quiénes somos?", "NUESTROS VALORES"…) en texto, Word, PowerPoint y **PDF con texto**
+  (pdf.js: renglones y bloques reconstruidos, interletrado deshecho); **colores del diseño del PDF**
+  (rellenos) y **de las imágenes** (medidos en el navegador con canvas), elegidos con
+  `pickBrandColors` (contracts). PDF escaneados y dañados se explican.
+- [x] Web: panel "¿Tienes documentos de tu marca?" en el onboarding; la fusión nunca reemplaza lo
+  escrito (llena vacíos y agrega a listas); aviso por paso de lo completado, lo que falta y de qué
+  documento salió; marca en la barra de pasos hasta que el usuario guarda.
+- [ ] Probar con documentos reales y Claude (no se pudo en este entorno) y ajustar el prompt.
+- [ ] Recordar la propuesta si el usuario recarga antes de guardar (hoy vive en la página).
+- [ ] Leer el logo para el manual de marca (hoy solo se usan sus colores).
+
+## Manual de marca ✅
+
+- [x] `/company/:id/manual`: documento A4 apaisado de 16 páginas generado del ADN y del personaje
+  (esencia, propósito, audiencia, personalidad, voz, color con HEX/RGB/CMYK y contraste WCAG,
+  tipografía recomendada, lenguaje visual, personaje, construcción, usos correctos/incorrectos,
+  aplicaciones, límites). Usa los renders de estudio si existen; si no, la vista 2D.
+- [x] Tipografía elegida de forma determinista según personalidad, formas y arquetipo (Google Fonts).
+- [x] "Descargar PDF" con la impresión del navegador (sin dependencias nuevas).
+- [x] Acceso desde la navegación, desde «ADN de marca» (en cuanto el ADN se muestra) y desde
+  «Personaje».
+- [ ] Logo real de la empresa (hoy el onboarding no admite archivos: la portada usa el nombre).
+- [ ] Generar el PDF en el servidor si se necesita enviarlo por correo o adjuntarlo sin navegador.
+
 ---
 
 ## Experiencia de entrada pública ✅

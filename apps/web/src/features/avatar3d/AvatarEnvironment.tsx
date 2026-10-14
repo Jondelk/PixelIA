@@ -1,11 +1,18 @@
 import { ContactShadows, Environment, Lightformer } from '@react-three/drei';
-import type { SceneSpec } from './sceneSpec';
 
 /**
  * Iluminación de estudio estilizada: luz principal con sombras, contraluz del color de acento,
  * relleno suave y un environment procedural (Lightformers locales, sin descargar HDRIs).
  */
-export function AvatarEnvironment({ spec }: { spec: SceneSpec }) {
+export function AvatarEnvironment({
+  accentColor,
+  groundY,
+}: {
+  /** Color de acento del personaje (contraluz). */
+  accentColor: string;
+  /** Altura del suelo donde se apoya el personaje. */
+  groundY: number;
+}) {
   return (
     <>
       <hemisphereLight args={['#E6EEFF', '#1A1410', 0.55]} />
@@ -20,7 +27,7 @@ export function AvatarEnvironment({ spec }: { spec: SceneSpec }) {
         shadow-camera-bottom={-3}
         shadow-bias={-0.0004}
       />
-      <directionalLight position={[-3, 2, -3.5]} intensity={1.6} color={spec.accentColor} />
+      <directionalLight position={[-3, 2, -3.5]} intensity={1.6} color={accentColor} />
       <pointLight position={[-2.5, 0.5, 3]} intensity={6} distance={10} color="#BFD4FF" />
 
       <Environment resolution={128} frames={1}>
@@ -35,7 +42,7 @@ export function AvatarEnvironment({ spec }: { spec: SceneSpec }) {
         <Lightformer
           form="ring"
           intensity={1.5}
-          color={spec.accentColor}
+          color={accentColor}
           position={[4, 1.5, -2]}
           scale={2}
         />
@@ -49,12 +56,12 @@ export function AvatarEnvironment({ spec }: { spec: SceneSpec }) {
         />
       </Environment>
 
-      <mesh rotation-x={-Math.PI / 2} position={[0, spec.groundY - 0.001, 0]} receiveShadow>
+      <mesh rotation-x={-Math.PI / 2} position={[0, groundY - 0.001, 0]} receiveShadow>
         <circleGeometry args={[2.6, 64]} />
         <shadowMaterial transparent opacity={0.22} />
       </mesh>
       <ContactShadows
-        position={[0, spec.groundY, 0]}
+        position={[0, groundY, 0]}
         opacity={0.6}
         scale={5}
         blur={2.6}

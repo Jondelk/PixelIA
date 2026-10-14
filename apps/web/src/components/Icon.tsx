@@ -122,6 +122,30 @@ const paths = {
   ),
   play: <path d="M8 5.5v13l10.5-6.5L8 5.5Z" />,
   pause: <path d="M8.5 5.5v13M15.5 5.5v13" />,
+  download: <path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14" />,
+  upload: <path d="M12 15.5V4.5M7.5 9 12 4.5 16.5 9M5 19.5h14" />,
+  /** Documento con una esquina doblada. */
+  file: (
+    <>
+      <path d="M13.5 3.5h-7a1 1 0 0 0-1 1v15a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-11l-5-5Z" />
+      <path d="M13.5 3.5v5h5" />
+    </>
+  ),
+  refresh: <path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3M19.5 4.5v3.7h-3.7" />,
+  /** Manual de marca: un cuaderno con su píxel. */
+  manual: (
+    <>
+      <path d="M5.5 4.5h11a2 2 0 0 1 2 2v13h-11a2 2 0 0 1-2-2v-13Z" />
+      <path d="M5.5 17.5a2 2 0 0 1 2-2h11" />
+      <rect x="9.5" y="7.5" width="3" height="3" fill="currentColor" stroke="none" />
+    </>
+  ),
+  print: (
+    <>
+      <path d="M7 8.5V4h10v4.5M7 16.5H5a1.5 1.5 0 0 1-1.5-1.5v-5A1.5 1.5 0 0 1 5 8.5h14a1.5 1.5 0 0 1 1.5 1.5v5a1.5 1.5 0 0 1-1.5 1.5h-2" />
+      <path d="M7 13.5h10V20H7z" />
+    </>
+  ),
 } as const;
 
 export type IconName = keyof typeof paths;

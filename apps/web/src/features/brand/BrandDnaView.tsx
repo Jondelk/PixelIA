@@ -12,10 +12,13 @@ const dateFormat = new Intl.DateTimeFormat('es', { dateStyle: 'long' });
 export function BrandDnaView({
   dna,
   editHref,
+  manualHref,
   justLearned,
 }: {
   dna: BrandDna;
   editHref: string;
+  /** Manual de marca generado a partir de este ADN. */
+  manualHref: string;
   justLearned: boolean;
 }) {
   const primary = BRAND_ARCHETYPES[dna.archetypes.primary.id];
@@ -66,6 +69,28 @@ export function BrandDnaView({
           </Link>
         </div>
       </header>
+
+      {/* Con el ADN listo, el manual de marca ya existe: se genera a partir de él. */}
+      <section
+        className="animate-rise flex flex-col gap-5 rounded-2xl border border-line bg-surface p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8"
+        style={rise(3)}
+      >
+        <div className="flex gap-4">
+          <span className="mt-1 size-2 shrink-0 bg-signal" aria-hidden="true" />
+          <div>
+            <h2 className="font-display text-lg font-bold tracking-tight">
+              {justLearned ? 'Tu manual de marca ya está listo' : 'Manual de marca'}
+            </h2>
+            <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted">
+              Esencia, voz, color, tipografía y el personaje de {dna.identity.name}, en un documento
+              listo para descargar en PDF y compartir con tu equipo o proveedores.
+            </p>
+          </div>
+        </div>
+        <Link to={manualHref} className={`${buttonClasses('primary')} shrink-0`}>
+          <Icon name="manual" className="size-4" /> Abrir el manual
+        </Link>
+      </section>
 
       <div className="grid gap-5 lg:grid-cols-2">
         {/* Personalidad */}

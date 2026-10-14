@@ -157,6 +157,13 @@ export async function generateAvatar(
 
 // ---------- Personal (PersonalDNA) ----------
 
+/** Versión vigente del avatar de un workspace personal (null si aún no hay). */
+export async function currentAvatarVersion(workspace: WorkspaceDocument): Promise<number | null> {
+  assertPersonalWorkspace(workspace);
+  const { profile } = await loadPersonalDna(workspace);
+  return profile?.avatarVersion ?? null;
+}
+
 export async function getPersonalAvatar(workspace: WorkspaceDocument): Promise<AvatarResponse> {
   assertPersonalWorkspace(workspace);
   const { profile } = await loadPersonalDna(workspace);

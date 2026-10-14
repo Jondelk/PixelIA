@@ -5,27 +5,30 @@ import { afterAll, afterEach, beforeAll, inject } from 'vitest';
 import type { AIProvider } from '../../src/ai/index.js';
 import { DemoProvider } from '../../src/ai/providers/demo.provider.js';
 import { createApp, type AppOptions } from '../../src/app.js';
-import type { PixelToolRegistry } from '../../src/modules/actions/toolRegistry.js';
+import { PixelToolRegistry } from '../../src/modules/actions/toolRegistry.js';
 import { loadEnv } from '../../src/config/env.js';
 import { createLogger } from '../../src/lib/logger.js';
 
 export const testEnv = loadEnv({ NODE_ENV: 'test', BCRYPT_ROUNDS: '4', LOG_LEVEL: 'silent' });
 
+export const silentLogger = createLogger({ level: 'silent', format: 'json' });
+
 /**
- * `tools`: herramientas de Pixel (Prompt 18) para simular fallos; por defecto, las de producción.
+ * Segundo argumento: las herramientas de Pixel (Prompt 18) para simular fallos, o
+ * `{ tools, avatarModels }` (producción 3D, desactivada si se omite).
  * `calendar`: Google Calendar falso (Prompt 19); sin él, la herramienta queda «sin configurar».
  */
 export function buildTestApp(
   ai: AIProvider = new DemoProvider(),
-  tools?: PixelToolRegistry,
+  options?: PixelToolRegistry | Pick<AppOptions, 'avatarModels' | 'tools'>,
   calendar?: AppOptions['calendar'],
 ) {
   return createApp({
     env: testEnv,
-    logger: createLogger({ level: 'silent', format: 'json' }),
+    logger: silentLogger,
     getDatabaseStatus: () => 'connected',
     ai,
-    ...(tools ? { tools } : {}),
+    ...(options instanceof PixelToolRegistry ? { tools: options } : (options ?? {})),
     ...(calendar ? { calendar } : {}),
   });
 }

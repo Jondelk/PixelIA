@@ -12,6 +12,8 @@ import { Icon } from '../../components/Icon';
 export interface WizardStep {
   key: string;
   title: string;
+  /** Tiene datos sugeridos (p. ej. leídos de documentos) pendientes de revisar. */
+  flagged?: boolean;
 }
 
 export function WizardLayout({
@@ -29,6 +31,7 @@ export function WizardLayout({
   submitLabel,
   submitIcon,
   onSubmit,
+  notice,
   children,
 }: {
   /** "Brand Brain" o "Pixel Personal". */
@@ -47,6 +50,8 @@ export function WizardLayout({
   submitLabel: string;
   submitIcon: 'arrowRight' | 'create';
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  /** Aviso sobre el formulario del paso (p. ej. qué se llenó desde documentos). */
+  notice?: ReactNode;
   children: ReactNode;
 }) {
   const index = steps.findIndex((step) => step.key === current);
@@ -99,7 +104,14 @@ export function WizardLayout({
                   >
                     {done ? <Icon name="check" className="size-3.5" /> : i + 1}
                   </span>
-                  {step.title}
+                  <span className="min-w-0 flex-1">{step.title}</span>
+                  {step.flagged && (
+                    <span
+                      className="size-1.5 shrink-0 rounded-full bg-fg"
+                      title="Tiene datos de tus documentos por revisar"
+                      aria-label="por revisar"
+                    />
+                  )}
                 </button>
               </li>
             );
@@ -125,6 +137,7 @@ export function WizardLayout({
 
         <div className="mt-8 space-y-5">
           {formError && <Alert>{formError}</Alert>}
+          {notice}
           {children}
         </div>
 

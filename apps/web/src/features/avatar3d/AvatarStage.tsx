@@ -11,7 +11,7 @@ const PixelAvatar = lazy(() => import('./PixelAvatar'));
 
 /**
  * Escena del personaje de la marca lista para usar en cualquier página. Si no hay WebGL o la escena falla,
- * muestra la vista SVG provisional.
+ * muestra la vista SVG provisional. Con `modelUrl` muestra el modelo 3D esculpido.
  */
 export function AvatarStage({
   avatar,
@@ -19,12 +19,15 @@ export function AvatarStage({
   className,
   interactive = true,
   reducedMotion = false,
+  modelUrl = null,
 }: {
   avatar: AvatarConcept & { id: string };
   state: AvatarState;
   className: string;
   interactive?: boolean;
   reducedMotion?: boolean;
+  /** Modelo 3D del personaje (.glb), si existe. */
+  modelUrl?: string | null;
 }) {
   const [webgl] = useState(supportsWebGL);
   const fallback = (
@@ -49,6 +52,7 @@ export function AvatarStage({
           state={state}
           interactive={interactive}
           reducedMotion={reducedMotion}
+          modelUrl={modelUrl}
           className={`relative w-full touch-pan-y ${className}`}
         />
       </Suspense>

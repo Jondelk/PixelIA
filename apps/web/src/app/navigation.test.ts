@@ -15,6 +15,7 @@ describe('companyNav', () => {
       '/company/abc',
       '/company/abc/brand',
       '/company/abc/pixel',
+      '/company/abc/manual',
       '/company/abc/chat',
     ]);
   });

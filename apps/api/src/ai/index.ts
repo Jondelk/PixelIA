@@ -4,7 +4,7 @@ import type { AIProvider } from './AIProvider.js';
 import { AnthropicProvider } from './providers/anthropic.provider.js';
 import { DemoProvider } from './providers/demo.provider.js';
 
-export type { AIChatTurn, AIProvider, AIResultMeta } from './AIProvider.js';
+export type { AIAttachment, AIChatTurn, AIProvider, AIResultMeta } from './AIProvider.js';
 export { AIProviderError } from './errors.js';
 
 /**

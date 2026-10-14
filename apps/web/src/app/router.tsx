@@ -25,6 +25,7 @@ import { ContentPage } from '../features/operations/ContentPage';
 import { ProjectDetailPage } from '../features/operations/ProjectDetailPage';
 import { ProjectsPage } from '../features/operations/ProjectsPage';
 import { TasksPage } from '../features/operations/TasksPage';
+import { BrandManualPage } from '../features/manual/BrandManualPage';
 import { PixelPage } from '../features/pixel/PixelPage';
 import { FeatureOnly } from '../features/workspaces/FeatureOnly';
 import { NewPixelPage } from '../features/workspaces/NewPixelPage';
@@ -263,6 +264,11 @@ export const router = createBrowserRouter([
             path: 'pixel',
             element: <PixelPage />,
             handle: handle('Personaje de la marca', 'Empresa'),
+          },
+          {
+            path: 'manual',
+            element: <BrandManualPage />,
+            handle: handle('Manual de marca', 'Empresa'),
           },
           { path: 'chat', element: <ChatPage />, handle: handle('Chat', 'Empresa') },
         ],

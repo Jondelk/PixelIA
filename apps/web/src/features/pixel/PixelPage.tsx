@@ -19,7 +19,9 @@ import { errorMessage } from '../../lib/api';
 import { companyApiBase } from '../../lib/apiPaths';
 import { useResource } from '../../lib/useResource';
 import { useCompany } from '../companies/companyContext';
-import { generateAvatar, getAvatar } from './avatarApi';
+import { generateAvatar, getAvatar, modelFileUrl } from './avatarApi';
+import { AvatarModelPanel, AvatarRenders } from './AvatarModelPanel';
+import { useAvatarModel } from './useAvatarModel';
 import {
   BODY_SHAPE_LABEL,
   EYES_LABEL,
@@ -77,6 +79,7 @@ export function PixelPage() {
       kind="brand"
       initial={state.data}
       onGenerated={reloadCompany}
+      manualHref={`${companyBasePath(company.id)}/manual`}
     />
   );
 }
@@ -94,17 +97,21 @@ export function PixelStudio({
   kind,
   initial,
   onGenerated,
+  manualHref = null,
 }: {
   apiBase: string;
   ownerName: string;
   kind: PixelKind;
   initial: AvatarResponse;
   onGenerated: () => void;
+  /** Manual de marca (solo Enterprise). */
+  manualHref?: string | null;
 }) {
   const [data, setData] = useState(initial);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [avatarState, setAvatarState] = useState<AvatarState>('idle');
+  const model = useAvatarModel(apiBase, data.avatar?.version ?? null);
 
   // Tras un concepto nuevo, Pixel celebra unos segundos y vuelve al reposo.
   useEffect(() => {
@@ -173,6 +180,8 @@ export function PixelStudio({
       onRegenerate={generate}
       avatarState={avatarState}
       onAvatarStateChange={setAvatarState}
+      model={model}
+      manualHref={manualHref}
     />
   );
 }
@@ -236,6 +245,8 @@ function AvatarConceptView({
   onRegenerate,
   avatarState,
   onAvatarStateChange,
+  model,
+  manualHref,
 }: {
   kind: PixelKind;
   avatar: AvatarProfile;
@@ -245,7 +256,11 @@ function AvatarConceptView({
   onRegenerate: () => void;
   avatarState: AvatarState;
   onAvatarStateChange: (state: AvatarState) => void;
+  model: ReturnType<typeof useAvatarModel>;
+  manualHref: string | null;
 }) {
+  const glb = model.data?.model?.files.glb;
+  const modelUrl = glb ? modelFileUrl(glb) : null;
   const colors = [
     { label: 'Principal', ...avatar.primaryColor },
     { label: 'Secundario', ...avatar.secondaryColor },
@@ -257,11 +272,29 @@ function AvatarConceptView({
       {/* Columna izquierda: vista provisional y acciones */}
       <div className="space-y-4 xl:sticky xl:top-24 xl:self-start">
         <section className="animate-rise overflow-hidden rounded-3xl border border-line bg-surface">
-          <AvatarStage avatar={avatar} state={avatarState} className="!h-80 sm:!h-96" />
+          <AvatarStage
+            avatar={avatar}
+            state={avatarState}
+            modelUrl={modelUrl}
+            className="!h-80 sm:!h-96"
+          />
           <p className="border-t border-line px-5 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-subtle">
-            Avatar paramétrico · arrastra para girarlo
+            {modelUrl ? 'Modelo 3D esculpido' : 'Avatar paramétrico'} · arrastra para girarlo
           </p>
         </section>
+
+        <AvatarModelPanel
+          name={avatar.name}
+          data={model.data}
+          inProgress={model.inProgress}
+          onBuild={model.build}
+        />
+
+        {manualHref && kind === 'brand' && (
+          <Link to={manualHref} className={buttonClasses('secondary', 'w-full')}>
+            <Icon name="manual" className="size-4" /> Ver el manual de marca
+          </Link>
+        )}
 
         {import.meta.env.DEV && (
           <AvatarStateControls value={avatarState} onChange={onAvatarStateChange} />
@@ -328,6 +361,8 @@ function AvatarConceptView({
             </Field>
           </dl>
         </header>
+
+        <AvatarRenders data={model.data} name={avatar.name} />
 
         <section
           className="animate-rise rounded-2xl bg-brand p-6 text-on-brand sm:p-8"

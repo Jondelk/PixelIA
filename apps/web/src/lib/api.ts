@@ -4,6 +4,11 @@ import type { z } from 'zod';
 /** Vacío = mismo origen (/api), que en desarrollo pasa por el proxy de Vite. */
 const API_URL = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
 
+/** URL absoluta de un recurso de la API (imágenes y modelos que el navegador pide directamente). */
+export function apiUrl(path: string): string {
+  return `${API_URL}${path}`;
+}
+
 export interface ApiFieldIssue {
   path: string;
   message: string;

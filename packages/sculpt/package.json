@@ -1,0 +1,24 @@
+{
+  "name": "@pixel/sculpt",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pixel Sculpt: modelado 3D procedural (SDF), exportación GLB y renders de estudio, sin dependencias.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  }
+}

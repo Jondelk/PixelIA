@@ -12,7 +12,9 @@ import type { AuthService } from './auth/auth.service.js';
 import type { SessionConfig } from './auth/session.js';
 import { createAvatarsRouter } from './avatars/avatars.routes.js';
 import type { AvatarConceptEngine, PersonalAvatarConceptEngine } from './avatars/engine/index.js';
-import { brandDnaRouter } from './brand-dna/brand-dna.routes.js';
+import type { AvatarModelService } from './avatars/model/avatarModel.service.js';
+import { createBrandDnaRouter } from './brand-dna/brand-dna.routes.js';
+import type { ExtractionDeps } from './brand-dna/extraction/extraction.service.js';
 import { companiesRouter, companyRouter } from './companies/companies.routes.js';
 import { createCampaignsRouter } from './campaigns/campaigns.routes.js';
 import type { CampaignStrategyEngine } from './campaigns/campaignStrategy.engine.js';
@@ -56,7 +58,11 @@ export interface ApiDependencies {
   session: SessionConfig;
   avatarEngine: AvatarConceptEngine;
   personalAvatarEngine: PersonalAvatarConceptEngine;
+  /** Producción 3D del personaje (Pixel Sculpt). */
+  avatarModels: AvatarModelService;
   chat: ChatDeps;
+  /** Lectura de documentos del onboarding (IA o local). */
+  extraction: ExtractionDeps;
   personalDnaGenerator: PersonalDnaGenerator;
   planningEngine: ContentPlanningEngine;
   enterprisePlanning: EnterprisePlanningStrategy;
@@ -156,7 +162,7 @@ export function createApiRouter(deps: ApiDependencies): Router {
   const company = Router({ mergeParams: true });
   company.use(requireCompanyAccess);
   company.use('/', companyRouter);
-  company.use('/brand-dna', brandDnaRouter);
+  company.use('/brand-dna', createBrandDnaRouter(deps.extraction));
   company.use('/avatar', createAvatarsRouter(deps));
   company.use('/conversations', createConversationsRouter(deps.chat));
   company.use('/memories', creativeMemoryRouter);

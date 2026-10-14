@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import type {
+  AIAttachment,
   AIProvider,
   AIResultMeta,
   GenerateStructuredInput,
@@ -36,6 +37,37 @@ function mapError(err: unknown): AIProviderError {
     return new AIProviderError('unavailable', 'El proveedor de IA no está disponible', err);
   }
   return new AIProviderError('unavailable', 'Error inesperado del proveedor de IA', err);
+}
+
+/** Documentos e imágenes como bloques de contenido (los documentos van antes del prompt). */
+export function toContentBlock(attachment: AIAttachment) {
+  switch (attachment.kind) {
+    case 'pdf':
+      return {
+        type: 'document' as const,
+        title: attachment.name,
+        source: {
+          type: 'base64' as const,
+          media_type: 'application/pdf' as const,
+          data: attachment.data,
+        },
+      };
+    case 'text':
+      return {
+        type: 'document' as const,
+        title: attachment.name,
+        source: { type: 'text' as const, media_type: 'text/plain' as const, data: attachment.text },
+      };
+    case 'image':
+      return {
+        type: 'image' as const,
+        source: {
+          type: 'base64' as const,
+          media_type: attachment.mediaType,
+          data: attachment.data,
+        },
+      };
+  }
 }
 
 export class AnthropicProvider implements AIProvider {
@@ -103,7 +135,14 @@ export class AnthropicProvider implements AIProvider {
           format: betaZodOutputFormat(input.schema),
         },
         system: [{ type: 'text', text: input.system, cache_control: { type: 'ephemeral' } }],
-        messages: [{ role: 'user', content: input.prompt }],
+        messages: [
+          {
+            role: 'user',
+            content: input.attachments?.length
+              ? [...input.attachments.map(toContentBlock), { type: 'text', text: input.prompt }]
+              : input.prompt,
+          },
+        ],
       });
       if (response.stop_reason === 'refusal') {
         throw new AIProviderError('refused', 'El modelo declinó la petición');

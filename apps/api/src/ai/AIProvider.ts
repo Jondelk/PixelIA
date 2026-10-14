@@ -34,9 +34,23 @@ export interface GenerateTextInput {
   effort?: 'low' | 'medium' | 'high';
 }
 
+/** Archivo que acompaña a una petición (documentos de la marca, imágenes). */
+export type AIAttachment =
+  | { kind: 'pdf'; name: string; /** base64 */ data: string }
+  | {
+      kind: 'image';
+      name: string;
+      mediaType: 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif';
+      /** base64 */
+      data: string;
+    }
+  | { kind: 'text'; name: string; text: string };
+
 export interface GenerateStructuredInput<T> {
   system: string;
   prompt: string;
+  /** Documentos que el modelo debe leer junto con el prompt. */
+  attachments?: AIAttachment[];
   schema: ZodType<T>;
   /** Nombre corto del objeto esperado (para logs y proveedores que lo usan). */
   schemaName: string;

@@ -64,18 +64,23 @@ El avatar **nunca** es una mascota aleatoria: es una consecuencia trazable del A
 artesanal → grano de café cálido; startup → forma geométrica precisa; constructora → personaje
 estructural.
 
-**Fuera de alcance hasta que se pida explícitamente:** generación automática avanzada de modelos 3D
-(el avatar es paramétrico/procedural), generación de video, lip-sync avanzado (la animación
-`speaking` actual no lo es), voz en tiempo real (la voz actual es por turnos, del navegador),
-clonación de voz, loader de avatares GLB (solo hay contrato: `docs/AVATAR-ASSET-CONTRACT.md`), campañas automáticas completas, facturación, planes
-SaaS, panel administrativo complejo y analytics avanzados.
+**Personaje 3D y habla (pedido explícitamente):** cada concepto se esculpe en 3D con Pixel Sculpt
+(`packages/sculpt`, `docs/AVATAR-3D.md`): `.glb` animable que la web carga con respaldo al avatar
+procedural, y renders de estudio. La boca se sincroniza con lo que Pixel dice
+(`features/avatar3d/lipsync.ts`): visemas del español a partir del texto, anclados en tiempo real a
+los límites de palabra de la voz del navegador; sin voz, el mismo cronograma mueve la boca mientras
+el texto aparece.
+
+**Fuera de alcance hasta que se pida explícitamente:** generación de video, voz en tiempo real (la
+voz actual es por turnos, del navegador), clonación de voz, campañas automáticas completas,
+facturación, planes SaaS, panel administrativo complejo y analytics avanzados.
 
 Referencia (leer lo relevante antes de trabajar): `docs/WORKSPACES.md`, `docs/PERSONAL.md`,
 `docs/WORKSPACE-MIGRATION.md`, `docs/OPERATIONS.md`, `docs/ENTERPRISE-OPERATIONS.md`,
 `docs/CAMPAIGNS.md`, `docs/CONTENT-PLANNER.md`, `docs/ENTERPRISE-CONTENT.md`, `docs/DAILY-DIRECTOR.md`,
 `docs/PIXEL-COMMAND.md`, `docs/BRAND-GUARDIAN.md`, `docs/CREATIVE-MEMORY.md`, `docs/PIXEL-PRESENCE.md`,
 `docs/PIXEL-ACTIONS.md`, `docs/PIXEL-TOOLS.md`, `docs/GOOGLE-CALENDAR.md`, `docs/PERSONAL-WEEK-PLANNER.md`,
-`docs/PERSONAL-AGENDA.md` y `docs/AVATAR-ASSET-CONTRACT.md` describen el diseño vigente; `docs/MVP.md`,
+`docs/PERSONAL-AGENDA.md`, `docs/AVATAR-ASSET-CONTRACT.md` y `docs/AVATAR-3D.md` describen el diseño vigente; `docs/MVP.md`,
 `docs/ARCHITECTURE.md`, `docs/ENTITIES.md` y `docs/BACKLOG.md` tienen deriva importante (detalle en
 `PIXEL_ESTADO.md` §12). Ante un conflicto, manda el código.
 
@@ -84,6 +89,10 @@ Referencia (leer lo relevante antes de trabajar): `docs/WORKSPACES.md`, `docs/PE
 - `apps/web`: React, Vite, TypeScript, Tailwind CSS, React Three Fiber, Drei.
 - `apps/api`: Node.js, Express, TypeScript, MongoDB, Mongoose, Zod.
 - `packages/contracts`: schemas Zod y tipos compartidos, sin Mongoose ni React. Se consume compilado (`dist/`).
+- `packages/sculpt` (aprobado): Pixel Sculpt, motor 3D propio en TypeScript sin dependencias
+  (campos de distancia, malla, glTF, renders por software). Corre dentro de la API en un
+  `worker_thread`; solo recibe una CharacterSpec derivada del AvatarProfile, nunca reglas de negocio.
+- Lectura de PDF sin IA (aprobada): `pdfjs-dist` en la API (onboarding desde documentos).
 - Tooling: npm workspaces, ESLint (flat config + typescript-eslint), Prettier, Vitest.
 
 ```

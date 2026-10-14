@@ -12,6 +12,11 @@ import {
   createAvatarConceptEngine,
   createPersonalAvatarConceptEngine,
 } from './modules/avatars/engine/index.js';
+import {
+  createDisabledAvatarModelService,
+  type AvatarModelService,
+} from './modules/avatars/model/avatarModel.service.js';
+import { EXTRACT_PATH } from './modules/brand-dna/brand-dna.routes.js';
 import { AppError } from './lib/errors.js';
 import { createApiRouter } from './modules/index.js';
 import { createCampaignStrategyEngine } from './modules/campaigns/campaignStrategy.engine.js';
@@ -38,6 +43,7 @@ export interface AppOptions {
     | 'BCRYPT_ROUNDS'
     | 'CHAT_HISTORY_LIMIT'
     | 'DEFAULT_TIMEZONE'
+    | 'DOCUMENT_READER'
   >;
   logger: Logger;
   getDatabaseStatus: () => DatabaseStatus;
@@ -50,6 +56,8 @@ export interface AppOptions {
    * API arranca igual. En tests y en el smoke, un proveedor falso sin red.
    */
   calendar?: Partial<Pick<CalendarDeps, 'config' | 'provider' | 'now'>>;
+  /** Producción 3D (Pixel Sculpt). Si se omite, queda desactivada (la web usa el avatar paramétrico). */
+  avatarModels?: AvatarModelService;
 }
 
 /** Construye la app Express sin efectos secundarios (sin listen ni conexión a DB): usable en tests. */
@@ -60,6 +68,7 @@ export function createApp({
   ai,
   tools,
   calendar: calendarOptions,
+  avatarModels,
 }: AppOptions): Express {
   const calendar: CalendarDeps = {
     config: calendarOptions?.config ?? null,
@@ -86,7 +95,10 @@ export function createApp({
   // Creative Memory registra decisiones dentro de otros servicios (best-effort): logger y sintetizador.
   configureCreativeMemory({ ai, logger });
 
-  app.use(express.json({ limit: '1mb' }));
+  // Cuerpos JSON de 1 MB, salvo la lectura de documentos de marca (llegan en base64).
+  const json = express.json({ limit: '1mb' });
+  const documentsJson = express.json({ limit: '21mb' });
+  app.use((req, res, next) => (EXTRACT_PATH.test(req.path) ? documentsJson : json)(req, res, next));
   app.use(cookieParser());
 
   // Prompt 18 (fail closed): sin la base LISTA (conectada y con sus índices críticos, ver
@@ -119,12 +131,14 @@ export function createApp({
       authService: createAuthService({ bcryptRounds: env.BCRYPT_ROUNDS }),
       avatarEngine: createAvatarConceptEngine(),
       personalAvatarEngine: createPersonalAvatarConceptEngine(),
+      avatarModels: avatarModels ?? createDisabledAvatarModelService(logger),
       chat: {
         ai,
         historyLimit: env.CHAT_HISTORY_LIMIT,
         logger,
         defaultTimezone: env.DEFAULT_TIMEZONE,
       },
+      extraction: { ai, logger, reader: env.DOCUMENT_READER },
       personalDnaGenerator: createPersonalDnaGenerator({ ai, logger }),
       planningEngine: createContentPlanningEngine({ ai, logger }),
       enterprisePlanning: createEnterprisePlanningStrategy({ ai, logger }),

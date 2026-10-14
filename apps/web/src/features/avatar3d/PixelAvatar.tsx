@@ -1,23 +1,31 @@
 import type { AvatarConcept } from '@pixel/contracts';
 import { PresentationControls } from '@react-three/drei';
 import { Canvas, useThree } from '@react-three/fiber';
-import { useEffect, useMemo } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { ErrorBoundary } from '../../components/ErrorBoundary';
 import { AvatarController } from './AvatarController';
 import { AvatarEnvironment } from './AvatarEnvironment';
+import { SculptedAvatarModel, type ModelBounds } from './SculptedAvatarModel';
 import type { AvatarState } from './pose';
 import { profileToScene, type AvatarProfileInput, type SceneSpec } from './sceneSpec';
 
 const FOV = 30;
 
+function parametricBounds(spec: SceneSpec): ModelBounds {
+  return {
+    top: spec.body.halfHeight + 0.55,
+    bottom: spec.groundY - 0.15,
+    halfWidth: spec.body.halfWidth + spec.limbs.armLength + 0.35,
+  };
+}
+
 /**
  * Encuadra al personaje completo (con accesorios y gestos) en cualquier proporción de
  * lienzo: calcula la distancia por alto y por ancho y usa la mayor.
  */
-function ResponsiveCamera({ spec }: { spec: SceneSpec }) {
+function ResponsiveCamera({ bounds }: { bounds: ModelBounds }) {
   const { camera, size } = useThree();
-  const top = spec.body.halfHeight + 0.55;
-  const bottom = spec.groundY - 0.15;
-  const halfWidth = spec.body.halfWidth + spec.limbs.armLength + 0.35;
+  const { top, bottom, halfWidth } = bounds;
 
   useEffect(() => {
     const aspect = size.width / Math.max(1, size.height);
@@ -39,11 +47,16 @@ export interface PixelAvatarProps {
   /** Permite girar el personaje con límites (vuelve solo a la vista frontal). */
   interactive?: boolean;
   reducedMotion?: boolean;
+  /**
+   * Modelo del personaje esculpido en 3D (.glb). Mientras carga, o si falla, se muestra
+   * el avatar paramétrico.
+   */
+  modelUrl?: string | null;
 }
 
 /**
- * Renderer 3D de Pixel. Recibe un AvatarProfile y lo dibuja con primitivas paramétricas.
- * No contiene reglas de negocio: solo traduce el perfil (profileToScene) y anima estados.
+ * Renderer 3D de Pixel. Con modelo esculpido muestra ese modelo; si no, dibuja el AvatarProfile
+ * con primitivas paramétricas. No contiene reglas de negocio: solo traduce y anima estados.
  */
 export function PixelAvatar({
   profile,
@@ -51,8 +64,23 @@ export function PixelAvatar({
   className,
   interactive = true,
   reducedMotion = false,
+  modelUrl = null,
 }: PixelAvatarProps) {
   const spec = useMemo(() => profileToScene(profile), [profile]);
+  const [model, setModel] = useState<{ url: string; bounds: ModelBounds } | null>(null);
+  const modelBounds = model && model.url === modelUrl ? model.bounds : null;
+  const onBounds = useCallback(
+    (bounds: ModelBounds) => {
+      if (modelUrl) setModel({ url: modelUrl, bounds });
+    },
+    [modelUrl],
+  );
+
+  const parametric = (
+    <AvatarController spec={spec} state={state} reducedMotion={reducedMotion} />
+  );
+  // El modelo esculpido apoya los pies en y = 0; el paramétrico, en spec.groundY.
+  const groundY = modelBounds ? 0 : spec.groundY;
 
   return (
     <Canvas
@@ -64,8 +92,8 @@ export function PixelAvatar({
       aria-label={`Avatar 3D de ${profile.name}`}
       role="img"
     >
-      <ResponsiveCamera spec={spec} />
-      <AvatarEnvironment spec={spec} />
+      <ResponsiveCamera bounds={modelBounds ?? parametricBounds(spec)} />
+      <AvatarEnvironment accentColor={spec.accentColor} groundY={groundY} />
       <PresentationControls
         enabled={interactive}
         global={false}
@@ -77,7 +105,21 @@ export function PixelAvatar({
         polar={[-0.08, 0.18]}
         azimuth={[-0.75, 0.75]}
       >
-        <AvatarController spec={spec} state={state} reducedMotion={reducedMotion} />
+        {modelUrl ? (
+          <ErrorBoundary key={modelUrl} fallback={parametric}>
+            <Suspense fallback={parametric}>
+              <SculptedAvatarModel
+                url={modelUrl}
+                motion={spec.motion}
+                state={state}
+                reducedMotion={reducedMotion}
+                onBounds={onBounds}
+              />
+            </Suspense>
+          </ErrorBoundary>
+        ) : (
+          parametric
+        )}
       </PresentationControls>
     </Canvas>
   );

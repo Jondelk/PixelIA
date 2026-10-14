@@ -24,7 +24,7 @@ Documentos relacionados: [`ARCHITECTURE.md`](./ARCHITECTURE.md) · [`ENTITIES.md
 |---|---|
 | Autenticación | Registro y login con email + contraseña. Sesión con JWT en cookie httpOnly. Logout. |
 | Empresas | Un usuario crea y lista sus empresas. Un dueño por empresa (sin equipos/roles). |
-| Onboarding | "Brand Brain": 8 pasos (empresa, propósito, público, personalidad, comunicación, identidad visual, competencia, preferencias creativas), guardado paso a paso con progreso. Solo texto, listas y colores hex (sin subida de archivos, sin scraping de web). |
+| Onboarding | "Brand Brain": 8 pasos (empresa, propósito, público, personalidad, comunicación, identidad visual, competencia, preferencias creativas), guardado paso a paso con progreso. Atajo opcional: subir documentos de la marca (PDF, Word, PowerPoint, texto, imágenes) para que Pixel proponga respuestas que el usuario revisa y completa; los archivos no se guardan. Sin scraping de web. |
 | Análisis | Generación asíncrona (en proceso) de BrandDNA y luego AvatarProfile, con estado consultable y reintento. |
 | BrandDNA | Datos estructurados (identity, purpose, audience, personality, archetypes, communication, visualLanguage, differentiators, creativePreferences, restrictions). Hoy se genera con reglas determinísticas; luego con IA, mismo contrato. Pantalla "Así entiende Pixel tu marca". Versionado (cada cambio = nueva versión). |
 | Avatar 3D | Render paramétrico con React Three Fiber a partir del AvatarProfile: forma base de catálogo, proporciones, paleta, material, rostro, expresión, animación idle y estados (idle / pensando / hablando). Vista de la *rationale* (por qué se ve así). |
@@ -37,7 +37,7 @@ Documentos relacionados: [`ARCHITECTURE.md`](./ARCHITECTURE.md) · [`ENTITIES.md
 
 Generación avanzada de modelos 3D, video, lip-sync avanzado, voz en tiempo real, campañas
 automáticas, facturación, planes SaaS, panel administrativo complejo, analytics avanzados,
-equipos/roles por empresa, subida de logos/archivos, scraping de sitios web, streaming de respuestas,
+equipos/roles por empresa, almacenamiento de archivos subidos, scraping de sitios web, streaming de respuestas,
 extracción automática de memorias, internacionalización.
 
 ## 3. Flujo completo del MVP

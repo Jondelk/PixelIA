@@ -14,6 +14,8 @@ import {
   ActionKeyIndexError,
   ensureActionKeyIndexes,
 } from './modules/operations/operations.indexes.js';
+import { createAvatarModelService } from './modules/avatars/model/avatarModel.service.js';
+import { createSculptRunner, ENGINE_VERSION } from './modules/avatars/model/sculptRunner.js';
 
 const env = loadEnv();
 const logger = createLogger({
@@ -67,6 +69,26 @@ const calendarConfig = resolveCalendarConfig(env);
 if (calendarConfig.problem) {
   logger.warn(`Google Calendar sin configurar: ${calendarConfig.problem}`);
 }
+// Producción 3D: Pixel Sculpt esculpe el personaje dentro de la API (sin programas externos).
+const avatar3d = env.AVATAR_3D === 'on';
+logger.info(
+  avatar3d
+    ? `Producción 3D activa (${ENGINE_VERSION}, calidad ${env.AVATAR_QUALITY})`
+    : 'Producción 3D desactivada (AVATAR_3D=off)',
+);
+const avatarModels = createAvatarModelService({
+  storageDir: env.STORAGE_DIR,
+  runner: avatar3d
+    ? createSculptRunner({
+        size: env.AVATAR_RENDER_SIZE,
+        quality: env.AVATAR_QUALITY,
+        timeoutMs: env.AVATAR_TIMEOUT_MS,
+      })
+    : null,
+  autoBuild: env.AVATAR_AUTO_BUILD,
+  logger,
+});
+
 const app = createApp({
   env,
   logger,
@@ -76,6 +98,7 @@ const app = createApp({
     config: calendarConfig.config,
     provider: calendarConfig.config ? createGoogleCalendarProvider(calendarConfig.config) : null,
   },
+  avatarModels,
 });
 const server = app.listen(env.PORT, () => {
   logger.info(`${SERVICE_NAME} v${SERVICE_VERSION} escuchando en http://localhost:${env.PORT}`, {
