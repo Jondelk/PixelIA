@@ -1,7 +1,5 @@
 import {
   CreateContentItemSchema,
-  CreateProjectSchema,
-  CreateTaskSchema,
   GenerateCampaignSchema,
   GenerateContentPlanSchema,
   type PixelCreatedResource,
@@ -15,28 +13,55 @@ import {
   type ContentPlanDeps,
 } from '../content-plans/contentPlans.service.js';
 import { createContentItem } from '../operations/content.service.js';
-import { createProject } from '../operations/projects.service.js';
-import { createTask } from '../operations/tasks.service.js';
 import type { WorkspaceDocument } from '../workspaces/workspace.model.js';
 import {
   forgetCreativeMemory,
   rememberCreativeMemory,
   resolveMemoryScope,
 } from '../creative-memory/creativeMemory.service.js';
+import { executeActions } from '../actions/action.executor.js';
+import { ACTION_ERROR_TEXT, describeOutcome } from '../actions/action.report.js';
+import {
+  isToolStep,
+  type ActionResultRecord,
+  type AuthorizedActionSnapshot,
+} from '../actions/action.snapshot.js';
+import type { PixelToolRegistry } from '../actions/toolRegistry.js';
 import type { PixelCommandDocument, PixelStepAttrs } from './pixelCommand.model.js';
 
 /*
- * Ejecución de un plan CONFIRMADO (docs/PIXEL-COMMAND.md §7). Solo orquesta servicios existentes
- * (Campaign Manager, Content Planner, Operations): nunca escribe en Mongo directamente ni duplica
- * su lógica. Cada paso valida sus parámetros con el schema del servicio, se ejecuta una vez y
- * guarda lo que creó; si uno falla, los siguientes no se ejecutan y el comando queda `partial`
- * (algo se creó) o `failed` (nada), con el motivo. Reintentar retoma desde el paso que falló.
+ * Ejecución de un plan CONFIRMADO (docs/PIXEL-COMMAND.md §7, docs/PIXEL-ACTIONS.md). Solo orquesta
+ * servicios existentes: nunca escribe en Mongo directamente ni duplica su lógica.
+ *
+ * - Pasos con herramientas (Prompt 18: create_project, create_tasks): ejecutan las acciones
+ *   CONGELADAS del snapshot autorizado con el ActionExecutor (una por proyecto y por tarea), que
+ *   verifica cada efecto. Un fallo no detiene las acciones independientes; las dependientes se
+ *   omiten. La respuesta sale de los resultados verificados.
+ * - Pasos anteriores (campaña, plan, pieza, memoria): como siempre. Cada uno valida sus parámetros
+ *   con el schema del servicio, se ejecuta una vez y guarda lo que creó; si uno falla, los
+ *   siguientes no se ejecutan.
+ * En los dos casos: `partial` (algo se hizo) o `failed` (nada), con el motivo, y reintentar retoma
+ * sin duplicar lo hecho.
  */
 
 export interface PixelExecutorDeps {
   campaigns: CampaignDeps;
   contentPlans: ContentPlanDeps;
   logger: Logger;
+  /** Herramientas que Pixel puede usar (Prompt 18). */
+  tools: PixelToolRegistry;
+}
+
+/** Quién y qué autorizó esta ejecución (lo congelado en la reserva atómica). */
+export interface AuthorizedExecution {
+  actorUserId: string;
+  executionId: string;
+  authorization: AuthorizedActionSnapshot;
+}
+
+export interface ExecutionProgress {
+  steps: PixelStepAttrs[];
+  actionResults: ActionResultRecord[];
 }
 
 type StepOutputs = Map<string, PixelCreatedResource[]>;
@@ -78,26 +103,10 @@ async function runStep(
         },
       ];
     }
-    case 'create_project': {
-      const project = await createProject(workspace, CreateProjectSchema.parse(step.params));
-      return [{ kind: 'project', id: project.id, label: project.name }];
-    }
-    case 'create_tasks': {
-      const projectId = fromStep(outputs, step.params.projectFromStep, 'project');
-      const tasks = Array.isArray(step.params.tasks) ? step.params.tasks : [];
-      // Reintento: las tareas ya creadas en este paso no se repiten.
-      const created = [...step.resources];
-      for (const raw of tasks.slice(created.length)) {
-        const input = CreateTaskSchema.parse({
-          ...(raw as Record<string, unknown>),
-          ...(projectId ? { projectId } : {}),
-        });
-        const task = await createTask(workspace, input, { source: 'pixel' });
-        created.push({ kind: 'task', id: task.id, label: task.title });
-        step.resources = created;
-      }
-      return created;
-    }
+    // create_project y create_tasks: herramientas (workspace.projects / workspace.tasks).
+    case 'create_project':
+    case 'create_tasks':
+      throw new Error(`El paso ${step.type} se ejecuta con herramientas`);
     case 'create_content_item': {
       const item = await createContentItem(workspace, CreateContentItemSchema.parse(step.params), {
         source: 'pixel',
@@ -138,25 +147,80 @@ export interface ExecutionResult {
   reply: string;
 }
 
+/** El último resultado de cada acción. */
+function upsertResult(results: ActionResultRecord[], result: ActionResultRecord) {
+  return [...results.filter((item) => item.actionId !== result.actionId), result];
+}
+
+/** Lo que un paso con herramientas ya tiene hecho y verificado (acumulado entre reintentos). */
+function stepResources(stepId: string, results: ActionResultRecord[], revision: number) {
+  return results
+    .filter(
+      (result) =>
+        result.stepId === stepId && result.revision === revision && result.status === 'success',
+    )
+    .flatMap((result) => result.resourceRefs);
+}
+
 /** Ejecuta los pasos pendientes del comando (ya reservado en estado `executing`). */
 export async function executeCommand(
   workspace: WorkspaceDocument,
   command: PixelCommandDocument,
   deps: PixelExecutorDeps,
-  persist: (steps: PixelStepAttrs[]) => Promise<void>,
+  authorized: AuthorizedExecution,
+  persist: (progress: ExecutionProgress) => Promise<void>,
 ): Promise<ExecutionResult> {
   // Copias planas (un subdocumento de Mongoose no se copia con spread).
-  const steps = (command.toObject().steps as PixelStepAttrs[]).map((step) => ({
+  const plain = command.toObject();
+  const steps = (plain.steps as PixelStepAttrs[]).map((step) => ({
     ...step,
     params: { ...step.params },
     resources: [...step.resources],
   }));
+  const { authorization } = authorized;
+  const revision = authorization.revision;
+  let results = ((plain.actionResults ?? []) as ActionResultRecord[]).map((result) => ({
+    ...result,
+  }));
   const outputs: StepOutputs = new Map(
     steps.filter((step) => step.status === 'done').map((step) => [step.id, step.resources]),
   );
+  const save = () => persist({ steps, actionResults: results });
   let failure: { step: PixelStepAttrs; message: string } | null = null;
+
   for (const step of steps) {
     if (step.status === 'done') continue;
+
+    if (isToolStep(step.type)) {
+      const actions = authorization.actions.filter((action) => action.stepId === step.id);
+      const stepResults = await executeActions({
+        workspace,
+        actions,
+        previous: results,
+        revision,
+        actorUserId: authorized.actorUserId,
+        commandId: command._id.toString(),
+        executionId: authorized.executionId,
+        registry: deps.tools,
+        logger: deps.logger,
+        onResult: async (result) => {
+          results = upsertResult(results, result);
+          step.resources = stepResources(step.id, results, revision);
+          await save();
+        },
+      });
+      const notDone = stepResults.find((result) => result.status !== 'success');
+      step.resources = stepResources(step.id, results, revision);
+      step.status = notDone ? 'failed' : 'done';
+      step.error = notDone?.errorCode ? ACTION_ERROR_TEXT[notDone.errorCode] : null;
+      outputs.set(step.id, step.resources);
+      await save();
+      continue;
+    }
+
+    // Un paso anterior no se ejecuta tras un fallo (no declara dependencias).
+    if (failure || steps.some((other) => isToolStep(other.type) && other.status === 'failed'))
+      break;
     try {
       step.resources = await runStep(workspace, step, outputs, deps, command._id.toString());
       step.status = 'done';
@@ -172,10 +236,24 @@ export async function executeCommand(
         err,
       });
     }
-    await persist(steps);
+    await save();
     if (failure) break;
   }
 
+  // Plan solo con herramientas: estado y respuesta salen de los resultados verificados.
+  if (steps.every((step) => isToolStep(step.type))) {
+    return describeOutcome(
+      authorization.actions,
+      results.filter((result) => result.revision === revision),
+    );
+  }
+  return legacyOutcome(steps, failure);
+}
+
+function legacyOutcome(
+  steps: PixelStepAttrs[],
+  failure: { step: PixelStepAttrs; message: string } | null,
+): ExecutionResult {
   const created = steps.flatMap((step) => step.resources);
   const names = created.map((resource) => `«${resource.label}»`);
   if (!failure && steps.every((step) => step.type === 'remember_memory')) {

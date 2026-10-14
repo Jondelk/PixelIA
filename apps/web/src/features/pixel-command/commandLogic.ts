@@ -99,12 +99,14 @@ export const THINKING_COPY = {
 /**
  * Prompt 17: qué refleja la presencia tras una respuesta de PixelCommand (campaña, plan, pieza…):
  * éxito al organizar, aviso si el Guardian vio algo, error si falló; si no, reposo.
+ * Prompt 18: un resultado parcial (algo verificado, algo no) es un AVISO, no un error.
  */
 export function presenceAfterCommand(
   command: Pick<PixelCommand, 'status' | 'guardian'>,
 ): 'success' | 'warn' | 'fail' | 'idle' {
   if (command.status === 'completed') return 'success';
-  if (command.status === 'partial' || command.status === 'failed') return 'fail';
+  if (command.status === 'partial') return 'warn';
+  if (command.status === 'failed') return 'fail';
   if (command.status === 'proposed' && command.guardian && command.guardian.status !== 'pass') {
     return 'warn';
   }

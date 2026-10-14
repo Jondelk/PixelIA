@@ -141,7 +141,12 @@ Ambos son recursos del workspace (`tenantScoped`). Detalle en [`BRAND-GUARDIAN.m
 
 Desde el Prompt 17, `PixelCommand.contextHint` admite `resource: { type, id }` (campaign,
 content_plan, project, content_item), validado contra el workspace, y guarda `contextHint.projectId`
-cuando el recurso lo implica. **Pixel Presence no añade entidades:** el estado de presencia y las
+cuando el recurso lo implica. **Prompt 18 (Action Foundation, `PIXEL-ACTIONS.md`):** `PixelCommand` guarda además
+`authorization` (snapshot inmutable de lo autorizado: revisión, `authorizedBy`, `authorizedAt` y
+las acciones congeladas con herramienta, capacidad y entrada), `actionResults[]` (lo que pasó con
+cada acción: estado, verificado, recursos, código de error, `executionId`, fecha) y
+`executionStartedAt` / `executionUpdatedAt`. Embebidos: sin colecciones nuevas. Project y Task ganan `pixelActionKey` (opcional, técnico, nunca en la API) con un índice único parcial `{ workspaceId, pixelActionKey }`: la creación por una acción de Pixel es idempotente.
+**Pixel Presence no añade entidades:** el estado de presencia y las
 preferencias de voz no se persisten en Mongo (`docs/PIXEL-PRESENCE.md`). `WorkspaceOverview` (DTO,
 no colección) incluye `avatar`, una vista previa del AvatarProfile vigente.
 

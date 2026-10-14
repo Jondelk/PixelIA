@@ -375,6 +375,8 @@ describe('PixelCommand Personal', () => {
 });
 
 describe('Fallos parciales: se informa qué pasó y reintentar no duplica', () => {
+  // Pasos anteriores a las herramientas (piezas de contenido): el primer fallo detiene los siguientes.
+  // Los pasos con herramientas (proyecto, tareas) se prueban en pixelActions.test.ts.
   it('si un paso falla tras crear algo, queda partial con lo creado y el motivo', async () => {
     const jhon = await registerUser(app, 'Jhon');
     const tinto = await brand(jhon, 'Café Tinto', cafeTinto);
@@ -383,23 +385,29 @@ describe('Fallos parciales: se informa qué pasó y reintentar no duplica', () =
     const command = await PixelCommandModel.create({
       workspaceId: tinto,
       status: 'proposed',
-      intent: 'organize_project',
-      request: 'Organiza el proyecto Empaque',
+      intent: 'create_content',
+      request: 'Guarda dos piezas',
       interpretation: { mode: 'rules', confidence: 0.75 },
-      plan: { summary: 'Creo el proyecto', understood: [], proposal: [], creates: [], revision: 1 },
+      plan: {
+        summary: 'Guardo dos piezas',
+        understood: [],
+        proposal: [],
+        creates: [],
+        revision: 1,
+      },
       steps: [
         {
           id: 'step_1',
-          type: 'create_project',
-          title: 'Crear el proyecto «Empaque»',
-          params: { name: 'Empaque' },
+          type: 'create_content_item',
+          title: 'Guardar «Origen del café»',
+          params: { title: 'Origen del café' },
         },
         // Paso inválido a propósito (título vacío): el servicio lo rechaza.
         {
           id: 'step_2',
-          type: 'create_tasks',
-          title: 'Crear 1 tarea',
-          params: { tasks: [{ title: '' }], projectFromStep: 'step_1' },
+          type: 'create_content_item',
+          title: 'Guardar la segunda',
+          params: { title: '' },
         },
       ],
     });
@@ -409,15 +417,17 @@ describe('Fallos parciales: se informa qué pasó y reintentar no duplica', () =
       .expect(200);
     const first = PixelCommandConfirmResponseSchema.parse(res.body).command;
     expect(first.status).toBe('partial');
-    expect(first.reply).toMatch(/Creé «Empaque», pero no pude completar «Crear 1 tarea»/);
+    expect(first.reply).toMatch(
+      /Creé «Origen del café», pero no pude completar «Guardar la segunda»/,
+    );
     expect(first.plan?.steps.map((step) => step.status)).toEqual(['done', 'failed']);
-    expect(await ProjectModel.countDocuments({ workspaceId: tinto })).toBe(1);
+    expect(await ContentItemModel.countDocuments({ workspaceId: tinto })).toBe(1);
 
-    // Reintentar retoma desde el paso que falló: el proyecto no se duplica.
+    // Reintentar retoma desde el paso que falló: lo creado no se duplica.
     await jhon.agent
       .post(`${commands(tinto)}/${command._id.toString()}/confirm`)
       .send({ revision: 1 })
       .expect(200);
-    expect(await ProjectModel.countDocuments({ workspaceId: tinto })).toBe(1);
+    expect(await ContentItemModel.countDocuments({ workspaceId: tinto })).toBe(1);
   });
 });

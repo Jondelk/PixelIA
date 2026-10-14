@@ -43,6 +43,12 @@ available». Pixel muestra qué está haciendo (escuchar, pensar, hablar, revisa
 del workspace, acompaña fuera del Inicio con el Pixel Dock (consciente del recurso abierto) y acepta
 la voz como otra entrada. Si el avatar o la voz fallan, todo sigue funcionando por texto.
 
+**Pixel Action Foundation** (Prompt 18, `docs/PIXEL-ACTIONS.md`, `docs/PIXEL-TOOLS.md`): «Pixel must
+distinguish between answering, planning and acting». PixelActionPlan ES la propuesta; al confirmar,
+sus acciones se congelan (quién, cuándo, qué) y se ejecutan con herramientas registradas, cada una
+verificada. Pixel solo dice «Creé…» con un resultado verificado. Lo que no puede hacer (calendario,
+correo, pagos) lo dice con honestidad.
+
 El avatar **nunca** es una mascota aleatoria: es una consecuencia trazable del ADN. Ejemplos: café
 artesanal → grano de café cálido; startup → forma geométrica precisa; constructora → personaje
 estructural.
@@ -56,8 +62,8 @@ SaaS, panel administrativo complejo y analytics avanzados.
 Referencia (leer lo relevante antes de trabajar): `docs/WORKSPACES.md`, `docs/PERSONAL.md`,
 `docs/WORKSPACE-MIGRATION.md`, `docs/OPERATIONS.md`, `docs/ENTERPRISE-OPERATIONS.md`,
 `docs/CAMPAIGNS.md`, `docs/CONTENT-PLANNER.md`, `docs/ENTERPRISE-CONTENT.md`, `docs/DAILY-DIRECTOR.md`,
-`docs/PIXEL-COMMAND.md`, `docs/BRAND-GUARDIAN.md`, `docs/CREATIVE-MEMORY.md`, `docs/PIXEL-PRESENCE.md` y
-`docs/AVATAR-ASSET-CONTRACT.md` describen el diseño vigente; `docs/MVP.md`,
+`docs/PIXEL-COMMAND.md`, `docs/BRAND-GUARDIAN.md`, `docs/CREATIVE-MEMORY.md`, `docs/PIXEL-PRESENCE.md`,
+`docs/PIXEL-ACTIONS.md`, `docs/PIXEL-TOOLS.md` y `docs/AVATAR-ASSET-CONTRACT.md` describen el diseño vigente; `docs/MVP.md`,
 `docs/ARCHITECTURE.md`, `docs/ENTITIES.md` y `docs/BACKLOG.md` tienen deriva importante (detalle en
 `PIXEL_ESTADO.md` §12). Ante un conflicto, manda el código.
 
@@ -78,7 +84,7 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
                   │                          (→ Project o ContentItem con campaignId al aceptar)
                   ├─ content planner: ContentPlan (contextType personal|enterprise) → ContentPlanItem (→ ContentItem al aceptar)
                   ├─ daily director: DailyBrief (versión del día; solo lee Operations, nunca modifica)
-                  ├─ pixel command: PixelCommand (solicitud → propuesta → [preflight Guardian] → confirmación; orquesta lo anterior)
+                  ├─ pixel command: PixelCommand (solicitud → propuesta → [preflight Guardian] → confirmación → snapshot autorizado → herramientas → resultados verificados)
                   └─ brand guardian (enterprise): GuardianReport (revisión explicable; nunca modifica el recurso)
 ```
 
@@ -191,6 +197,12 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
      memorias ni conversaciones a la IA.
 10. **No sobrearquitectar.** Monolito modular: sin microservicios, colas externas, GraphQL, state
    managers globales ni librerías "por si acaso".
+11. **Acciones (Prompt 18).** Las acciones con efecto pasan por `modules/actions`: herramienta
+    registrada (`PixelToolRegistry`), política determinista (`authorizationFor`: financiero →
+    unsupported), snapshot congelado en la reserva atómica, ejecución secuencial verificada y respuesta
+    derivada de los resultados. Nunca un endpoint para ejecutar herramientas, ni autorización por la
+    IA, la voz o el Guardian; las herramientas reciben el workspace autorizado, nunca de la entrada.
+    Añadir una herramienta no toca PixelCommand.
 
 ## Convenciones de código
 
@@ -199,7 +211,10 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
 - **API:** un módulo de dominio por carpeta (`apps/api/src/modules/<módulo>/` con `*.model`,
   `*.service`, `*.routes`), registrado solo en `modules/index.ts`: `auth`, `health`, `workspaces`,
   `companies`, `brand-dna`, `personal`, `avatars`, `conversations`, `creative-memory`, `operations`,
-  `content-plans`, `daily-director`, `campaigns`, `pixel-command`, `guardian`, `creative-memory`. Errores con `AppError` o `lib/errors.ts` (el `errorHandler`
+  `content-plans`, `daily-director`, `campaigns`, `pixel-command`, `guardian`, `creative-memory`.
+  `actions` (Prompt 18) no tiene rutas: herramientas, política, snapshot y ejecutor que usa
+  PixelCommand; las herramientas viven en `actions/tools/` y se registran en
+  `createDefaultToolRegistry()`. Errores con `AppError` o `lib/errors.ts` (el `errorHandler`
   responde con `ApiError`). Logs con `lib/logger.ts`, nunca `console.log`.
 - **Fechas:** el "hoy" de un workspace se calcula en su zona horaria IANA (`Workspace.timezone` o
   `DEFAULT_TIMEZONE`), nunca en UTC; no inferir la zona desde texto libre.

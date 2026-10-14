@@ -9,6 +9,7 @@ import {
   type WorkspaceType,
 } from '@pixel/contracts';
 import {
+  externalServiceOf,
   fold,
   interpretPixelRequest,
   PIXEL_COMMAND_SCHEMA_NAME,
@@ -105,6 +106,7 @@ export function mergeEntities(
     memoryAction: next.memoryAction ?? previous.memoryAction,
     memoryText: previous.memoryText ?? next.memoryText,
     memoryScopeHint: next.memoryScopeHint ?? previous.memoryScopeHint,
+    externalService: next.externalService ?? previous.externalService,
   });
 }
 
@@ -149,6 +151,19 @@ export function createPixelIntentResolver(deps: {
         intent = 'plan_content';
       }
       if (!availableIntents.includes(intent)) intent = 'unknown';
+
+      // Prompt 18: una acción externa reconocida por las reglas manda sobre lo que diga la IA (una
+      // reunión en Google Calendar nunca es un plan de contenido). Pixel la entiende y responde con
+      // honestidad: no hay herramienta, no hay ejecución.
+      const external = previous ? null : externalServiceOf(fold(userRequest));
+      if (external && availableIntents.includes('external_action')) {
+        return {
+          intent: 'external_action',
+          confidence: raw.confidence,
+          entities: PixelCommandEntitiesSchema.parse({ externalService: external }),
+          mode,
+        };
+      }
 
       const source = previous ? `${previous.request}\n${userRequest}` : userRequest;
       let entities = sanitizeEntities(raw.entities, source);

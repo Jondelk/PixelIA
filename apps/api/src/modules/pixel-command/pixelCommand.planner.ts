@@ -11,7 +11,7 @@ import {
   type PixelCommandIntent,
   type PixelTimeframe,
 } from '@pixel/contracts';
-import { fold } from '../../ai/index.js';
+import { asksNewProject, fold } from '../../ai/index.js';
 import { platformFromText } from '../content-plans/contentPlanning.grounding.js';
 import type { KnownCampaign, KnownProject, PixelKnownContext } from './pixelContext.resolver.js';
 
@@ -552,7 +552,12 @@ function planProject(state: PlanningState): PlanningOutcome {
   const due = entities.timeframe ? periodFor(entities.timeframe, state.today).endDate : null;
   let existing: KnownProject | null;
   if (entities.projectHint) {
-    existing = matchProjects(context.projects, entities.projectHint)[0] ?? null;
+    // «Crea un proyecto para preparar el final» no es «preparar mi parcial» aunque compartan palabras:
+    // al pedir uno NUEVO solo se reutiliza un proyecto con exactamente ese nombre.
+    const hint = fold(entities.projectHint).trim();
+    existing = asksNewProject(state.request)
+      ? (context.projects.find((project) => fold(project.name).trim() === hint) ?? null)
+      : (matchProjects(context.projects, entities.projectHint)[0] ?? null);
   } else if (state.chosenProject) {
     // «Organiza esto» desde el detalle de un proyecto: ese proyecto.
     existing = state.chosenProject;
@@ -589,6 +594,13 @@ function planProject(state: PlanningState): PlanningOutcome {
   }
 
   const name = entities.projectHint!.slice(0, 120);
+  // «Crea el proyecto X y agrega tres tareas» sin decir cuáles: una pregunta, nunca tareas inventadas.
+  if (!entities.taskTitles.length && /\btareas?\b/i.test(state.request)) {
+    return question(
+      'tasks',
+      `¿Qué tareas agrego a «${name}»? Puedes escribirlas separadas por comas.`,
+    );
+  }
   const steps: StepDraft[] = [
     {
       id: 'step_1',

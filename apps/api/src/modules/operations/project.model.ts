@@ -28,6 +28,13 @@ export interface ProjectAttrs {
   goals: string[];
   startDate: Date | null;
   dueDate: Date | null;
+  /**
+   * Prompt 18: clave de la acción de Pixel que lo creó (`commandId:revision:actionId`). Solo la
+   * fija el servidor al ejecutar una acción autorizada; nunca sale en la API. Ausente en lo creado a
+   * mano. Hace idempotente la creación: si la acción se repite (recuperación, reintento, carrera),
+   * se reconoce el recurso ya creado en vez de duplicarlo.
+   */
+  pixelActionKey?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -46,11 +53,22 @@ const projectSchema = new Schema<ProjectAttrs>(
     goals: { type: [String], default: [] },
     startDate: { type: Date, default: null },
     dueDate: { type: Date, default: null },
+    pixelActionKey: { type: String, maxlength: 200 },
   },
   { timestamps: true },
 );
 
 // Sin índice suelto por workspaceId: lo cubre el prefijo de los compuestos.
+// Idempotencia de las acciones de Pixel (Prompt 18): una clave = un recurso por workspace. Parcial:
+// lo creado a mano (sin clave) no entra en el índice.
+projectSchema.index(
+  { workspaceId: 1, pixelActionKey: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { pixelActionKey: { $type: 'string' } },
+    name: 'workspace_pixel_action_key_unique',
+  },
+);
 projectSchema.index({ workspaceId: 1, status: 1, updatedAt: -1 });
 projectSchema.index({ workspaceId: 1, dueDate: 1 });
 projectSchema.index({ workspaceId: 1, campaignId: 1 });

@@ -653,6 +653,8 @@ describe('Presencia de campañas, planes y Guardian', () => {
     expect(presenceAfterCommand(cmd('proposed', { status: 'warning' }))).toBe('warn');
     expect(presenceAfterCommand(cmd('proposed', { status: 'block' }))).toBe('warn');
     expect(presenceAfterCommand(cmd('failed'))).toBe('fail');
+    // Prompt 18: algo verificado y algo no → aviso (no error, no éxito).
+    expect(presenceAfterCommand(cmd('partial'))).toBe('warn');
     expect(presenceAfterCommand(cmd('needs_information'))).toBe('idle');
     expect(spokenFor(cmd('needs_information'))).toBe('¿Qué producto vamos a lanzar?');
   });

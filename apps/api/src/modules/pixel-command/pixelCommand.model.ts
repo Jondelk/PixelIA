@@ -17,6 +17,12 @@ import {
 } from '@pixel/contracts';
 import { model, Schema, type HydratedDocument, type Types } from 'mongoose';
 import { tenantScoped } from '../../db/tenantScoped.plugin.js';
+import { planActionsView } from '../actions/action.report.js';
+import {
+  expandSteps,
+  type ActionResultRecord,
+  type AuthorizedActionSnapshot,
+} from '../actions/action.snapshot.js';
 
 /*
  * PixelCommand (docs/PIXEL-COMMAND.md): una solicitud natural y su ciclo de vida
@@ -74,6 +80,16 @@ export interface PixelCommandAttrs {
   guardian: GuardianPreflightSummary | null;
   /** BLOCK del preflight sin override: confirmar no ejecuta. */
   guardianBlocked: boolean;
+  /**
+   * Prompt 18: lo que el usuario AUTORIZÓ (revisión, quién, cuándo y las acciones congeladas). Se
+   * escribe una vez, en la reserva atómica de la confirmación, y nunca se modifica.
+   */
+  authorization: AuthorizedActionSnapshot | null;
+  /** Lo que realmente ocurrió con cada acción (el último intento de cada una). */
+  actionResults: ActionResultRecord[];
+  /** Detecta una ejecución abandonada (caída del proceso): ver PIXEL-ACTIONS.md §Recuperación. */
+  executionStartedAt: Date | null;
+  executionUpdatedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -164,6 +180,83 @@ const pixelCommandSchema = new Schema<PixelCommandAttrs>(
   { timestamps: true },
 );
 
+const resourceRefSchema = new Schema(
+  {
+    kind: { type: String, enum: PixelResourceKindSchema.options, required: true },
+    id: { type: String, required: true },
+    label: { type: String, required: true, maxlength: 200 },
+  },
+  { _id: false },
+);
+
+const frozenActionSchema = new Schema(
+  {
+    id: { type: String, required: true },
+    stepId: { type: String, required: true },
+    toolKey: { type: String, required: true },
+    capabilityKey: { type: String, required: true },
+    kind: { type: String, enum: PixelResourceKindSchema.options, required: true },
+    effect: { type: String, enum: ['create', 'update', 'delete'], required: true },
+    target: { type: String, enum: ['internal', 'external'], required: true },
+    authorization: { type: String, enum: ['none', 'confirm'], required: true },
+    title: { type: String, required: true, maxlength: 300 },
+    label: { type: String, required: true, maxlength: 200 },
+    // Entrada validada de la capacidad (sin secretos: las credenciales viven en el servidor).
+    input: { type: Schema.Types.Mixed, default: {} },
+    inputRefs: {
+      type: [
+        new Schema(
+          {
+            field: { type: String, required: true },
+            fromAction: { type: String, required: true },
+            kind: { type: String, enum: PixelResourceKindSchema.options, required: true },
+          },
+          { _id: false },
+        ),
+      ],
+      default: [],
+    },
+    dependsOnActionId: { type: String, default: null },
+  },
+  { _id: false },
+);
+
+const actionResultSchema = new Schema(
+  {
+    actionId: { type: String, required: true },
+    stepId: { type: String, required: true },
+    revision: { type: Number, required: true },
+    toolKey: { type: String, required: true },
+    capabilityKey: { type: String, required: true },
+    status: { type: String, enum: ['success', 'failed', 'skipped'], required: true },
+    verified: { type: Boolean, required: true },
+    summary: { type: String, required: true, maxlength: 500 },
+    resourceRefs: { type: [resourceRefSchema], default: [] },
+    errorCode: { type: String, default: null },
+    executionId: { type: String, required: true },
+    executedAt: { type: Date, required: true },
+  },
+  { _id: false },
+);
+
+pixelCommandSchema.add({
+  authorization: {
+    type: new Schema(
+      {
+        revision: { type: Number, required: true },
+        authorizedBy: { type: String, required: true },
+        authorizedAt: { type: Date, required: true },
+        actions: { type: [frozenActionSchema], default: [] },
+      },
+      { _id: false },
+    ),
+    default: null,
+  },
+  actionResults: { type: [actionResultSchema], default: [] },
+  executionStartedAt: { type: Date, default: null },
+  executionUpdatedAt: { type: Date, default: null },
+});
+
 pixelCommandSchema.index({ workspaceId: 1, createdAt: -1 });
 pixelCommandSchema.plugin(tenantScoped, { key: 'workspaceId' });
 
@@ -174,6 +267,16 @@ export const PixelCommandModel = model<PixelCommandAttrs>(
 );
 
 export function toPixelCommandDTO(doc: PixelCommandDocument): PixelCommand {
+  const steps = doc.steps.map((step) => ({
+    id: step.id,
+    type: step.type,
+    params: step.params ?? {},
+  }));
+  // Lo congelado manda (es lo que se ejecutó); antes de autorizar, la vista previa del plan.
+  const actions =
+    doc.authorization && doc.plan && doc.authorization.revision === doc.plan.revision
+      ? doc.authorization.actions
+      : expandSteps(steps);
   return PixelCommandSchema.parse({
     id: doc._id.toString(),
     workspaceId: doc.workspaceId.toString(),
@@ -209,6 +312,7 @@ export function toPixelCommandDTO(doc: PixelCommandDocument): PixelCommand {
             })),
             error: step.error ?? null,
           })),
+          actions: planActionsView(actions, doc.actionResults ?? [], doc.plan.revision),
         }
       : null,
     guardian: doc.guardian ?? null,

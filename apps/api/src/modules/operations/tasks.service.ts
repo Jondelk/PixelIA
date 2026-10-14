@@ -18,6 +18,7 @@ import {
   searchFilter,
   TASK_NOT_FOUND,
 } from './operations.scope.js';
+import { isActionKeyConflict } from './projects.service.js';
 import { TaskModel, toTaskDTO, type TaskAttrs, type TaskDocument } from './task.model.js';
 
 /*
@@ -46,24 +47,49 @@ async function findTask(workspace: WorkspaceDocument, rawId: unknown): Promise<T
   return task;
 }
 
+/** La tarea que ya creó ESA acción de Pixel en este workspace (o null). Nunca por título. */
+export async function findTaskByActionKey(
+  workspace: WorkspaceDocument,
+  actionKey: string,
+): Promise<Task | null> {
+  const task = await TaskModel.findOne({ workspaceId: workspace._id, pixelActionKey: actionKey });
+  return task ? toTaskDTO(task) : null;
+}
+
 export async function createTask(
   workspace: WorkspaceDocument,
   input: CreateTaskData,
-  options: { source?: OperationSource; now?: Date } = {},
+  /** `actionKey`: acción de Pixel que la crea (Prompt 18): si ya la creó, se devuelve esa. */
+  options: { source?: OperationSource; now?: Date; actionKey?: string } = {},
 ): Promise<Task> {
+  if (options.actionKey) {
+    const existing = await findTaskByActionKey(workspace, options.actionKey);
+    if (existing) return existing;
+  }
   const now = options.now ?? new Date();
   const projectId = input.projectId
     ? await assertProjectInWorkspace(workspace, input.projectId)
     : null;
-  const task = await TaskModel.create({
-    ...input,
-    workspaceId: workspace._id,
-    projectId,
-    dueDate: toDate(input.dueDate),
-    source: options.source ?? 'manual',
-    completedAt: completedAtFor(input.status, null, now),
-  });
-  return toTaskDTO(task);
+  try {
+    const task = await TaskModel.create({
+      ...input,
+      workspaceId: workspace._id,
+      projectId,
+      dueDate: toDate(input.dueDate),
+      source: options.source ?? 'manual',
+      completedAt: completedAtFor(input.status, null, now),
+      ...(options.actionKey ? { pixelActionKey: options.actionKey } : {}),
+    });
+    return toTaskDTO(task);
+  } catch (err) {
+    // Dos ejecuciones de la misma acción a la vez: el índice deja pasar una; la otra recibe esa.
+    const winner =
+      options.actionKey && isActionKeyConflict(err)
+        ? await findTaskByActionKey(workspace, options.actionKey)
+        : null;
+    if (winner) return winner;
+    throw err;
+  }
 }
 
 function dueFilter(query: TaskListQuery, now: Date) {

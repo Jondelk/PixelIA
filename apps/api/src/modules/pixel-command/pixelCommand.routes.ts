@@ -6,6 +6,7 @@ import {
   type PixelCommandResponse,
 } from '@pixel/contracts';
 import { Router } from 'express';
+import { getAuth } from '../../middleware/requireAuth.js';
 import { getWorkspace } from '../../middleware/requireWorkspaceAccess.js';
 import {
   adjustPixelCommand,
@@ -35,7 +36,7 @@ export function createPixelCommandRouter(deps: PixelCommandDeps): Router {
 
   router.get('/:commandId', async (req, res) => {
     const body: PixelCommandResponse = {
-      command: await getPixelCommand(getWorkspace(req), req.params.commandId),
+      command: await getPixelCommand(getWorkspace(req), req.params.commandId, deps),
     };
     res.json(body);
   });
@@ -49,11 +50,13 @@ export function createPixelCommandRouter(deps: PixelCommandDeps): Router {
   });
 
   router.post('/:commandId/confirm', async (req, res) => {
+    // Solo la revisión vista: quién autoriza lo pone la sesión, nunca el cliente (schema estricto).
     const input = ConfirmPixelCommandSchema.parse(req.body);
     const body: PixelCommandConfirmResponse = await confirmPixelCommand(
       getWorkspace(req),
       req.params.commandId,
       input,
+      getAuth(req).userId,
       deps,
     );
     res.json(body);

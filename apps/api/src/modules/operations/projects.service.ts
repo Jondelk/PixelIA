@@ -115,24 +115,61 @@ async function findProject(workspace: WorkspaceDocument, rawId: unknown): Promis
   return project;
 }
 
+/** El proyecto que ya creó ESA acción de Pixel en este workspace (o null). Nunca por nombre. */
+export async function findProjectByActionKey(
+  workspace: WorkspaceDocument,
+  actionKey: string,
+): Promise<Project | null> {
+  const project = await ProjectModel.findOne({
+    workspaceId: workspace._id,
+    pixelActionKey: actionKey,
+  });
+  return project ? toProjectDTO(project) : null;
+}
+
 export async function createProject(
   workspace: WorkspaceDocument,
   input: CreateProjectData,
-  /** `id`: id ya reservado (conversión atómica desde una pieza de campaña). */
-  options: { id?: Types.ObjectId } = {},
+  /**
+   * `id`: id ya reservado (conversión atómica desde una pieza de campaña).
+   * `actionKey`: acción de Pixel que lo crea (Prompt 18): si ya lo creó, se devuelve ese.
+   */
+  options: { id?: Types.ObjectId; actionKey?: string } = {},
 ): Promise<Project> {
+  if (options.actionKey) {
+    const existing = await findProjectByActionKey(workspace, options.actionKey);
+    if (existing) return existing;
+  }
   const campaignId = input.campaignId
     ? await assertCampaignInWorkspace(workspace, input.campaignId)
     : null;
-  const project = await ProjectModel.create({
-    ...(options.id ? { _id: options.id } : {}),
-    ...input,
-    campaignId,
-    startDate: toDate(input.startDate),
-    dueDate: toDate(input.dueDate),
-    workspaceId: workspace._id,
-  });
-  return toProjectDTO(project);
+  try {
+    const project = await ProjectModel.create({
+      ...(options.id ? { _id: options.id } : {}),
+      ...input,
+      campaignId,
+      startDate: toDate(input.startDate),
+      dueDate: toDate(input.dueDate),
+      workspaceId: workspace._id,
+      ...(options.actionKey ? { pixelActionKey: options.actionKey } : {}),
+    });
+    return toProjectDTO(project);
+  } catch (err) {
+    // Dos ejecuciones de la misma acción a la vez: el índice deja pasar una; la otra recibe esa.
+    const winner =
+      options.actionKey && isActionKeyConflict(err)
+        ? await findProjectByActionKey(workspace, options.actionKey)
+        : null;
+    if (winner) return winner;
+    throw err;
+  }
+}
+
+/** ¿Choque con el índice único de la clave de acción? (otra ejecución ya lo creó). */
+export function isActionKeyConflict(err: unknown): boolean {
+  if (typeof err !== 'object' || err === null) return false;
+  const { code, keyPattern } = err as { code?: unknown; keyPattern?: Record<string, unknown> };
+  return code === 11000 && Boolean(keyPattern && 'pixelActionKey' in keyPattern);
 }
 
 export async function listProjects(

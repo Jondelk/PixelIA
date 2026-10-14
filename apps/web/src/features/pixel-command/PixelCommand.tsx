@@ -26,6 +26,7 @@ import {
   sendPixelCommand,
 } from './pixelCommandApi';
 import { preflightBlocks, preflightOverridable } from '../guardian/guardianLogic';
+import { ActionResults } from './ActionResults';
 import { GuardianPreflight } from './GuardianPreflight';
 import { PixelProposalCard } from './PixelProposalCard';
 
@@ -344,6 +345,8 @@ export function PixelCommandPanel({
             <p className="whitespace-pre-line text-[15px] leading-relaxed text-fg">
               {command.reply}
             </p>
+            {command.plan && <ActionResults actions={command.plan.actions} />}
+            {/* Solo enlaces a recursos verificados (lo que no se comprobó no se enlaza). */}
             {createdResources(command).length > 0 && (
               <ul className="flex flex-wrap gap-2" aria-label="Lo que Pixel creó">
                 {createdResources(command).map((resource) => (

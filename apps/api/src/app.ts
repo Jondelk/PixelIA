@@ -12,6 +12,7 @@ import {
   createAvatarConceptEngine,
   createPersonalAvatarConceptEngine,
 } from './modules/avatars/engine/index.js';
+import { AppError } from './lib/errors.js';
 import { createApiRouter } from './modules/index.js';
 import { createCampaignStrategyEngine } from './modules/campaigns/campaignStrategy.engine.js';
 import { createGuardianEngine } from './modules/guardian/guardian.engine.js';
@@ -23,6 +24,8 @@ import { createDailyDirectorEngine } from './modules/daily-director/dailyDirecto
 import { createPersonalDnaGenerator } from './modules/personal/personalDna.generator.js';
 import type { DatabaseStatus } from '@pixel/contracts';
 import type { AIProvider } from './ai/index.js';
+import { createDefaultToolRegistry } from './modules/actions/tools/index.js';
+import type { PixelToolRegistry } from './modules/actions/toolRegistry.js';
 
 export interface AppOptions {
   env: Pick<
@@ -39,10 +42,18 @@ export interface AppOptions {
   getDatabaseStatus: () => DatabaseStatus;
   /** Proveedor de IA (inyectable: en tests se usa uno falso o el demo). */
   ai: AIProvider;
+  /** Herramientas de Pixel (inyectables en tests para simular fallos); por defecto, las internas. */
+  tools?: PixelToolRegistry;
 }
 
 /** Construye la app Express sin efectos secundarios (sin listen ni conexión a DB): usable en tests. */
-export function createApp({ env, logger, getDatabaseStatus, ai }: AppOptions): Express {
+export function createApp({
+  env,
+  logger,
+  getDatabaseStatus,
+  ai,
+  tools = createDefaultToolRegistry(),
+}: AppOptions): Express {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
@@ -64,6 +75,29 @@ export function createApp({ env, logger, getDatabaseStatus, ai }: AppOptions): E
   app.use(express.json({ limit: '1mb' }));
   app.use(cookieParser());
 
+  // Prompt 18 (fail closed): sin la base LISTA (conectada y con sus índices críticos, ver
+  // db/connection.ts) no se atiende tráfico normal; /api/health sigue respondiendo («degraded»).
+  app.use('/api', (req, _res, next) => {
+    if (
+      req.path === '/health' ||
+      req.path.startsWith('/health/') ||
+      getDatabaseStatus() === 'connected'
+    ) {
+      next();
+      return;
+    }
+    next(
+      new AppError(
+        503,
+        'SERVICE_UNAVAILABLE',
+        'Pixel se está preparando; vuelve a intentarlo en un momento',
+        {
+          reason: 'database_not_ready',
+        },
+      ),
+    );
+  });
+
   app.use(
     '/api',
     createApiRouter({
@@ -83,6 +117,7 @@ export function createApp({ env, logger, getDatabaseStatus, ai }: AppOptions): E
       dailyDirector: createDailyDirectorEngine({ ai, logger }),
       campaignEngine: createCampaignStrategyEngine({ ai, logger }),
       pixelIntentResolver: createPixelIntentResolver({ ai, logger }),
+      pixelTools: tools,
       guardianEngine: createGuardianEngine({ ai, logger }),
       defaultTimezone: env.DEFAULT_TIMEZONE,
       logger,

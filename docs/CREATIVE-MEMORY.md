@@ -292,6 +292,11 @@ marca · Brand Guardian · Lo aprendido · Personaje; Personal: junto a Mi Pixel
 Las preferencias de voz y movimiento **no** son memoria creativa: son del dispositivo
 (`docs/PIXEL-PRESENCE.md` §5) y nunca entran al contexto de la IA.
 
+**Prompt 18 (Action Foundation):** lo que Pixel EJECUTA (`PixelCommand.actionResults`) es historial de
+acciones, no memoria: una acción exitosa nunca crea una CreativeMemory ni un CreativeDecisionEvent.
+Las memorias pueden orientar una propuesta (p. ej. preferencias de trabajo), pero nunca cambian la
+política de autorización.
+
 ## 17. Coste y rendimiento
 
 - Registrar una decisión cuesta 1 inserción + 2 consultas por clave (memorias de la clave y eventos

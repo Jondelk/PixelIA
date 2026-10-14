@@ -23,7 +23,16 @@ export function PixelProposalCard({
       <div className="mt-6 grid gap-6 @2xl:grid-cols-3">
         <ProposalList title="Lo que entendí" items={plan.understood} />
         <ProposalList title="Lo que propongo" items={plan.proposal} />
-        <ProposalList title="Qué voy a crear" items={plan.creates} />
+        {/* Prompt 18: con acciones concretas, cada una (el proyecto, CADA tarea); una sola
+            confirmación las autoriza todas. Si no, el resumen de siempre. */}
+        {plan.actions.length ? (
+          <ProposalList
+            title="Qué voy a hacer"
+            items={plan.actions.map((action) => action.title)}
+          />
+        ) : (
+          <ProposalList title="Qué voy a crear" items={plan.creates} />
+        )}
       </div>
       <div className="mt-7 border-t border-line pt-5">{actions}</div>
     </section>

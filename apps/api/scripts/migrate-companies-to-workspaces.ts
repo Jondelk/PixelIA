@@ -5,6 +5,9 @@
  *   npm run migrate:workspaces -- --dry-run          # solo cuenta lo que haría
  *   npm run migrate:workspaces -- --sync-indexes     # además elimina índices legacy no declarados
  *
+ * Antes de migrar crea los índices de integridad de `EXPLICIT_INDEX_MODELS` (también los de
+ * idempotencia de las acciones de Pixel en Project y Task, Prompt 18) y comprueba estos últimos.
+ *
  * Por cada empresa sin workspace crea un Workspace enterprise (mismo dueño y nombre), asigna
  * workspaceId a sus AvatarProfile, Conversation y Message y enlaza company.workspaceId.
  * Idempotente y repetible: nunca duplica workspaces ni borra datos. Usa MONGODB_URI (apps/api/.env).
@@ -13,23 +16,10 @@
 import 'dotenv/config';
 import mongoose from 'mongoose';
 import { loadEnv } from '../src/config/env.js';
+import { EXPLICIT_INDEX_MODELS } from '../src/db/indexedModels.js';
 import { upgradeAvatarProfileIndexes } from '../src/modules/avatars/avatarProfile.indexes.js';
-import { AvatarProfileModel } from '../src/modules/avatars/avatarProfile.model.js';
-import { CompanyModel } from '../src/modules/companies/company.model.js';
-import { ConversationModel } from '../src/modules/conversations/conversation.model.js';
-import { MessageModel } from '../src/modules/conversations/message.model.js';
-import { CreativeMemoryModel } from '../src/modules/creative-memory/creativeMemory.model.js';
+import { missingActionKeyIndexes } from '../src/modules/operations/operations.indexes.js';
 import { migrateCompaniesToWorkspaces } from '../src/modules/workspaces/workspace.migration.js';
-import { WorkspaceModel } from '../src/modules/workspaces/workspace.model.js';
-
-const MODELS = [
-  WorkspaceModel,
-  CompanyModel,
-  AvatarProfileModel,
-  ConversationModel,
-  MessageModel,
-  CreativeMemoryModel,
-];
 
 const args = new Set(process.argv.slice(2));
 const dryRun = args.has('--dry-run');
@@ -46,7 +36,7 @@ async function main(): Promise<number> {
   if (!dryRun) {
     // Los índices nuevos (sobre todo el único de migratedFromCompanyId) deben existir antes de
     // migrar: son los que impiden duplicados si dos procesos migran a la vez.
-    for (const model of MODELS) {
+    for (const model of EXPLICIT_INDEX_MODELS) {
       if (syncIndexes) {
         const dropped = await model.syncIndexes();
         if (dropped.length) out(`  ${model.modelName}: índices eliminados ${dropped.join(', ')}`);
@@ -57,6 +47,11 @@ async function main(): Promise<number> {
     out(
       syncIndexes ? 'Índices sincronizados.' : 'Índices nuevos creados (sin eliminar los legacy).',
     );
+    // Prompt 18: la idempotencia de las acciones de Pixel depende de estos índices.
+    const missing = await missingActionKeyIndexes();
+    if (missing.length)
+      throw new Error(`Falta el índice de idempotencia en: ${missing.join(', ')}`);
+    out('Índices de idempotencia de Project y Task: OK (únicos y parciales).');
     // Índices legacy no parciales de avatar_profiles: incompatibles con avatares personales.
     const droppedAvatar = await upgradeAvatarProfileIndexes();
     if (droppedAvatar.length) {

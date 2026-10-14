@@ -96,6 +96,12 @@ resultado. Sale con código `1` si la verificación no queda limpia. Desde la ra
 comando compila antes `packages/contracts` (la API lo importa ya compilado), así que funciona aunque
 aún no se haya ejecutado `npm run build` tras actualizar el código.
 
+Desde el Prompt 18 el paso de índices incluye también Project y Task (`EXPLICIT_INDEX_MODELS`,
+`apps/api/src/db/indexedModels.ts`): el índice de idempotencia de las acciones de Pixel
+(`workspace_pixel_action_key_unique`, único y parcial). El script comprueba que queda bien y sale con
+error si no. No toca documentos: al ser parcial, los proyectos y tareas sin clave (manuales o
+anteriores) no entran. La API también lo crea y comprueba al arrancar (`ensureActionKeyIndexes`).
+
 Salida real con datos creados por la versión anterior (3 empresas, 2 con avatar y chat):
 
 ```

@@ -4,8 +4,8 @@
 > en el repositorio**, no lo que dicen los prompts ni el resto de `docs/`, que tienen deriva (§12).
 > Si el código y este documento no coinciden, **manda el código**: corrige este documento.
 >
-> - Última revisión: **2026-10-13**, rama `feat/prompts-9-11` en `29fbb77` (Prompt 16), **1 commit
->   por delante de `origin`** (`29fbb77` sin push); hasta `79b97e7` (Prompt 15), al día con `origin` (los commits de los Prompts 14 + 14.1 y 15 ya están subidos; contiene `feat/etapa-0-foundation` en `c846956`) y el commit del Prompt 13 (Campaign Manager, `a65e28c`, ya en `origin`),
+> - Última revisión: **2026-10-14**, rama `feat/prompts-9-11` en `8545a3e` (Prompt 17), **2 commits
+>   por delante de `origin`** (`29fbb77` y `8545a3e` sin push); hasta `79b97e7` (Prompt 15), al día con `origin` (los commits de los Prompts 14 + 14.1 y 15 ya están subidos; contiene `feat/etapa-0-foundation` en `c846956`) y el commit del Prompt 13 (Campaign Manager, `a65e28c`, ya en `origin`),
 >   hecho con autorización del usuario el 2026-10-09 en su equipo (Windows, Claude Code en VS Code),
 >   Encima, el **Prompt 14 (Enterprise Content Planner) y el Prompt 14.1 (Zero-entry UX:
 >   PixelCommand), implementados, verificados y confirmados en un único commit** (`1593576`) ("Add Prompt 14: Enterprise Content Planner and zero-entry Pixel Command"),
@@ -14,8 +14,10 @@
 >   2026-10-10 (§13).
 > - Encima, el **Prompt 16 (Creative Memory)**, confirmado en el commit "Add Prompt 16: Pixel Creative
 >   Memory" (`29fbb77`, autorizado el 2026-10-13, **sin push**), verificado el 2026-10-13 (§13).
-> - Encima, **sin commit y sin push**: el **Prompt 17 (Pixel Presence V1)**, implementado y verificado
->   el 2026-10-13 (§13), **pendiente de revisión** del usuario.
+> - Encima, el **Prompt 17 (Pixel Presence V1)**, confirmado en el commit "Add Prompt 17: Pixel
+>   Presence V1" (`8545a3e`, autorizado el 2026-10-14, **sin push**), verificado el 2026-10-13/14 (§13).
+> - Encima, **sin commit y sin push**: el **Prompt 18 (Pixel Action Foundation)**, implementado y
+>   verificado el 2026-10-14 (§13), **pendiente de revisión** del usuario.
 > - Leyenda: ✅ implementado y verificado (tests automáticos; si solo hubo revisión manual, se dice) ·
 >   🟨 parcial · 📝 solo planificado (docs o prompts, sin código) · ❓ pendiente de verificación ·
 >   ⛔ bloqueado.
@@ -24,13 +26,13 @@
 
 | Tema | Estado |
 |---|---|
-| Última etapa verificada | **Etapa PR — Pixel Presence V1 (Prompt 17)**, implementada y verificada el 2026-10-13 (§13) en el equipo del usuario, **sin commit ni push, pendiente de revisión**. Debajo: Etapa CM (Prompt 16, `29fbb77`, sin push), Etapa G (Prompt 15, `79b97e7`), Etapas Z y EC (Prompts 14.1 y 14, `1593576`), Etapa M (Prompt 13, `a65e28c`), Etapas O, C, D y E (`e59757d`) y la entrada pública (`24e300a`); todo eso en `origin`. |
-| Prompts | Prompt 9 = Operations, 10 = Content Planner, 11 = Daily Director, **12** = Shared Operations + Enterprise Projects (Etapa E; confirmado: el texto del Prompt 12 se recibió e implementó en la sesión del equipo del usuario el 2026-10-08), **13 = Enterprise Campaign Manager** (Etapa M; el usuario envió el texto "PROMPT 13 — ENTERPRISE CAMPAIGN MANAGER" el 2026-10-09), **14 = Enterprise Content Planner** (Etapa EC; recibido el 2026-10-09), **14.1 = Zero-entry UX / PixelCommand** (Etapa Z; recibido el 2026-10-09: "PROMPT 14.1 — ZERO-ENTRY UX"), **15 = Brand Guardian Core** (Etapa G; recibido el 2026-10-10: "PIXEL BRAND GUARDIAN CORE"), **16 = Creative Memory** (Etapa CM; recibido el 2026-10-13: "PROMPT 16 — PIXEL CREATIVE MEMORY"; el mensaje llegó truncado en §142), **17 = Pixel Presence V1** (Etapa PR; recibido el 2026-10-13: "PIXEL PRESENCE V1"; llegó cortado en §150 y el usuario envió después §150–§173). La entrada pública no tiene número. |
+| Última etapa verificada | **Etapa AF — Pixel Action Foundation (Prompt 18)**, implementada y verificada el 2026-10-14 (§13) en el equipo del usuario, **sin commit ni push, pendiente de revisión**. Debajo: Etapa PR (Prompt 17, `8545a3e`, sin push), Etapa CM (Prompt 16, `29fbb77`, sin push), Etapa G (Prompt 15, `79b97e7`), Etapas Z y EC (Prompts 14.1 y 14, `1593576`), Etapa M (Prompt 13, `a65e28c`), Etapas O, C, D y E (`e59757d`) y la entrada pública (`24e300a`); todo eso en `origin`. |
+| Prompts | Prompt 9 = Operations, 10 = Content Planner, 11 = Daily Director, **12** = Shared Operations + Enterprise Projects (Etapa E; confirmado: el texto del Prompt 12 se recibió e implementó en la sesión del equipo del usuario el 2026-10-08), **13 = Enterprise Campaign Manager** (Etapa M; el usuario envió el texto "PROMPT 13 — ENTERPRISE CAMPAIGN MANAGER" el 2026-10-09), **14 = Enterprise Content Planner** (Etapa EC; recibido el 2026-10-09), **14.1 = Zero-entry UX / PixelCommand** (Etapa Z; recibido el 2026-10-09: "PROMPT 14.1 — ZERO-ENTRY UX"), **15 = Brand Guardian Core** (Etapa G; recibido el 2026-10-10: "PIXEL BRAND GUARDIAN CORE"), **16 = Creative Memory** (Etapa CM; recibido el 2026-10-13: "PROMPT 16 — PIXEL CREATIVE MEMORY"; el mensaje llegó truncado en §142), **17 = Pixel Presence V1** (Etapa PR; recibido el 2026-10-13: "PIXEL PRESENCE V1"; llegó cortado en §150 y el usuario envió después §150–§173), **18 = Pixel Action Foundation** (Etapa AF; recibido el 2026-10-14 en dos partes: "PROMPT 18 — PIXEL ACTION FOUNDATION" Parte 1/2 —auditoría— y Parte 2/2 —«ajustada después de la auditoría real»—; un primer envío anterior llegó cortado en §134 y se descartó). La entrada pública no tiene número. |
 | Ramas | `feat/prompts-9-11` (nueva, en `origin`) = `feat/etapa-0-foundation` + este trabajo. `feat/etapa-0-foundation` sigue en `c846956`: **todavía no se ha fusionado**. |
-| Última etapa | **Pixel Presence V1** (Prompt 17, Etapa PR): sistema de estados de presencia efímero (8 estados), Avatar Runtime con tres niveles (ambient 2D, interactive y focus 3D; uno solo en 3D por pantalla; Pixi sin personaje; caída a 2D sin WebGL; movimiento reducido), Voice Runtime (Web Speech del navegador; voz = otra entrada de PixelCommand, nunca confirma; degradación a texto), acentos por workspace con contraste validado, Pixel Dock persistente con el recurso en contexto (validado contra el workspace), UI Presence Pass (Tus Pixels, Inicios, Campañas, Plan de contenido, topbar y navegación sin Chat) y «Voz y movimiento» en Personaje (`docs/PIXEL-PRESENCE.md`, `docs/AVATAR-ASSET-CONTRACT.md`). Anterior: **Creative Memory** (Prompt 16, Etapa CM): CreativeDecisionEvent inmutable e idempotente, CreativeMemory extendida (candidata → confirmada; explícita con una confirmación), detector de patrones (3 señales en 2 recursos), sintetizador con refs EVENT_n, resolver con alcance y excepciones, integración en PixelCommand (`manage_memory`), campañas, planners, Daily Director, chat y Guardian, y «Lo que Pixel ha aprendido» en la web (`docs/CREATIVE-MEMORY.md`). Anterior: Brand Guardian Core (Prompt 15). |
-| Siguiente paso | Usuario: revisar el Prompt 17 y decidir su commit; decidir el push de `29fbb77` (Prompt 16) y del 17. No empezar el Prompt 18 sin pedirlo (§14). |
+| Última etapa | **Pixel Action Foundation** (Prompt 18, Etapa AF): PixelActionPlan como propuesta (sin segundo agregado), snapshot autorizado inmutable (revisión, quién, cuándo, acciones exactas) en la reserva atómica, PixelToolRegistry con herramientas internas (`workspace.projects/create_project`, `workspace.tasks/create_task` y `update_task`), ActionAuthorizationPolicy determinista, ActionExecutor secuencial con dependencias, fallos parciales y verificación por acción, resultados embebidos y respuesta veraz, recuperación de ejecuciones abandonadas, `external_action` para calendario/correo/mensajería/pagos (respuesta honesta), y la UI de acciones y resultados (`docs/PIXEL-ACTIONS.md`, `docs/PIXEL-TOOLS.md`). Anterior: **Pixel Presence V1** (Prompt 17, Etapa PR): sistema de estados de presencia efímero (8 estados), Avatar Runtime con tres niveles (ambient 2D, interactive y focus 3D; uno solo en 3D por pantalla; Pixi sin personaje; caída a 2D sin WebGL; movimiento reducido), Voice Runtime (Web Speech del navegador; voz = otra entrada de PixelCommand, nunca confirma; degradación a texto), acentos por workspace con contraste validado, Pixel Dock persistente con el recurso en contexto (validado contra el workspace), UI Presence Pass (Tus Pixels, Inicios, Campañas, Plan de contenido, topbar y navegación sin Chat) y «Voz y movimiento» en Personaje (`docs/PIXEL-PRESENCE.md`, `docs/AVATAR-ASSET-CONTRACT.md`). Anterior: **Creative Memory** (Prompt 16, Etapa CM): CreativeDecisionEvent inmutable e idempotente, CreativeMemory extendida (candidata → confirmada; explícita con una confirmación), detector de patrones (3 señales en 2 recursos), sintetizador con refs EVENT_n, resolver con alcance y excepciones, integración en PixelCommand (`manage_memory`), campañas, planners, Daily Director, chat y Guardian, y «Lo que Pixel ha aprendido» en la web (`docs/CREATIVE-MEMORY.md`). Anterior: Brand Guardian Core (Prompt 15). |
+| Siguiente paso | Usuario: revisar el Prompt 18 y decidir su commit; decidir el push de `29fbb77` (Prompt 16) y `8545a3e` (Prompt 17). No empezar el Prompt 19 sin pedirlo (§14). |
 | Problema a conocer ya | Copiar `apps/api/.env.example` tal cual **impide arrancar la API** (`JWT_SECRET=` y `AI_PROVIDER=` vacíos no validan). Sigue igual en `e59757d`. Ver §11 y §15. |
-| Cambios sin commit | **Sí: todo el Prompt 17** (contracts `workspace.ts` y `pixelCommand.ts`; API `workspaces`, `personal`, `pixel-command` y `pixelCommandRules`; web: feature nueva `presence`, shell, navegación, Inicios, Tus Pixels, Campañas, Plan de contenido, Guardian, Daily Director, avatar 3D y Personaje; tests y docs). El Prompt 16 está en `29fbb77` **sin push**; los Prompts 13–15, en `origin`. |
+| Cambios sin commit | **Sí: todo el Prompt 18** (contracts `pixelCommand.ts` y `pixelActions.ts`; API: módulo nuevo `actions`, PixelCommand —modelo, servicio, ejecutor, planificador, rutas, intérprete—, reglas del intérprete y `app.ts`; web: `PixelProposalCard`, `ActionResults`, `commandLogic`; tests y docs). El Prompt 17 está en `8545a3e` y el 16 en `29fbb77`, **sin push**. Antes: **todo el Prompt 17** (contracts `workspace.ts` y `pixelCommand.ts`; API `workspaces`, `personal`, `pixel-command` y `pixelCommandRules`; web: feature nueva `presence`, shell, navegación, Inicios, Tus Pixels, Campañas, Plan de contenido, Guardian, Daily Director, avatar 3D y Personaje; tests y docs). El Prompt 16 está en `29fbb77` **sin push**; los Prompts 13–15, en `origin`. |
 
 ## 1. Rama, commits y git
 
@@ -49,7 +51,8 @@
 
 | Commit | Fecha (UTC) | Autor | Mensaje |
 |---|---|---|---|
-| (sin commit) | 2026-10-13 | Claude | Prompt 17: Pixel Presence V1 (pendiente de revisión y autorización del usuario; sin push) |
+| (sin commit) | 2026-10-14 | Claude | Prompt 18: Pixel Action Foundation (pendiente de revisión y autorización del usuario; sin push) |
+| `8545a3e` | 2026-10-14 | Claude | Add Prompt 17: Pixel Presence V1 (autorizado; **sin push**) |
 | `29fbb77` | 2026-10-13 | Claude | Add Prompt 16: Pixel Creative Memory (autorizado; **sin push**) |
 | `79b97e7` | 2026-10-10 | Claude | Add Prompt 15: Pixel Brand Guardian Core (autorizado; en `origin`) |
 | `1593576` | 2026-10-10 | Claude | Add Prompt 14: Enterprise Content Planner and zero-entry Pixel Command (Prompts 14 y 14.1, autorizado; en `origin`) |
@@ -105,7 +108,8 @@ en este repositorio.
 | 14.1 | Zero-entry UX: PixelCommand | Z | `1593576`, el mismo commit que el Prompt 14 (2026-10-10, sin push) | ✅ implementado y verificado el 2026-10-09 (§13), incluido el navegador; sin prueba con Claude real |
 | 15 | Brand Guardian Core | G | `79b97e7` (2026-10-10, en `origin`) | ✅ implementado y verificado el 2026-10-10 (§13), incluido el navegador; sin prueba con Claude real (sin `ANTHROPIC_API_KEY`) |
 | 16 | Creative Memory | CM | `29fbb77` (2026-10-13, sin push) | ✅ implementado y verificado el 2026-10-13 (§13), incluido el navegador; sin prueba con Claude real (sin `ANTHROPIC_API_KEY`) |
-| 17 | Pixel Presence V1 | PR | sin commit ni push (pendiente de revisión) | ✅ implementado y verificado el 2026-10-13 (§13), incluido el navegador con voz **simulada**; sin micrófono ni síntesis reales, sin Safari/Firefox y sin Claude real |
+| 17 | Pixel Presence V1 | PR | `8545a3e` (2026-10-14, sin push) | ✅ implementado y verificado el 2026-10-13 (§13), incluido el navegador con voz **simulada**; sin micrófono ni síntesis reales, sin Safari/Firefox y sin Claude real |
+| 18 | Pixel Action Foundation | AF | sin commit ni push (pendiente de revisión) | ✅ implementado y verificado el 2026-10-14 (§13), incluido el navegador (con un fallo de herramienta simulado solo en la API temporal del smoke); sin Claude real (sin `ANTHROPIC_API_KEY`) |
 
 En la sesión remota del 2026-10-08, el Prompt 11 se recibió antes de que existieran sus
 prerrequisitos en `origin`; aquí solo se comprobó que faltaban. Lo implementado es lo que llegó en
@@ -227,6 +231,7 @@ packages/contracts/src   25 módulos reexportados por index.ts (se consume solo 
 | `campaigns` | Campaign, CampaignStrategy (versionada) y CampaignDeliverable; `CampaignStrategyEngine` (IA con contexto controlado + validación de fundamento de marca; 503 sin IA; demo determinista); aceptar una pieza crea su ContentItem o Project con `campaignId` (idempotente); `DELETE` archiva | ✅ solo Enterprise (2026-10-09); sin prueba con Claude real |
 | `pixel-command` | PixelCommand: `PixelIntentResolver` (IA + reglas en español de respaldo; saneado del backend), `PixelContextResolver`, `planCommand` (información que falta + ActionPlan, puro), respuestas sin escritura (estado, consejo, desconocido) y ejecutor que llama a los servicios existentes; confirmación única con reserva atómica + revisión; `partial` con reintento | ✅ Personal y Enterprise (2026-10-09); sin prueba con Claude real (`PIXEL-COMMAND.md` §10) |
 | `guardian` | GuardianReport (`guardian_reports`); `GuardianEngine` con 8 evaluadores (identidad, comunicación, claims, restricciones, estrategia, alineación de campaña, contenido, dirección visual estructurada), una sola llamada semántica con referencias controladas (`BRAND_*`, `CAMPAIGN_*`, `RESOURCE_TEXT_n`) y respaldo por reglas; `GuardianScoreAggregator`; override registrado; corrección de una pasada (`guardian_correction`) y aplicación con el servicio del recurso; `stale` por hash de la instantánea; preflight de PixelCommand (`guardian`/`guardianBlocked`, 409 `guardian_preflight_blocked`) | ✅ solo Enterprise (2026-10-10); sin prueba con Claude real (`BRAND-GUARDIAN.md` §12) |
+| `actions` (Prompt 18, sin rutas) | PixelTool / capacidades (schema, efecto, destino, verificación), PixelToolRegistry, ActionAuthorizationPolicy, snapshot autorizado, ActionExecutor (dependencias, parciales, verificación, límite de tiempo), informe veraz, catálogo CAPABILITY_n para la IA, respuesta a acciones externas; herramientas `workspace.projects` y `workspace.tasks` | ✅ (2026-10-14); `update_task` sin flujo que la proponga; sin Claude real |
 | `daily-director` | DailyBrief por día local y versión; `DailyDataCollector`, `PriorityScorer`, `ProjectHealth`, `ContentHealth`, `DailyDirectorEngine` (IA + fallback determinístico), detección de "desactualizado" | ✅ solo Personal; sin prueba con Claude real |
 
 ### Web (`apps/web/src/features`)
@@ -281,13 +286,14 @@ sin tests automáticos) · Workspaces y migración Company → Workspace · Pixe
 PersonalDNA, avatar, chat) · Operations para Personal y Enterprise (Etapas O y E) · Content Planner
 Personal (Etapa C) · Daily Director Personal (Etapa D) · Campaign Manager Enterprise (Etapa M,
 Prompt 13) · Content Planner Enterprise (Etapa EC, Prompt 14) · PixelCommand /
-zero-entry (Etapa Z, Prompt 14.1) · Brand Guardian (Etapa G, Prompt 15) · Creative Memory (Etapa CM, Prompt 16, `29fbb77`) · Pixel Presence V1 (Etapa PR, Prompt 17, sin
-commit). Las nueve últimas, verificadas con tests y en modo demo (EC, Z, G, CM y PR también en
+zero-entry (Etapa Z, Prompt 14.1) · Brand Guardian (Etapa G, Prompt 15) · Creative Memory (Etapa CM, Prompt 16, `29fbb77`) · Pixel Presence V1 (Etapa PR, Prompt 17, `8545a3e`) · Pixel Action Foundation (Etapa AF, Prompt 18,
+sin commit). Las diez últimas, verificadas con tests y en modo demo (EC, Z, G, CM, PR y AF también en
 navegador; PR con voz simulada); con Claude real, sin probar (❓). Experiencia de entrada pública (solo web,
 verificada en navegador el 2026-10-09; falta el video final).
 
 ### Parciales o abiertas 🟨
 
+- **Action Foundation (Etapa AF):** solo proyecto y tareas usan herramientas; campaña, plan, pieza y memoria siguen por el ejecutor anterior. `update_task` está registrada y probada, pero ninguna intención la propone. El catálogo CAPABILITY_n y `resolveActionDrafts` están probados sin un planificador de IA que los use (V1 determinista). Confirmación reforzada (`elevated`) no existe: una acción así no se ejecuta.
 - **Creative Memory (Etapa CM):** sin decay; los alcances `project` y `content_plan` existen en contrato y resolver pero no se crean desde la conversación; `creative_resource_rejected` aún no se emite.
 - **Pixel Presence (Etapa PR):** la voz depende de Web Speech del navegador (Chrome/Edge; Firefox sin
   reconocimiento → solo texto); `BehaviorProfile`
@@ -322,6 +328,7 @@ verificada en navegador el 2026-10-09; falta el video final).
 
 ### Pendiente de verificación ❓
 
+- Action Foundation con Claude real (el intérprete clasificando `external_action` y las tareas): `pixelActions.live.test.ts` SKIPPED sin `ANTHROPIC_API_KEY` (2026-10-14).
 - `contentPlanning.live.test.ts` con Claude real, y ajuste del prompt del planner
   (`CONTENT-PLANNER.md` §10). El `DailyDirectorEngine` tampoco se ha probado con Claude real.
 - `chat.live.test.ts` con Claude real (se salta sin `ANTHROPIC_API_KEY`).
@@ -427,7 +434,7 @@ verificada en navegador el 2026-10-09; falta el video final).
 | `/workspaces/:id/campaigns/:campaignId/strategy[?version=]` · `/strategy/generate` | GET · POST (201) | versiones conservadas; dos regeneraciones simultáneas → 409 `campaign_strategy_generation_in_progress` |
 | `/workspaces/:id/campaigns/:campaignId/deliverables` · `/:deliverableId` · `/accept` · `/reject` | GET · PATCH · POST (201 al crear, 200 si ya existía) · POST | convertida → 409 `campaign_deliverable_converted` al editar o rechazar |
 | `/workspaces/:id/daily-brief` · `/daily-brief/generate` | GET (404 `daily_brief_not_generated` si no hay) · POST (201) | solo Personal; respuesta `{ brief, stale }` |
-| `/workspaces/:id/pixel/commands` · `/:commandId` · `/adjust` · `/confirm` · `/cancel` | POST (201) · GET · POST · POST (`{ command, executed }`) · POST | Personal y Enterprise; sin ADN → 409; confirmar exige la `revision` vista; segunda confirmación → 200 `executed: false`; `source: voice` se trata como texto; `contextHint.resource` `{ type, id }` (campaign, content_plan, project, content_item) se valida contra el workspace → 400 `VALIDATION_ERROR` si no es suyo (Prompt 17) |
+| `/workspaces/:id/pixel/commands` · `/:commandId` · `/adjust` · `/confirm` · `/cancel` | POST (201) · GET · POST · POST (`{ command, executed }`) · POST | Personal y Enterprise; sin ADN → 409; confirmar exige la `revision` vista; segunda confirmación → 200 `executed: false`; `source: voice` se trata como texto; `contextHint.resource` `{ type, id }` (campaign, content_plan, project, content_item) se valida contra el workspace → 400 `VALIDATION_ERROR` si no es suyo (Prompt 17); `/confirm` congela el snapshot autorizado (quién = la sesión, el cuerpo sigue siendo solo `{ revision }`) y ejecuta proyecto y tareas con herramientas verificadas; `plan.actions` = cada acción y su resultado; una ejecución abandonada (> 5 min) se libera al consultar o confirmar (Prompt 18) |
 | `/workspaces/:id/pixel/commands/:commandId/guardian-override` | POST | solo Enterprise; todos los hallazgos bloqueantes deben admitir override (si no, 409 `guardian_not_overridable`) |
 | `/workspaces/:id/guardian/evaluate` · `/reports` · `/reports/:reportId` · `/override` · `/correct` · `/apply` | POST (201) · GET (paginado, `?resourceType=&resourceId=`) · GET (`{ report }` con `stale`) · POST · POST (201) · POST | solo Enterprise (Personal → 400 `feature_not_available`); sin ADN → 409 `brand_dna_missing`; recurso ajeno → 404 |
 | `/workspaces/:id/creative-memories` · `/:memoryId` · `/remember` · `/:memoryId/confirm` · `/dismiss` · `/forget` · `/replace` | GET (`?view=`) · GET (`{ memory, evidence, related }`) · POST (201/200) · POST · POST · POST · POST (201) | Personal y Enterprise; recurso ajeno → 404; hechos/credenciales/sensible → 400 `creative_memory_not_allowed` |
@@ -459,7 +466,7 @@ con `INVALID_RESPONSE`.
   `pixel_command_revision_changed`, `pixel_command_changed`, `pixel_command_not_cancellable`,
   `pixel_command_reply_unavailable` (Prompt 14.1), `guardian_preflight_blocked`, `guardian_not_overridable`,
   `guardian_single_correction_pass`, `guardian_nothing_to_fix`, `guardian_no_safe_correction`,
-  `guardian_report_stale` (409) y `guardian_apply_not_supported` (400) (Prompt 15), `creative_memory_not_allowed`, `creative_memory_unclear` (400), `creative_memory_not_candidate`, `creative_memory_not_active`, `creative_memory_duplicate` (409) (Prompt 16). No tienen schema en
+  `guardian_report_stale` (409) y `guardian_apply_not_supported` (400) (Prompt 15), `creative_memory_not_allowed`, `creative_memory_unclear` (400), `creative_memory_not_candidate`, `creative_memory_not_active`, `creative_memory_duplicate` (409) (Prompt 16), `action_invalid_input`, `action_capability_unavailable`, `action_unauthorized` (409, al confirmar: no se ejecuta nada) (Prompt 18). No tienen schema en
   contracts. `ChatStudio` reacciona a
   `personal_context_not_configured`, `brand_dna_missing` y `enterprise_company_missing`.
 
@@ -471,7 +478,7 @@ con `INVALID_RESPONSE`.
 (arquetipos, `LanguageCode`, roles de paleta…); `generator.kind`; claves de paso de ambos
 onboardings (un paso guardado que deja de validar se descarta en silencio); `CreativeMemory.kind`,
 `memoryScope` y `source.type`; `ContentPlan.contextType`, `ContentPlanItem.strategicRole` y
-`funnelStage` (Prompt 14); `PixelCommand.status`, `intent` y los tipos de paso (Prompt 14.1); `GuardianReport.mode`, `resourceType`, `status`, las dimensiones, severidades y códigos de hallazgo (Prompt 15); `CreativeMemory.status`, `kind`, `origin`, `polarity`, `dimension`, `scope.type` y `CreativeDecisionEvent.eventType` / señales (Prompt 16); la intención `manage_memory` y los pasos `remember_memory` / `forget_memory`. Al leer, la API valida con `Schema.parse` BrandDNA, PersonalDNA,
+`funnelStage` (Prompt 14); `PixelCommand.status`, `intent` y los tipos de paso (Prompt 14.1); `GuardianReport.mode`, `resourceType`, `status`, las dimensiones, severidades y códigos de hallazgo (Prompt 15); `CreativeMemory.status`, `kind`, `origin`, `polarity`, `dimension`, `scope.type` y `CreativeDecisionEvent.eventType` / señales (Prompt 16); la intención `manage_memory` y los pasos `remember_memory` / `forget_memory`; la intención `external_action`, `entities.externalService` (`google_calendar`, `calendar`, `email`, `messaging`, `payment`), y en `PixelCommand.authorization` / `actionResults` las claves de herramienta y capacidad (`workspace.projects/create_project`, `workspace.tasks/create_task`, `update_task`), los estados `success | failed | skipped` y los códigos de error de acción (Prompt 18). Al leer, la API valida con `Schema.parse` BrandDNA, PersonalDNA,
 AvatarProfile, Conversation, Message y CreativeMemory; Workspace y Company no se validan al leer,
 pero la web valida cada respuesta (un valor fuera del enum rompe la UI con `INVALID_RESPONSE`). En
 ambos casos: **no estrechar enums**.
@@ -547,10 +554,12 @@ createdAt: -1}` en el Prompt 14).
 8. `PixelStudio` no tiene archivo propio: vive en `features/pixel/PixelPage.tsx`.
 9. El proveedor demo no inventa frecuencias ni dice "en directo" sin evidencia en el ADN.
 10. BrandDNA solo tiene la ruta legacy; el plan de convergencia aún no la menciona.
-11. El script de migración solo crea o sincroniza índices de Workspace, Company, AvatarProfile,
-    Conversation, Message y CreativeMemory. Ni el modo normal ni `--sync-indexes` tocan
-    PersonalProfile, PersonalDNA, BrandDNA ni User: Mongoose crea sus índices al arrancar y los
-    obsoletos no se retiran.
+11. El script de migración solo crea o sincroniza índices de `EXPLICIT_INDEX_MODELS`
+    (`db/indexedModels.ts`): Workspace, Company, AvatarProfile, Conversation, Message,
+    CreativeMemory y, desde el Prompt 18, Project y Task (índice de idempotencia de las acciones de
+    Pixel, que además se crea y comprueba al arrancar la API: `ensureActionKeyIndexes`). Ni el modo
+    normal ni `--sync-indexes` tocan PersonalProfile, PersonalDNA, BrandDNA ni User: Mongoose crea sus
+    índices al arrancar y los obsoletos no se retiran.
 12. **Pixel Presence (Prompt 17) es estado de la web, no un modelo.** Ni el estado de presencia ni
     las preferencias de voz se guardan en Mongo: las preferencias van por dispositivo y por Pixel en
     `localStorage` (`pixel:presence:<workspaceId>`, con try/catch) porque las voces dependen del
@@ -635,6 +644,9 @@ a "no convertida") y **R11** (el rollback borra también los ítems). El resto s
 - Comentarios desactualizados: `contracts/src/workspace.ts:9` y `avatarProfile.ts:184` ("próximamente
   PersonalDNA"), `workspaces.routes.ts:28`, `creativeMemory.model.ts`, `creative-memory.routes.ts`,
   `previewSpec.ts:5`, `contracts/src/personal.ts:92`.
+- ~~**Ventana residual de duplicado (Prompt 18)**~~ — **cerrada antes del commit** (2026-10-14): crear proyecto/tarea es idempotente por la clave de la acción (`pixelActionKey` + índice único parcial), también tras una caída y en carreras (`PIXEL-ACTIONS.md` §8).
+- **Resumen del Inicio sin refrescar (anterior):** tras organizar desde el Inicio, los contadores de «Trabajo» siguen con el dato cargado al abrir la página hasta navegar (visto en el smoke del Prompt 18).
+- **Nombre de proyecto en minúscula (anterior):** «Crea un proyecto para preparar mi parcial» crea «preparar mi parcial» (el texto del usuario tal cual); un test de PixelCommand lo fija así.
 - **Test intermitente:** `dailyBrief` › «doble clic» falló una vez en la suite completa de la API
   (2026-10-13, Prompt 17) y pasó 4/4 aislado y en la repetición: dedupe en memoria (`inFlight`)
   sensible a la temporización. Sin corregir.
@@ -662,6 +674,48 @@ a "no convertida") y **R11** (el rollback borra también los ítems). El resto s
 | `docs/WORKSPACES.md`, `WORKSPACE-MIGRATION.md`, `PERSONAL.md` | Correctos salvo detalles: `WORKSPACES.md` presenta `/api/companies/:id/memories` como ruta legacy que usa la web (el router está vacío y la web no la llama) y su plan de convergencia no menciona `brand-dna` (§10.10). `WORKSPACE-MIGRATION.md` §4 dice que el modo normal del script «no elimina índices», pero siempre llama a `upgradeAvatarProfileIndexes()` y retira los dos índices legacy de `avatar_profiles` (su propio §2 lo explica; el log del script también dice «sin eliminar los legacy») |
 
 ## 13. Última verificación
+
+### 2026-10-14: Prompt 18 (Pixel Action Foundation), equipo del usuario, sin commit ni push
+
+| Comprobación | Resultado |
+|---|---|
+| `npm run typecheck` | 0 errores |
+| `npm run lint` | sin errores ni avisos |
+| Prettier | OK en los archivos tocados, con su EOL (`--end-of-line auto`) |
+| `npm run test` | contracts 82/82 · API 531 + 5 omitidos (pruebas en vivo, incluida `pixelActions.live`) · web 280/280 |
+| `npm run build` | OK (aviso de chunk grande, no error) |
+| Navegador (API :4100 con un arranque temporal que hace fallar SOLO la tarea «Simular fallo», build de producción :5180, base `pixel_smoke_p18` borrada; el arranque temporal se borró del repo) | **25/25**: Personal (propuesta con «Qué voy a hacer» → 0 escrituras → Organizar → «Listo. Creé el proyecto… y sus 3 tareas», 4/4 comprobadas, presencia thinking → success, proyecto con sus 3 tareas); Dock dentro del proyecto («Crea una tarea para revisar esto.» → ese proyecto, verificada); «Quita la segunda» → 2 tareas creadas; doble clic → 1 proyecto + 3 tareas; Google Calendar → respuesta honesta, 0 planes/proyectos/tareas; parcial ✓ ✓ ✕ ✓ («Creé… 2 de las 3 tareas. No pude crear «Simular fallo»», Reintentar, presencia warning); INVENTIA mismo motor y aislada; regresión de campaña con Guardian; móvil sin desbordes; consola limpia |
+| Encontrado y corregido en el smoke | «Crea un proyecto para preparar el final» se emparejaba con «preparar mi parcial» (palabras en común): al pedir uno NUEVO solo se reutiliza un proyecto con el mismo nombre (test añadido) |
+| Claude real | SKIPPED: no hay `ANTHROPIC_API_KEY` en el entorno ni `apps/api/.env` |
+
+Los servidores del usuario (:4000 y :5173) no se tocaron.
+
+**Cierre previo al commit (2026-10-14): idempotencia de creación.** `pixelActionKey` en Project y Task
+(`commandId:revision:actionId`), índice único parcial `{ workspaceId, pixelActionKey }`, búsqueda por
+clave antes de crear y recuperación del ganador en una carrera; verificación que comprueba la clave.
+Tests: caída tras crear proyecto y tarea → 1 proyecto + 3 tareas con resultados reconstruidos; caída
+tras crear una tarea → 1 tarea; dos creaciones simultáneas de la misma acción → 1; acciones distintas
+con el mismo texto → 2; creación manual intacta; clave de TINTO no toca INVENTIA; `update_task`
+repetida → mismo estado. Validación: typecheck 0 · lint limpio · Prettier OK · contracts 82/82 · API
+537 + 5 omitidos · web 280/280 · build OK. Navegador: smoke del Prompt 18 repetido 25/25 y recuperación
+5/5 (propuesta visible → caída simulada con el proyecto ya creado por esa acción y la ejecución
+abandonada → Organizar → 1 solo proyecto y sus 2 tareas, resultado reconstruido y verificado).
+
+**Cierre previo al commit (2026-10-14): despliegue de los índices de idempotencia.** No dependen del
+`autoIndex`: se crean y comprueban al arrancar la API (`ensureActionKeyIndexes`) y en
+`migrate:workspaces` (Project y Task en `EXPLICIT_INDEX_MODELS`; el script falla si no quedan únicos
+y parciales). Probado con el script real contra una base temporal con proyectos y tareas legacy sin
+clave (`pixel_idx_check`, borrada): 2 ejecuciones normales y 2 con `--sync-indexes`, salida 0, índices
+únicos y parciales en `projects` y `tasks`, documentos intactos. Test `actionKeyIndexes.test.ts` (4).
+
+**Cierre previo al commit (2026-10-14): fail closed.** Los índices de idempotencia son mantenimiento
+CRÍTICO del arranque (`startDatabase({ critical, onCriticalFailure })`): hasta que quedan bien, la base
+informa `connecting` y `/api` (salvo `/api/health`) responde 503 `database_not_ready`; si no pueden
+garantizarse, log `FATAL` (índice, colección, motivo) y el proceso termina con código 1. Un índice con
+el mismo nombre y otra configuración se repara (solo el índice). Probado con el proceso real: base sin
+índices → listo (`/api/health` 200); tareas que ya violan la unicidad → FATAL en `tasks` y salida 1
+sin atender, datos intactos. `migrate:workspaces` sin cambios de comportamiento (normal y
+`--sync-indexes`, salida 0). Tests: 3 más en `actionKeyIndexes.test.ts` (7 en total).
 
 ### 2026-10-13: Prompt 17 (Pixel Presence V1), equipo del usuario, sin commit ni push
 
@@ -828,8 +882,8 @@ Verificación anterior: `c846956` (2026-10-08): contracts 27 · API 185 + 1 · w
 
 ## 14. Siguiente paso (no implementado)
 
-0. **Usuario: revisar el Prompt 17 (Pixel Presence V1) y autorizar (o no) su commit**; decidir el push
-   de `29fbb77` (Prompt 16) y del 17. No empezar el Prompt 18 sin pedirlo. Probar la voz con un
+0. **Usuario: revisar el Prompt 18 (Pixel Action Foundation) y autorizar (o no) su commit**; decidir el
+   push de `29fbb77` (Prompt 16) y `8545a3e` (Prompt 17). No empezar el Prompt 19 sin pedirlo. Probar la voz con un
    micrófono real en Chrome/Edge y Safari. Probar `CAMPAIGN_SYSTEM`, `ENTERPRISE_PLANNING_SYSTEM`,
    `PIXEL_COMMAND_SYSTEM`, `GUARDIAN_SYSTEM`, `GUARDIAN_CORRECTION_SYSTEM` y `MEMORY_SYSTEM` con Claude real
    cuando haya `ANTHROPIC_API_KEY`.
@@ -848,7 +902,8 @@ Verificación anterior: `c846956` (2026-10-08): contracts 27 · API 185 + 1 · w
 6. ~~Prompt 13 — Campaign Manager~~: hecho (Etapa M, §13). ~~Prompt 14 — Enterprise Content
    Planner~~ y ~~Prompt 14.1 — Zero-entry UX~~: hechos (Etapas EC y Z, §13), en `1593576`, sin push. ~~Prompt 15 — Brand Guardian
    Core~~: hecho (Etapa G, §13), en `79b97e7`. ~~Prompt 16 — Creative Memory~~: hecho (Etapa CM, §13), en `29fbb77`, sin push. ~~Prompt 17 — Pixel
-   Presence V1~~: hecho (Etapa PR, §13), sin commit.
+   Presence V1~~: hecho (Etapa PR, §13), en `8545a3e`, sin push. ~~Prompt 18 — Pixel Action
+   Foundation~~: hecho (Etapa AF, §13), sin commit.
 7. Opcional, previa petición: corregir la deriva de §12.
 
 ## 15. Comandos reales

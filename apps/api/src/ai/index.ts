@@ -53,7 +53,13 @@ export {
   pixelCommandPrompt,
   type PixelCommandPayload,
 } from './pixelCommandPayload.js';
-export { fold, interpretPixelRequest } from './pixelCommandRules.js';
+export {
+  asksNewProject,
+  externalServiceOf,
+  fold,
+  interpretPixelRequest,
+  removeTaskTitles,
+} from './pixelCommandRules.js';
 export {
   extractGuardianCorrectionPayload,
   extractGuardianPayload,

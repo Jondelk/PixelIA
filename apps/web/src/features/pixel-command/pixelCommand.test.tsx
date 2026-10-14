@@ -193,6 +193,139 @@ describe('PixelCommand: fases de la conversación', () => {
   });
 });
 
+/* ---------- Prompt 18: acciones concretas y su resultado verificado ---------- */
+
+const PROJECT_ID = '6ac93cc3a738fe62abe5b040';
+const action = (
+  id: string,
+  kind: 'project' | 'task',
+  label: string,
+  status: 'pending' | 'success' | 'failed' | 'skipped',
+  error: string | null = null,
+) => ({
+  id,
+  stepId: kind === 'project' ? 'step_1' : 'step_2',
+  kind,
+  effect: 'create' as const,
+  title: kind === 'project' ? `Crear el proyecto «${label}»` : `Crear la tarea «${label}»`,
+  label,
+  status,
+  resource: status === 'success' ? { kind, id: PROJECT_ID, label } : null,
+  error,
+});
+
+function projectCommand(
+  statuses: ('pending' | 'success' | 'failed' | 'skipped')[],
+  overrides: Partial<PixelCommand> = {},
+) {
+  const [p, a, b, c] = statuses;
+  return commandFixture({
+    intent: 'organize_project',
+    plan: {
+      intent: 'organize_project',
+      summary: 'Creo el proyecto «Preparar parcial» con 3 tareas.',
+      understood: ['Proyecto nuevo: «Preparar parcial»'],
+      proposal: ['Un proyecto activo', 'Sus tareas, por hacer'],
+      creates: ['Un proyecto', '3 tareas dentro de él'],
+      steps: [
+        {
+          id: 'step_1',
+          type: 'create_project',
+          title: 'Crear el proyecto «Preparar parcial»',
+          status: p === 'success' ? 'done' : 'pending',
+          resources:
+            p === 'success' ? [{ kind: 'project', id: PROJECT_ID, label: 'Preparar parcial' }] : [],
+          error: null,
+        },
+      ],
+      actions: [
+        action('step_1.project', 'project', 'Preparar parcial', p!),
+        action('step_2.task_1', 'task', 'Repasar límites', a!),
+        action(
+          'step_2.task_2',
+          'task',
+          'Practicar derivadas',
+          b!,
+          b === 'failed' ? 'No se pudo completar' : null,
+        ),
+        action('step_2.task_3', 'task', 'Hacer un simulacro', c!),
+      ],
+      requiresConfirmation: true,
+      revision: 1,
+    },
+    ...overrides,
+  });
+}
+
+describe('Acciones: proponer, autorizar una vez y contar la verdad', () => {
+  it('propuesta: «Qué voy a hacer» lista el proyecto y CADA tarea; una sola confirmación', () => {
+    const html = panel('proposal', projectCommand(['pending', 'pending', 'pending', 'pending']));
+    const visible = text(html);
+    expect(visible).toContain('Qué voy a hacer');
+    for (const title of [
+      'Crear el proyecto «Preparar parcial»',
+      'Crear la tarea «Repasar límites»',
+      'Crear la tarea «Practicar derivadas»',
+      'Crear la tarea «Hacer un simulacro»',
+    ]) {
+      expect(visible).toContain(title);
+    }
+    expect(visible).not.toContain('Qué voy a crear');
+    expect(html.match(/>\s*(?:<svg[^]*?<\/svg>\s*)?Organizar\s*</g)).toHaveLength(1);
+    // Nada técnico: ni herramientas, ni capacidades, ni ids.
+    expect(visible).not.toMatch(/workspace\.|create_task|step_2\.task|6ac93cc3a738fe62abe5b040/);
+  });
+
+  it('completado: ✓ cada acción comprobada y el enlace al proyecto verificado', () => {
+    const html = panel(
+      'completed',
+      projectCommand(['success', 'success', 'success', 'success'], {
+        status: 'completed',
+        reply: 'Listo. Creé el proyecto «Preparar parcial» y sus 3 tareas.',
+      }),
+    );
+    expect(text(html)).toContain('4 de 4 acciones hechas y comprobadas.');
+    expect(html).toContain('aria-label="Resultado de cada acción"');
+    expect(text(html)).toContain('Hecho: Proyecto · Preparar parcial');
+    expect(html).toContain(`href="${BASE}/projects/${PROJECT_ID}"`);
+  });
+
+  it('parcial: ✓ ✓ ✕ ✓ sin esconder el fallo ni decir «todo listo»; Reintentar', () => {
+    const html = panel(
+      'partial',
+      projectCommand(['success', 'success', 'failed', 'success'], {
+        status: 'partial',
+        reply:
+          'Creé el proyecto «Preparar parcial» y 2 de las 3 tareas. No pude crear «Practicar derivadas».',
+      }),
+    );
+    const visible = text(html);
+    expect(visible).toContain('3 de 4 acciones hechas y comprobadas.');
+    expect(visible).toContain('No se pudo: Tarea · Practicar derivadas');
+    expect(visible).toContain('No se pudo completar');
+    expect(visible).not.toMatch(/Todo listo/);
+    expect(visible).toContain('Reintentar');
+  });
+
+  it('dependencia fallida: las tareas aparecen como «No se hizo», sin enlaces', () => {
+    const html = panel(
+      'failed',
+      projectCommand(['failed', 'skipped', 'skipped', 'skipped'], {
+        status: 'failed',
+        reply: 'No pude crear el proyecto «Preparar parcial», así que no creé sus 3 tareas.',
+      }),
+    );
+    expect(text(html)).toContain('0 de 4 acciones hechas y comprobadas.');
+    expect(text(html)).toContain('No se hizo: Tarea · Repasar límites');
+    expect(html).not.toContain('/projects/');
+  });
+
+  it('una campaña (pasos sin herramientas) no muestra la lista de acciones', () => {
+    const html = panel('completed', commandFixture({ status: 'completed', reply: 'Listo.' }));
+    expect(html).not.toContain('Resultado de cada acción');
+  });
+});
+
 describe('commandLogic', () => {
   it('la petición en curso manda sobre el estado del servidor', () => {
     expect(commandPhase(null, null)).toBe('idle');

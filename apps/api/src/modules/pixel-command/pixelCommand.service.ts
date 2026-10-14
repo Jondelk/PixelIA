@@ -15,7 +15,7 @@ import {
   type PixelCommandStatus,
 } from '@pixel/contracts';
 import { Types } from 'mongoose';
-import { fold, type AIProvider } from '../../ai/index.js';
+import { fold, removeTaskTitles, type AIProvider } from '../../ai/index.js';
 import { recordCreativeDecision } from '../creative-memory/memory.detector.js';
 import {
   placementDirectives,
@@ -37,13 +37,19 @@ import type { GuardianText } from '../guardian/guardian.types.js';
 import { hasWorkspaceFeature } from '../workspaces/workspaceFeatures.js';
 import { fieldError, resourceId } from '../operations/operations.scope.js';
 import type { WorkspaceDocument } from '../workspaces/workspace.model.js';
+import {
+  carriedOverResults,
+  expandSteps,
+  freezeActions,
+  type AuthorizedActionSnapshot,
+} from '../actions/action.snapshot.js';
+import { answerExternalRequest } from '../actions/external.capabilities.js';
 import { executeCommand, type PixelExecutorDeps } from './pixelCommand.executor.js';
 import {
   PixelCommandModel,
   toPixelCommandDTO,
   type PixelCommandAttrs,
   type PixelCommandDocument,
-  type PixelStepAttrs,
 } from './pixelCommand.model.js';
 import { planMemoryCommand, type MemoryOutcome } from './pixelCommand.memory.js';
 import { matchCampaigns, planCommand } from './pixelCommand.planner.js';
@@ -277,6 +283,12 @@ async function interpretAndPlan(
     entities = { ...entities, objective: capitalize(cleanAnswer(message)).slice(0, 500) };
   }
 
+  // Ajuste de una propuesta de tareas: «Quita la segunda» crea otra revisión sin esa tarea.
+  if (state.previous && (intent === 'organize_project' || intent === 'create_tasks')) {
+    const kept = removeTaskTitles(message, entities.taskTitles);
+    if (kept.length !== entities.taskTitles.length) entities = { ...entities, taskTitles: kept };
+  }
+
   const context = await resolvePixelContext(workspace, intent);
   let { campaignId, noCampaign } = state;
   if (state.pendingField) {
@@ -368,11 +380,13 @@ async function interpretAndPlan(
   const reply =
     outcome.kind === 'memory_reply'
       ? outcome.reply
-      : intent === 'work_status'
-        ? await workStatusReply(workspace, entities, message, context, state.tzOffset)
-        : intent === 'creative_advice'
-          ? await creativeAdviceReply(workspace, message, deps)
-          : unknownReply(workspace.type);
+      : intent === 'external_action'
+        ? answerExternalRequest(entities.externalService, deps.tools, workspace).reply
+        : intent === 'work_status'
+          ? await workStatusReply(workspace, entities, message, context, state.tzOffset)
+          : intent === 'creative_advice'
+            ? await creativeAdviceReply(workspace, message, deps)
+            : unknownReply(workspace.type);
   return {
     ...base,
     guardian: null,
@@ -431,6 +445,7 @@ export async function createPixelCommand(
     status: command.status,
     mode: command.interpretation.mode,
   });
+  logProposed(deps, workspace, command);
   return toPixelCommandDTO(command);
 }
 
@@ -493,39 +508,149 @@ export async function adjustPixelCommand(
 
 const CONFIRMABLE: PixelCommandStatus[] = ['proposed', 'partial', 'failed'];
 
+/** Sin actividad durante este tiempo, una ejecución se da por abandonada (caída del proceso). */
+export const STALE_EXECUTION_MS = 5 * 60_000;
+
+function logProposed(
+  deps: PixelCommandDeps,
+  workspace: WorkspaceDocument,
+  command: PixelCommandDocument,
+) {
+  if (command.status !== 'proposed') return;
+  const actions = expandSteps(command.steps);
+  if (!actions.length) return;
+  deps.logger.info('action.proposed', {
+    workspaceId: workspace._id.toString(),
+    commandId: command._id.toString(),
+    revision: command.plan?.revision ?? 0,
+    actions: actions.length,
+  });
+}
+
+/**
+ * Recuperación mínima (Prompt 18): una ejecución sin actividad en STALE_EXECUTION_MS se libera
+ * (`partial` si algo quedó hecho, `failed` si no) para que el usuario pueda reintentar; lo hecho
+ * no se repite. Atómica y ligada al executionId abandonado: si dos peticiones lo detectan, solo una
+ * la libera, y el ejecutor antiguo ya no puede escribir (todas sus escrituras filtran por su id).
+ */
+async function releaseStaleExecution(
+  workspace: WorkspaceDocument,
+  command: PixelCommandDocument,
+  deps: PixelCommandDeps,
+  now = new Date(),
+): Promise<PixelCommandDocument> {
+  if (command.status !== 'executing') return command;
+  const lastActivity =
+    command.executionUpdatedAt ?? command.executionStartedAt ?? command.updatedAt;
+  const cutoff = new Date(now.getTime() - STALE_EXECUTION_MS);
+  if (lastActivity > cutoff) return command;
+  const somethingDone =
+    command.steps.some((step) => step.resources.length > 0) ||
+    (command.actionResults ?? []).some((result) => result.status === 'success');
+  const reply =
+    'La ejecución anterior se interrumpió antes de terminar. Lo que ya estaba hecho se conserva; puedes reintentarlo y no se duplicará.';
+  const released = await PixelCommandModel.findOneAndUpdate(
+    {
+      _id: command._id,
+      workspaceId: workspace._id,
+      status: 'executing',
+      executionId: command.executionId,
+      $or: [
+        { executionUpdatedAt: { $lte: cutoff } },
+        { executionUpdatedAt: null, updatedAt: { $lte: cutoff } },
+      ],
+    },
+    {
+      $set: { status: somethingDone ? 'partial' : 'failed', reply, executionId: null },
+      $push: { turns: { role: 'pixel', text: reply, at: now } },
+    },
+    { new: true },
+  );
+  if (released) {
+    deps.logger.warn('action.execution_interrupted', {
+      workspaceId: workspace._id.toString(),
+      commandId: command._id.toString(),
+    });
+  }
+  return released ?? (await findCommand(workspace, command._id.toString()));
+}
+
 export async function confirmPixelCommand(
   workspace: WorkspaceDocument,
   rawId: unknown,
   input: ConfirmPixelCommandInput,
+  actorUserId: string,
   deps: PixelCommandDeps,
 ): Promise<PixelCommandConfirmResponse> {
   const id = resourceId(rawId, PIXEL_COMMAND_NOT_FOUND);
+  const current = await releaseStaleExecution(
+    workspace,
+    await findCommand(workspace, id.toString()),
+    deps,
+  );
+
+  // Lo autorizado se congela UNA vez por revisión y nunca se cambia: un reintento usa el mismo
+  // snapshot. Las acciones se validan ANTES de reservar: si alguna no es ejecutable, nada se hace.
+  const revision = input.revision;
+  const frozen: AuthorizedActionSnapshot | null =
+    current.authorization && current.authorization.revision === revision
+      ? null
+      : current.plan?.revision === revision && CONFIRMABLE.includes(current.status)
+        ? {
+            revision,
+            authorizedBy: actorUserId,
+            authorizedAt: new Date(),
+            actions: freezeActions(current.steps, deps.tools, workspace),
+          }
+        : null;
+
   const executionId = new Types.ObjectId();
+  const now = new Date();
   // Reserva atómica: solo una confirmación ejecuta, y solo la revisión que el usuario vio.
   const command = await PixelCommandModel.findOneAndUpdate(
     {
       _id: id,
       workspaceId: workspace._id,
       status: { $in: CONFIRMABLE },
-      'plan.revision': input.revision,
+      'plan.revision': revision,
       // Un BLOCK del Brand Guardian sin override no se ejecuta solo.
       guardianBlocked: { $ne: true },
+      // El snapshot no se pisa: o no había, o es de esta misma revisión.
+      ...(frozen ? { authorization: null } : { 'authorization.revision': revision }),
     },
-    { $set: { status: 'executing', executionId } },
+    {
+      $set: {
+        status: 'executing',
+        executionId,
+        executionStartedAt: now,
+        executionUpdatedAt: now,
+        ...(frozen
+          ? {
+              authorization: frozen,
+              actionResults: carriedOverResults(
+                current.steps,
+                frozen.actions,
+                revision,
+                executionId.toString(),
+              ),
+            }
+          : {}),
+      },
+    },
     { new: true },
   );
   if (!command) {
-    const current = await findCommand(workspace, id.toString());
-    if (current.status === 'executing' || current.status === 'completed') {
-      return { command: toPixelCommandDTO(current), executed: false };
+    const latest = await findCommand(workspace, id.toString());
+    if (latest.status === 'executing' || latest.status === 'completed') {
+      return { command: toPixelCommandDTO(latest), executed: false };
     }
-    if (CONFIRMABLE.includes(current.status) && current.guardianBlocked) {
+    if (CONFIRMABLE.includes(latest.status) && latest.guardianBlocked) {
       throw conflict(
         'Brand Guardian encontró algo que hay que resolver antes de organizar',
         'guardian_preflight_blocked',
       );
     }
-    if (CONFIRMABLE.includes(current.status)) {
+    if (CONFIRMABLE.includes(latest.status)) {
       throw conflict(
         'La propuesta cambió: revisa la versión actual antes de confirmar',
         'pixel_command_revision_changed',
@@ -533,27 +658,38 @@ export async function confirmPixelCommand(
     }
     throw conflict('Esta solicitud no tiene nada que confirmar', 'pixel_command_not_confirmable');
   }
-
-  const persist = async (steps: PixelStepAttrs[]) => {
-    await PixelCommandModel.updateOne(
-      { _id: command._id, workspaceId: workspace._id, executionId },
-      { $set: { steps } },
-    );
+  const authorization = command.toObject().authorization as AuthorizedActionSnapshot;
+  const logBase = {
+    workspaceId: workspace._id.toString(),
+    commandId: command._id.toString(),
+    executionId: executionId.toString(),
   };
-  const result = await executeCommand(workspace, command, deps, persist);
+  if (frozen) {
+    deps.logger.info('action.authorized', { ...logBase, revision, actions: frozen.actions.length });
+  }
+  deps.logger.info('action.execution_started', logBase);
+
+  const result = await executeCommand(
+    workspace,
+    command,
+    deps,
+    { actorUserId, executionId: executionId.toString(), authorization },
+    async ({ steps, actionResults }) => {
+      await PixelCommandModel.updateOne(
+        { _id: command._id, workspaceId: workspace._id, executionId },
+        { $set: { steps, actionResults, executionUpdatedAt: new Date() } },
+      );
+    },
+  );
   const final = await PixelCommandModel.findOneAndUpdate(
     { _id: command._id, workspaceId: workspace._id, executionId },
     {
-      $set: { status: result.status, reply: result.reply },
+      $set: { status: result.status, reply: result.reply, executionUpdatedAt: new Date() },
       $push: { turns: { role: 'pixel', text: result.reply, at: new Date() } },
     },
     { new: true },
   );
-  deps.logger.info('PixelCommand: plan ejecutado', {
-    workspaceId: workspace._id.toString(),
-    intent: command.intent,
-    status: result.status,
-  });
+  deps.logger.info(`action.${result.status}`, { ...logBase, intent: command.intent });
   return { command: toPixelCommandDTO(final ?? command), executed: true };
 }
 
@@ -580,8 +716,11 @@ export async function cancelPixelCommand(
 export async function getPixelCommand(
   workspace: WorkspaceDocument,
   rawId: unknown,
+  deps: PixelCommandDeps,
 ): Promise<PixelCommand> {
-  return toPixelCommandDTO(await findCommand(workspace, rawId));
+  return toPixelCommandDTO(
+    await releaseStaleExecution(workspace, await findCommand(workspace, rawId), deps),
+  );
 }
 
 /* ---------- Creative Memory ---------- */

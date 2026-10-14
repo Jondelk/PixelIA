@@ -7,6 +7,11 @@ import { createLogger } from './lib/logger.js';
 import { upgradeAvatarProfileIndexes } from './modules/avatars/avatarProfile.indexes.js';
 import { migrateContentPlanContexts } from './modules/content-plans/contentPlan.migration.js';
 import { migrateLegacyCreativeMemories } from './modules/creative-memory/creativeMemory.migration.js';
+import {
+  ACTION_KEY_INDEX,
+  ActionKeyIndexError,
+  ensureActionKeyIndexes,
+} from './modules/operations/operations.indexes.js';
 
 const env = loadEnv();
 const logger = createLogger({
@@ -19,6 +24,26 @@ if (env.usingDevJwtSecret) {
 }
 
 startDatabase(env.MONGODB_URI, logger, {
+  // Prompt 18: crítico. Sin los índices de idempotencia, Action Foundation no puede garantizar
+  // «una acción = un recurso»: hasta que quedan bien la API responde 503 (salvo /api/health) y, si
+  // no se pueden garantizar, el proceso termina (fail closed). Igual en todos los entornos.
+  critical: async () => {
+    const repaired = await ensureActionKeyIndexes();
+    if (repaired.length) {
+      logger.warn(`Índice ${ACTION_KEY_INDEX} reparado (configuración distinta)`, { repaired });
+    }
+  },
+  onCriticalFailure: (err) => {
+    logger.error(
+      'FATAL: índices de idempotencia de Action Foundation no garantizados; la API no se inicia',
+      {
+        index: ACTION_KEY_INDEX,
+        collection: err instanceof ActionKeyIndexError ? err.collection : 'projects/tasks',
+        reason: err instanceof Error ? err.message : String(err),
+      },
+    );
+    void shutdown('fallo de índices críticos', 1);
+  },
   onConnected: async () => {
     // Índices de AvatarProfile compatibles con avatares personales (idempotente, sin tocar datos).
     const dropped = await upgradeAvatarProfileIndexes();
@@ -50,7 +75,7 @@ server.on('error', (err: NodeJS.ErrnoException) => {
 });
 
 let shuttingDown = false;
-async function shutdown(signal: string) {
+async function shutdown(signal: string, exitCode = 0) {
   if (shuttingDown) return;
   shuttingDown = true;
   logger.info(`Recibido ${signal}; cerrando...`);
@@ -58,7 +83,7 @@ async function shutdown(signal: string) {
   force.unref();
   server.close();
   await stopDatabase().catch((err: unknown) => logger.error('Error al cerrar MongoDB', { err }));
-  process.exit(0);
+  process.exit(exitCode);
 }
 
 process.on('SIGINT', () => void shutdown('SIGINT'));

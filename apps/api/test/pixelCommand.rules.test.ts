@@ -235,3 +235,73 @@ describe('Redacción de la propuesta', () => {
     );
   });
 });
+
+describe('Prompt 18: responder, actuar o reconocer un límite', () => {
+  it.each([
+    ['Pon mañana a las 3 una reunión en mi Google Calendar.', 'google_calendar'],
+    ['Agenda una reunión con Laura el viernes', 'calendar'],
+    ['Pon una cita en mi calendario para el lunes', 'calendar'],
+    ['Envíale un correo a Laura.', 'email'],
+    ['Envía este correo a Laura.', 'email'],
+    ['Mándale un WhatsApp a Juan', 'messaging'],
+    ['Compra esto.', 'payment'],
+    ['Paga esto.', 'payment'],
+    ['Transfiere 100 dólares a Juan.', 'payment'],
+  ])('«%s» → acción externa (%s)', (text, service) => {
+    const result = interpret(text);
+    expect(result.intent).toBe('external_action');
+    expect(result.entities.externalService).toBe(service);
+    // También en Personal.
+    expect(interpret(text, personal).intent).toBe('external_action');
+  });
+
+  it.each([
+    ['Arma el calendario de contenido de esta semana', 'plan_content'],
+    ['Necesito el calendario editorial del mes en Instagram', 'plan_content'],
+    // «la compra» como sustantivo no es una orden de pago.
+    ['Necesito contenido que impulse la compra del TINTO 500 g', 'plan_content'],
+    ['¿Qué es una campaña?', 'creative_advice'],
+    ['¿Qué significa una tarea prioritaria?', 'creative_advice'],
+    ['¿Cuántas tareas pendientes tengo?', 'work_status'],
+    [
+      'Crea un proyecto para preparar mi parcial y agrega tres tareas: repasar límites, practicar derivadas y hacer un simulacro.',
+      'organize_project',
+    ],
+    ['Crea una tarea para revisar esto.', 'create_tasks'],
+  ])('«%s» → %s (no es una acción externa)', (text, intent) => {
+    expect(interpret(text).intent).toBe(intent);
+  });
+
+  it('«Crea un proyecto…»: el nombre y las tareas en palabras del usuario', () => {
+    const result = interpret(
+      'Crea un proyecto para lanzar el servicio de prototipado y agrega tareas para definir propuesta, preparar material y revisar lanzamiento.',
+    );
+    expect(result.intent).toBe('organize_project');
+    expect(result.entities.projectHint).toBe('lanzar el servicio de prototipado');
+    expect(result.entities.taskTitles).toEqual([
+      'Definir propuesta',
+      'Preparar material',
+      'Revisar lanzamiento',
+    ]);
+  });
+
+  it('«Quita la segunda» / «quita la tarea 3» / «sin la última» / por nombre', async () => {
+    const { removeTaskTitles } = await import('../src/ai/pixelCommandRules.js');
+    const titles = ['Repasar límites', 'Practicar derivadas', 'Hacer un simulacro'];
+    expect(removeTaskTitles('Quita la segunda.', titles)).toEqual([
+      'Repasar límites',
+      'Hacer un simulacro',
+    ]);
+    expect(removeTaskTitles('Elimina la tarea 3', titles)).toEqual([
+      'Repasar límites',
+      'Practicar derivadas',
+    ]);
+    expect(removeTaskTitles('Sin la última', titles)).toHaveLength(2);
+    expect(removeTaskTitles('Quita practicar derivadas', titles)).toEqual([
+      'Repasar límites',
+      'Hacer un simulacro',
+    ]);
+    // Un ajuste que no quita nada no cambia la lista.
+    expect(removeTaskTitles('Ponlas para el viernes', titles)).toEqual(titles);
+  });
+});

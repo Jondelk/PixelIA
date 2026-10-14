@@ -85,7 +85,7 @@ La API arranca aunque MongoDB no esté disponible: `/api/health` responde `503` 
 apps/web            React + Vite + Tailwind (shell y pantallas)
 apps/api            Express + Mongoose (módulos: health, auth, workspaces, companies, brand-dna, personal, avatars, conversations, creative-memory, operations, content-plans, daily-director, campaigns, pixel-command, guardian, creative-memory)
 packages/contracts  Schemas Zod y tipos compartidos
-docs/               Estado real (PIXEL_ESTADO), MVP, arquitectura, entidades, backlog, workspaces, migración, Pixel Personal, Operations, Campaign Manager, Content Planner (Personal y Enterprise), Daily Director, PixelCommand, Brand Guardian, Creative Memory y Pixel Presence
+docs/               Estado real (PIXEL_ESTADO), MVP, arquitectura, entidades, backlog, workspaces, migración, Pixel Personal, Operations, Campaign Manager, Content Planner (Personal y Enterprise), Daily Director, PixelCommand, Brand Guardian, Creative Memory, Pixel Presence y Action Foundation
 ```
 
 ## Documentación
@@ -108,5 +108,7 @@ docs/               Estado real (PIXEL_ESTADO), MVP, arquitectura, entidades, ba
 - [`docs/BRAND-GUARDIAN.md`](./docs/BRAND-GUARDIAN.md) — Brand Guardian: revisión explicable de propuestas, campañas, planes, contenido y textos contra el BrandDNA (solo Enterprise).
 - [`docs/CREATIVE-MEMORY.md`](./docs/CREATIVE-MEMORY.md) — Creative Memory: lo que Pixel aprende de tus decisiones (preferencias, excepciones y patrones), confirmado por ti.
 - [`docs/PIXEL-PRESENCE.md`](./docs/PIXEL-PRESENCE.md) — Pixel Presence: estados de presencia, avatar en tres niveles, voz del navegador, acentos por Pixel y Pixel Dock con el recurso en contexto.
+- [`docs/PIXEL-ACTIONS.md`](./docs/PIXEL-ACTIONS.md) — Pixel Action Foundation: proponer → autorizar → ejecutar → verificar, con resultados veraces.
+- [`docs/PIXEL-TOOLS.md`](./docs/PIXEL-TOOLS.md) — herramientas, capacidades, registro y política de autorización (y cómo añadir Google Calendar).
 - [`docs/AVATAR-ASSET-CONTRACT.md`](./docs/AVATAR-ASSET-CONTRACT.md) — contrato del avatar GLB futuro (escala, rig, clips y materiales).
 - [`docs/WORKSPACE-MIGRATION.md`](./docs/WORKSPACE-MIGRATION.md) — migración Company → Workspace.

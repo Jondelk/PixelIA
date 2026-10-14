@@ -25,6 +25,11 @@ export const PIXEL_COMMAND_INTENTS = [
   'work_status',
   /** Prompt 16: recordar, olvidar o mostrar lo que Pixel ha aprendido (Creative Memory). */
   'manage_memory',
+  /**
+   * Prompt 18: una acción en un servicio externo (calendario, correo, mensajería, pagos). Pixel la
+   * entiende y responde con honestidad si no tiene esa capacidad: nunca finge que la hizo.
+   */
+  'external_action',
   'unknown',
 ] as const;
 export const PixelCommandIntentSchema = z.enum(PIXEL_COMMAND_INTENTS);
@@ -40,6 +45,7 @@ const INTENT_FEATURES: Record<PixelCommandIntent, WorkspaceFeature | null> = {
   creative_advice: null,
   work_status: null,
   manage_memory: 'creativeMemory',
+  external_action: null,
   unknown: null,
 };
 
@@ -65,6 +71,19 @@ export const PixelTimeframeSchema = z.enum(PIXEL_TIMEFRAMES);
 export type PixelTimeframe = z.infer<typeof PixelTimeframeSchema>;
 
 const entityText = (max: number) => z.string().trim().min(1).max(max).nullable().default(null);
+
+/**
+ * Servicios externos que Pixel sabe RECONOCER (Prompt 18). Reconocer no es poder: si no hay una
+ * herramienta conectada, Pixel lo dice. `payment` (compras, pagos, transferencias) nunca se ejecuta.
+ */
+export const PIXEL_EXTERNAL_SERVICES = [
+  'google_calendar',
+  'calendar',
+  'email',
+  'messaging',
+  'payment',
+] as const;
+export type PixelExternalService = (typeof PIXEL_EXTERNAL_SERVICES)[number];
 
 /**
  * Lo que el usuario DIJO (nunca ids ni lo que ya vive en el ADN: tono, colores, audiencia…). Las
@@ -96,6 +115,8 @@ export const PixelCommandEntitiesSchema = z.object({
   memoryText: entityText(500),
   /** Alcance que el usuario dijo: "para TINTO en general" o "solo para esta campaña". */
   memoryScopeHint: z.enum(['workspace', 'campaign']).nullable().default(null),
+  /** external_action (Prompt 18): el servicio externo que el usuario nombró. */
+  externalService: z.enum(PIXEL_EXTERNAL_SERVICES).nullable().default(null),
 });
 export type PixelCommandEntities = z.infer<typeof PixelCommandEntitiesSchema>;
 
@@ -160,6 +181,32 @@ export const PixelActionStepSchema = z.object({
 });
 export type PixelActionStep = z.infer<typeof PixelActionStepSchema>;
 
+/** Estado de UNA acción del plan (Prompt 18). `success` solo con el efecto VERIFICADO. */
+export const PixelPlanActionStatusSchema = z.enum(['pending', 'success', 'failed', 'skipped']);
+export type PixelPlanActionStatus = z.infer<typeof PixelPlanActionStatusSchema>;
+
+/**
+ * Una acción concreta de la propuesta, en lenguaje humano («Crear la tarea «Repasar límites»»).
+ * Nunca lleva nombres de herramientas, capacidades, ids internos ni la entrada de la acción: eso
+ * vive solo en la API (docs/PIXEL-ACTIONS.md).
+ */
+export const PixelPlanActionSchema = z.object({
+  id: z.string(),
+  stepId: z.string(),
+  kind: PixelResourceKindSchema,
+  effect: z.enum(['create', 'update', 'delete']),
+  /** Lo que Pixel hará, en imperativo humano. */
+  title: z.string(),
+  /** El objeto afectado («Repasar límites»), para los resultados. */
+  label: z.string(),
+  status: PixelPlanActionStatusSchema,
+  /** El recurso creado o modificado: solo si se verificó que existe. */
+  resource: PixelCreatedResourceSchema.nullable(),
+  /** Motivo humano de un fallo u omisión (nunca un stack trace ni un código interno). */
+  error: z.string().nullable(),
+});
+export type PixelPlanAction = z.infer<typeof PixelPlanActionSchema>;
+
 /** La propuesta: lo que Pixel entendió, lo que propone y lo que creará al confirmar. */
 export const PixelActionPlanSchema = z.object({
   intent: PixelCommandIntentSchema,
@@ -168,6 +215,11 @@ export const PixelActionPlanSchema = z.object({
   proposal: z.array(z.string()),
   creates: z.array(z.string()),
   steps: z.array(PixelActionStepSchema),
+  /**
+   * Prompt 18: las acciones concretas (un proyecto, cada tarea) y, tras ejecutar, su resultado
+   * verificado. Vacío en los pasos que aún no usan herramientas (campañas, planes, piezas, memoria).
+   */
+  actions: z.array(PixelPlanActionSchema).default([]),
   requiresConfirmation: z.boolean(),
   /** Cambia con cada ajuste: confirmar exige la revisión que el usuario vio. */
   revision: z.number().int().min(1),

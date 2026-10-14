@@ -45,8 +45,8 @@ AppShell
 | `thinking` | `think` | PixelCommand espera la respuesta | `thinking` |
 | `speaking` | `speak` | la voz está diciendo la respuesta | `speaking` |
 | `reviewing` | `review` | el Guardian revisa | `thinking` |
-| `success` | `success` | algo quedó organizado o el informe salió bien | `happy` |
-| `warning` | `warn` | el Guardian pide ajustes o bloquea | `idle` |
+| `success` | `success` | algo quedó organizado (todo verificado) o el informe salió bien | `happy` |
+| `warning` | `warn` | el Guardian pide ajustes o bloquea, o un plan quedó `partial` (Prompt 18) | `idle` |
 | `error` | `fail` | falló la petición | `idle` |
 
 - Las transiciones están en una tabla (`ALLOWED`); una no permitida deja el estado como estaba.
@@ -216,6 +216,13 @@ conversaciones se conservan**; también el acceso «Chat» de la tarjeta de marc
 - Micrófono, Detener, Dejar de hablar y Cerrar Pixel con nombre accesible; Escape pliega el Dock.
 - Movimiento reducido del sistema o del usuario: pose fija y sin pulso.
 - Las figuras 2D llevan su descripción; dentro de un botón, el botón tiene nombre propio.
+
+## 11 bis. Ejecución de acciones (Prompt 18)
+
+No hay un estado `executing`: `thinking` cubre una ejecución interna (milisegundos). Confirmar →
+`thinking` → `success` (todas las acciones verificadas), `warning` (parcial) o `error` (nada) →
+`idle`. La voz sigue sin autorizar nada: «Organizar» es un botón. Un estado `executing` tendrá
+sentido con herramientas externas o lentas (`PIXEL-ACTIONS.md` §12).
 
 ## 12. Rendimiento
 

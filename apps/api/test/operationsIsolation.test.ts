@@ -285,12 +285,15 @@ describe('Operations: tenantScoped e índices', () => {
       (await model.collection.indexes()).map((index) => index.key);
     expect(await keys(ProjectModel as unknown as Model<Record<string, unknown>>)).toEqual([
       { _id: 1 },
+      // Prompt 18: idempotencia de las acciones de Pixel (único y parcial).
+      { workspaceId: 1, pixelActionKey: 1 },
       { workspaceId: 1, status: 1, updatedAt: -1 },
       { workspaceId: 1, dueDate: 1 },
       { workspaceId: 1, campaignId: 1 },
     ]);
     expect(await keys(TaskModel as unknown as Model<Record<string, unknown>>)).toEqual([
       { _id: 1 },
+      { workspaceId: 1, pixelActionKey: 1 },
       { workspaceId: 1, status: 1, createdAt: -1 },
       { workspaceId: 1, dueDate: 1 },
       { workspaceId: 1, projectId: 1, status: 1 },
@@ -302,5 +305,13 @@ describe('Operations: tenantScoped e índices', () => {
       { workspaceId: 1, projectId: 1, status: 1 },
       { workspaceId: 1, campaignId: 1 },
     ]);
+    // La clave de acción: única por workspace y solo cuando existe (lo manual no entra).
+    const actionKey = (await ProjectModel.collection.indexes()).find(
+      (index) => index.name === 'workspace_pixel_action_key_unique',
+    );
+    expect(actionKey).toMatchObject({
+      unique: true,
+      partialFilterExpression: { pixelActionKey: { $type: 'string' } },
+    });
   });
 });

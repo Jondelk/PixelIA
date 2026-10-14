@@ -36,7 +36,10 @@ el usuario escribió y devuelves SOLO su intención y los datos que él mismo di
   plan_content = contenido o publicaciones para un periodo; create_content = guardar UNA pieza concreta;
   organize_project = crear u ordenar un proyecto; create_tasks = apuntar tareas; creative_advice =
   opinión, ideas o qué publicar (no crea nada); work_status = cómo va el trabajo; manage_memory =
-  recordar, olvidar o mostrar lo que Pixel ha aprendido; unknown si no encaja.
+  recordar, olvidar o mostrar lo que Pixel ha aprendido; external_action = hacer algo en un servicio
+  externo (un evento en el calendario o Google Calendar, enviar un correo o un mensaje, comprar,
+  pagar o transferir), con entities.externalService = google_calendar | calendar | email | messaging |
+  payment; unknown si no encaja. Una pregunta de definición («¿qué es…?») es creative_advice.
 - manage_memory SOLO con una expresión claramente persistente ("de ahora en adelante", "siempre",
   "nunca", "recuerda que", "no vuelvas a", "para esta marca", "solo en esta campaña podemos…") o
   al pedir olvidar o ver lo aprendido. "Hoy no quiero Stories" o "esta vez…" NO es memoria: es la

@@ -465,7 +465,7 @@ Ver `docs/CREATIVE-MEMORY.md`. Sustituye a la antigua Etapa 9 (abajo, conservada
   métricas (no construir sin pedirlo).
 - [x] Commit autorizado por el usuario el 2026-10-13 (`29fbb77`, sin push).
 
-## Etapa PR — Pixel Presence V1 ✅ (implementado, sin commit ni push; Prompt 17)
+## Etapa PR — Pixel Presence V1 ✅ (confirmado en `8545a3e`, sin push; Prompt 17)
 
 Ver `docs/PIXEL-PRESENCE.md` y `docs/AVATAR-ASSET-CONTRACT.md`.
 
@@ -490,6 +490,25 @@ Ver `docs/PIXEL-PRESENCE.md` y `docs/AVATAR-ASSET-CONTRACT.md`.
 - [x] Aviso de privacidad de la voz (primera activación del micrófono y en «Voz y movimiento»).
 - [x] Inicio vacío solo sin ningún trabajo (`currentCampaigns`: también borradores) y tarjeta «Tu Pixel».
 - [ ] Loader GLB, mezclador de clips y lip-sync (no construir sin pedirlo).
+- [x] Commit autorizado por el usuario el 2026-10-14 (`8545a3e`, sin push).
+
+## Etapa AF — Pixel Action Foundation ✅ (implementado, sin commit ni push; Prompt 18)
+
+Ver `docs/PIXEL-ACTIONS.md` y `docs/PIXEL-TOOLS.md`.
+
+- [x] PixelActionPlan como propuesta (sin segundo agregado); `plan.actions` humanas por acción.
+- [x] PixelTool, capacidades (schema, efecto, destino, verificación), PixelToolRegistry.
+- [x] ActionAuthorizationPolicy determinista (financiero → unsupported).
+- [x] Snapshot autorizado inmutable (revisión, `authorizedBy`, `authorizedAt`) en la reserva atómica.
+- [x] ActionExecutor secuencial con dependencias, fallos parciales y verificación; ActionResult embebido.
+- [x] `workspace.projects/create_project`, `workspace.tasks/create_task` y `update_task` (esta última sin flujo que la proponga todavía).
+- [x] Recuperación de ejecuciones abandonadas (5 min).
+- [x] Respuesta honesta para calendario, correo, mensajería y pagos (`external_action`); «calendario» ya no lleva a un plan de contenido.
+- [x] «Quita la segunda» en propuestas de tareas; «Crea un proyecto…» no reutiliza uno parecido; pregunta cuáles tareas si no las dice.
+- [x] Catálogo de capacidades para la IA (CAPABILITY_n) y resolución de borradores (preparado; V1 sin llamada extra).
+- [x] Tests (contracts, API, web) y smoke de navegador con un fallo simulado solo en el entorno de prueba.
+- [ ] Migrar campaña, plan, pieza y memoria a herramientas.
+- [ ] Google Calendar (Prompt 19); confirmación reforzada (`elevated`).
 - [ ] Commit (pendiente de revisión del usuario).
 
 ## Etapa 9 — CreativeMemory básica (sustituida por la Etapa CM)

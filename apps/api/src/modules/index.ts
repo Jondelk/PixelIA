@@ -39,6 +39,7 @@ import {
 import type { PersonalDnaGenerator } from './personal/personalDna.generator.js';
 import { createPixelCommandRouter } from './pixel-command/pixelCommand.routes.js';
 import type { PixelIntentResolver } from './pixel-command/pixelIntent.resolver.js';
+import type { PixelToolRegistry } from './actions/toolRegistry.js';
 import {
   createPersonalDnaRouter,
   createPersonalProfileRouter,
@@ -59,6 +60,8 @@ export interface ApiDependencies {
   dailyDirector: DailyDirectorEngine;
   campaignEngine: CampaignStrategyEngine;
   pixelIntentResolver: PixelIntentResolver;
+  /** Herramientas que Pixel puede usar al ejecutar un plan autorizado (Prompt 18). */
+  pixelTools: PixelToolRegistry;
   guardianEngine: GuardianEngine;
   defaultTimezone: string;
   logger: Logger;
@@ -112,6 +115,7 @@ export function createApiRouter(deps: ApiDependencies): Router {
       campaigns: deps,
       contentPlans: deps,
       guardian: { engine: deps.guardianEngine, ai: deps.chat.ai, logger: deps.logger },
+      tools: deps.pixelTools,
     }),
   );
   // Brand Guardian: solo Enterprise (capacidad `brandGuardian`, la comprueba el servicio).

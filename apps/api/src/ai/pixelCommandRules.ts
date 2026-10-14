@@ -6,6 +6,7 @@ import {
   type GeneratedPixelInterpretation,
   type PixelCommandEntities,
   type PixelCommandIntent,
+  type PixelExternalService,
   type PixelTimeframe,
 } from '@pixel/contracts';
 import type { PixelCommandPayload } from './pixelCommandPayload.js';
@@ -221,7 +222,7 @@ function objectiveOf(original: string): string {
 }
 
 const STATUS =
-  /\bcomo (?:vamos|va|van|voy|estamos|esta|estan)\b|\ben que (?:va|vamos|estamos)\b|\bestado de\b|\bque (?:tengo|hay|me queda|queda) pendiente|\bque (?:tengo|hay) (?:hoy|para hoy|esta semana)\b|\bque falta\b|\bresumen del? (?:trabajo|dia|semana)\b/;
+  /\bcuant[oa]s? (?:tareas|proyectos|campanas|piezas|contenidos|pendientes)\b|\bcomo (?:vamos|va|van|voy|estamos|esta|estan)\b|\ben que (?:va|vamos|estamos)\b|\bestado de\b|\bque (?:tengo|hay|me queda|queda) pendiente|\bque (?:tengo|hay) (?:hoy|para hoy|esta semana)\b|\bque falta\b|\bresumen del? (?:trabajo|dia|semana)\b/;
 const ADVICE =
   /\bque te parece\b|\bque opinas\b|\bcomo (?:lo )?mejorar(?:ia|ias|as)?\b|\bmejorarias\b|\b(?:que|sobre que) (?:deberia|debo|podria|puedo) (?:publicar|hacer|escribir|subir|contar)\b|\bdame (?:\w+ )?ideas?\b|\bideas? (?:de|para)\b|\b(?:me )?recomiendas\b|\bconsejos?\b|\bfeedback\b|\bes buena idea\b/;
 const TASKS =
@@ -236,6 +237,81 @@ const CONTENT =
   /\b(?:contenidos?|publicar|publicaciones?|posts?|reels?|stories|historias|carrusel(?:es)?|plan de contenido|calendario|parrilla|piezas?)\b/;
 const PROJECT =
   /\b(?:organiza|organizar|ordena|ordenar|estructura|estructurar|planifica|planificar|arma|armar|crea|crear|monta|montar)\b(?:\s+\w+){0,3}?\s+proyectos?\b/;
+/** «Crea un proyecto … y agrega tres tareas»: crear el proyecto manda sobre las tareas (Prompt 18). */
+const NEW_PROJECT =
+  /\b(?:crea|creame|crear|arma|armame|monta|montame|abre|abreme)\s+(?:un|una|el|mi)?\s*(?:nuevo\s+)?proyecto\b/;
+/** Preguntas de definición («¿Qué es una campaña?»): se responden, nunca crean nada. */
+const DEFINITION =
+  /^\W*(?:pixel[,:]?\s+)?(?:que (?:es|son|significa|significan|quiere decir)|para que (?:sirve|sirven)|como funciona|cual es la diferencia|que diferencia hay|explicame (?:que|como))\b/;
+
+/*
+ * Acciones en servicios externos (Prompt 18). Se reconocen ANTES que cualquier otra intención para
+ * que «Pon una reunión en mi Google Calendar» nunca acabe en un plan de contenido: Pixel la entiende
+ * y responde con honestidad lo que puede y no puede hacer. «Calendario de contenido» sigue siendo
+ * planear contenido: el calendario externo exige nombrarlo o hablar de un evento en tu calendario.
+ */
+const PAYMENT =
+  /^\W*(?:pixel[,:]?\s+)?(?:por favor\s+)?(?:compra(?:me|r)?|paga(?:me|le|r)?|transfiere(?:le)?|transferir|consigna(?:le)?|haz (?:el |un |una )?(?:pago|transferencia|compra))\b|\b(?:paga|pagar|pagale) (?:esto|eso|la factura|el recibo|la cuenta)\b|\btransfi(?:ere|ere?le|eran) \d/;
+const GOOGLE_CALENDAR = /\bgoogle calendar\b|\bcalendario de google\b|\bgcal\b/;
+const CALENDAR_EVENT =
+  /\b(?:reunion|reuniones|cita|citas|evento|eventos|llamada|llamadas|meeting)\b[\s\S]{0,80}\b(?:mi|el|tu|al|en) (?:calendario|agenda)\b|\b(?:mi|el|tu) (?:calendario|agenda)\b[\s\S]{0,40}\b(?:reunion|cita|evento|llamada)\b|\boutlook\b|\bagenda(?:r|me|le)? (?:una |un )?(?:reunion|cita|llamada)\b/;
+const EMAIL =
+  /\b(?:envia|enviale|envie|enviar|manda|mandale|mandar|reenvia|reenviale|responde|respondele)\b(?:\s+\S+){0,6}?\s+(?:correo|correos|email|emails|e-mail|mail|mails)\b|\b(?:correo|email|mail) (?:a|para) [a-z]/;
+const MESSAGING =
+  /\b(?:envia|enviale|manda|mandale|escribele)\b[\s\S]{0,40}\b(?:whatsapp|slack|telegram|sms|mensaje de texto)\b/;
+
+/** ¿Pide crear un proyecto NUEVO («Crea un proyecto…»)? Entonces no se reutiliza uno parecido. */
+export function asksNewProject(request: string): boolean {
+  return NEW_PROJECT.test(fold(request));
+}
+
+/** El servicio externo que pide la frase, si pide uno (null = ninguno). */
+export function externalServiceOf(t: string): PixelExternalService | null {
+  if (PAYMENT.test(t)) return 'payment';
+  if (GOOGLE_CALENDAR.test(t)) return 'google_calendar';
+  if (CALENDAR_EVENT.test(t)) return 'calendar';
+  if (MESSAGING.test(t)) return 'messaging';
+  if (EMAIL.test(t)) return 'email';
+  return null;
+}
+
+const ORDINALS: Record<string, number> = {
+  primera: 1,
+  primero: 1,
+  segunda: 2,
+  segundo: 2,
+  tercera: 3,
+  tercero: 3,
+  cuarta: 4,
+  cuarto: 4,
+  quinta: 5,
+  quinto: 5,
+  sexta: 6,
+  septima: 7,
+  octava: 8,
+  novena: 9,
+  decima: 10,
+};
+
+/**
+ * Un ajuste que quita tareas de la propuesta: «Quita la segunda», «Elimina la tarea 3», «Quita
+ * practicar derivadas», «Sin la última». Devuelve las que quedan (o las mismas si no quita nada).
+ */
+export function removeTaskTitles(message: string, titles: string[]): string[] {
+  const t = fold(message);
+  if (!/\b(?:quita|quitale|quitar|elimina|eliminar|borra|borrar|saca|sacar|sin)\b/.test(t))
+    return titles;
+  const positions = new Set<number>();
+  for (const [word, position] of Object.entries(ORDINALS)) {
+    if (new RegExp(`\\b${word}\\b`).test(t)) positions.add(position);
+  }
+  for (const match of t.matchAll(/\b(?:tarea|la|numero|n\.?)\s*(\d{1,2})\b/g)) {
+    positions.add(Number(match[1]));
+  }
+  if (/\bultima\b/.test(t) && titles.length) positions.add(titles.length);
+  const byName = titles.filter((title) => t.includes(fold(title)));
+  return titles.filter((title, index) => !positions.has(index + 1) && !byName.includes(title));
+}
 
 /*
  * Creative Memory (Prompt 16). Solo expresiones inequívocamente PERSISTENTES crean una propuesta de
@@ -302,8 +378,11 @@ function memoryTextOf(original: string, action: 'remember' | 'forget' | 'show'):
 }
 
 function intentOf(t: string): PixelCommandIntent {
+  if (externalServiceOf(t)) return 'external_action';
   if (STATUS.test(t)) return 'work_status';
+  if (DEFINITION.test(t)) return 'creative_advice';
   if (ADVICE.test(t)) return 'creative_advice';
+  if (NEW_PROJECT.test(t)) return 'organize_project';
   if (TASKS.test(t)) return 'create_tasks';
   if (SINGLE_CONTENT.test(t)) return 'create_content';
   if (CAMPAIGN_WORD.test(t) && !USING_CAMPAIGN.test(t)) return 'create_campaign';
@@ -320,6 +399,15 @@ export function interpretPixelRequest(
 ): GeneratedPixelInterpretation {
   const t = fold(request);
   let intent = intentOf(t);
+  // Una acción externa nunca se confunde con memoria ni con contenido.
+  if (intent === 'external_action' && availableIntents.includes('external_action')) {
+    return {
+      intent,
+      confidence: 0.85,
+      entities: PixelCommandEntitiesSchema.parse({ externalService: externalServiceOf(t) }),
+      missingRequiredInformation: [],
+    };
+  }
   const memoryAction = availableIntents.includes('manage_memory')
     ? memoryActionOf(t, intent)
     : null;

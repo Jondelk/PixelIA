@@ -50,6 +50,7 @@ Código: `apps/api/src/modules/pixel-command/`, `apps/api/src/ai/pixelCommand{Pa
 | `create_tasks` | Apunta tareas (en un proyecto si se menciona) | ✅ | ✅ |
 | `creative_advice` | Responde con el contexto del chat; **no crea nada** | ✅ | ✅ |
 | `work_status` | Estado real del trabajo; **no modifica nada** | ✅ | ✅ |
+| `external_action` | (Prompt 18) Una acción en un servicio externo (calendario, correo, mensajería, pagos): la entiende y responde con honestidad; **no crea nada** sin una herramienta conectada (`PIXEL-ACTIONS.md` §10) | ✅ | ✅ |
 | `unknown` | Explica qué puede hacer, con ejemplos | ✅ | ✅ |
 
 La disponibilidad se **deriva** de las capacidades de contracts (`pixelIntentAvailable`:
@@ -147,10 +148,17 @@ curso), no se persiste.
   `executionId`, condicionada a la revisión que el usuario vio. Solo una confirmación ejecuta; una
   segunda (o simultánea) responde 200 `executed: false` sin crear nada. Una revisión vieja → 409
   `pixel_command_revision_changed`.
-- Cada paso valida sus parámetros con el schema del servicio (`GenerateCampaignSchema`,
-  `GenerateContentPlanSchema`, `CreateProjectSchema`, `CreateTaskSchema`,
-  `CreateContentItemSchema`) y llama al servicio existente. Lo creado se guarda en el paso.
-- Si un paso falla, los siguientes no corren: `partial` (algo se creó; la respuesta dice qué y por
+- **Prompt 18 (Action Foundation, `PIXEL-ACTIONS.md`):** al confirmar se congela un snapshot de
+  lo autorizado (revisión, `authorizedBy` de la sesión, `authorizedAt`, acciones exactas) en la
+  misma operación atómica. Los pasos `create_project` y `create_tasks` se ejecutan con
+  herramientas (`workspace.projects`, `workspace.tasks`): una acción por proyecto y por CADA tarea,
+  cada una verificada (`plan.actions` muestra ✓ ✕ – por acción). Un fallo no detiene las acciones
+  independientes; las que dependen de una fallida se omiten. Una ejecución abandonada más de 5 min
+  se libera al consultar o reintentar.
+- Los demás pasos validan sus parámetros con el schema del servicio (`GenerateCampaignSchema`,
+  `GenerateContentPlanSchema`, `CreateContentItemSchema`) y llaman al servicio existente. Lo creado
+  se guarda en el paso.
+- Si un paso anterior a las herramientas falla, los siguientes no corren: `partial` (algo se creó; la respuesta dice qué y por
   qué falló el resto) o `failed` (nada). Reintentar retoma desde el paso que falló: lo hecho no se
   duplica. La generación de campaña y de plan ya tienen su propia compensación (si fallan, no dejan
   nada a medias).
