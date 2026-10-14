@@ -1,0 +1,131 @@
+/*
+ * PIXELES — tokens de identidad visual. ÚNICA fuente de colores, tipografías, radios, sombras y
+ * movimiento de la interfaz. Fuente: brand-assets/PIXELES — Manual de marca (español), v1.0.
+ *
+ * Reglas del manual que estos tokens codifican:
+ * - Negro Cine es el fondo; el Azul PIXELES es el color de reconocimiento.
+ * - Azul sobre negro = 2,5:1 → el azul solo rellena formas (botones, selección), NUNCA es texto.
+ * - Amarillo Origen = "píxel señal": marca una sola cosa por pieza. Nunca fondos grandes.
+ *   Amarillo sobre blanco = 1,3:1 → en modo claro la señal pasa a negro (como el logo sobre blanco).
+ * - Sin brillos, neón, degradados ni sombras decorativas.
+ *
+ * La app SIEMPRE arranca en oscuro (`data-theme="dark"` en index.html). El modo claro existe con
+ * paridad y solo dura la sesión (ver `src/app/theme.ts`).
+ */
+
+@theme {
+  /* Desactiva la paleta y las familias por defecto de Tailwind: solo existen los tokens de marca. */
+  --color-*: initial;
+  --font-*: initial;
+  --shadow-*: initial;
+  --drop-shadow-*: initial;
+  --inset-shadow-*: initial;
+  --blur-*: initial;
+
+  /* Paleta oficial (fija, no cambia con el tema). */
+  --color-negro-cine: #08080b;
+  --color-azul: #1e14ff;
+  --color-blanco: #ffffff;
+  --color-grafito: #2b2d33;
+  --color-amarillo: #f2e500;
+
+  /* Tinta fija para texto sobre colores arbitrarios (p. ej. muestras de la paleta de una empresa). */
+  --color-ink: #08080b;
+  --color-paper: #ffffff;
+
+  /* Tipografía: Unbounded (destacados, 700–800) e Instrument Sans (interfaz, 400–600). */
+  --font-display: 'Unbounded', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  /* Radios: geometría de píxel, esquinas casi rectas. */
+  --radius-xs: 1px;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 6px;
+  --radius-2xl: 8px;
+  --radius-3xl: 10px;
+
+  /* Sombra única para capas flotantes (menús, cajón móvil). Nada de resplandores. */
+  --shadow-overlay: 0 16px 40px -16px rgb(0 0 0 / 0.55);
+
+  /* Movimiento: suave, sin rebotes (manual, "Movimiento"). */
+  --ease-pxl: cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-rise: rise 600ms var(--ease-pxl) both;
+}
+
+/* Tokens semánticos: los que usa la interfaz. Cambian con el tema. */
+@theme inline {
+  --color-canvas: var(--pxl-canvas);
+  --color-surface: var(--pxl-surface);
+  --color-elevated: var(--pxl-elevated);
+  --color-line: var(--pxl-line);
+  --color-line-strong: var(--pxl-line-strong);
+  --color-fg: var(--pxl-fg);
+  --color-muted: var(--pxl-muted);
+  --color-subtle: var(--pxl-subtle);
+  --color-brand: var(--pxl-brand);
+  --color-brand-hover: var(--pxl-brand-hover);
+  --color-on-brand: var(--pxl-on-brand);
+  --color-signal: var(--pxl-signal);
+  --color-on-signal: var(--pxl-on-signal);
+  --color-alert: var(--pxl-alert);
+  --color-focus: var(--pxl-focus);
+  --color-overlay: var(--pxl-overlay);
+}
+
+:root,
+[data-theme='dark'] {
+  color-scheme: dark;
+  --pxl-canvas: var(--color-negro-cine);
+  --pxl-surface: color-mix(in srgb, var(--color-grafito) 28%, var(--color-negro-cine));
+  --pxl-elevated: color-mix(in srgb, var(--color-grafito) 55%, var(--color-negro-cine));
+  --pxl-line: color-mix(in srgb, var(--color-grafito) 80%, var(--color-negro-cine));
+  --pxl-line-strong: color-mix(in srgb, var(--color-blanco) 14%, var(--color-grafito));
+  --pxl-fg: var(--color-blanco);
+  --pxl-muted: color-mix(in srgb, var(--color-blanco) 70%, var(--color-negro-cine));
+  --pxl-subtle: color-mix(in srgb, var(--color-blanco) 50%, var(--color-negro-cine));
+  --pxl-brand: var(--color-azul);
+  --pxl-brand-hover: color-mix(in srgb, var(--color-blanco) 12%, var(--color-azul));
+  --pxl-on-brand: var(--color-blanco);
+  --pxl-signal: var(--color-amarillo);
+  --pxl-on-signal: var(--color-negro-cine);
+  --pxl-alert: var(--color-amarillo);
+  --pxl-focus: var(--color-blanco);
+  --pxl-overlay: rgb(8 8 11 / 0.72);
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+  --pxl-canvas: var(--color-blanco);
+  --pxl-surface: color-mix(in srgb, var(--color-grafito) 4%, var(--color-blanco));
+  --pxl-elevated: color-mix(in srgb, var(--color-grafito) 9%, var(--color-blanco));
+  --pxl-line: color-mix(in srgb, var(--color-grafito) 14%, var(--color-blanco));
+  --pxl-line-strong: color-mix(in srgb, var(--color-grafito) 30%, var(--color-blanco));
+  --pxl-fg: var(--color-negro-cine);
+  --pxl-muted: var(--color-grafito);
+  --pxl-subtle: color-mix(in srgb, var(--color-grafito) 72%, var(--color-blanco));
+  --pxl-brand: var(--color-azul);
+  --pxl-brand-hover: color-mix(in srgb, var(--color-negro-cine) 18%, var(--color-azul));
+  --pxl-on-brand: var(--color-blanco);
+  --pxl-signal: var(--color-negro-cine);
+  --pxl-on-signal: var(--color-blanco);
+  --pxl-alert: var(--color-azul);
+  --pxl-focus: var(--color-azul);
+  --pxl-overlay: rgb(43 45 51 / 0.45);
+}
+
+/* Variantes por tema para mostrar la versión correcta de logos y de Pixi. */
+@custom-variant light (&:where([data-theme='light'], [data-theme='light'] *));
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
