@@ -8,6 +8,7 @@ import { ApiRequestError } from '../../lib/api';
 import { useResource } from '../../lib/useResource';
 import type { WorkspaceOutletContext } from './workspaceContext';
 import { getWorkspace } from './workspacesApi';
+import { WorkspacePresence } from '../presence/WorkspacePresence';
 
 /**
  * Entrada única de un Pixel: /workspace/:workspaceId[/...].
@@ -58,5 +59,10 @@ export function WorkspaceLayout() {
   }
 
   const context: WorkspaceOutletContext = { overview: state.data, reload };
-  return <Outlet context={context} />;
+  return (
+    <>
+      <Outlet context={context} />
+      <WorkspacePresence overview={state.data} />
+    </>
+  );
 }

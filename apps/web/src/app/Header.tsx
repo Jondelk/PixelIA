@@ -1,6 +1,7 @@
 import { useMatches } from 'react-router';
 import { Icon } from '../components/Icon';
 import { ApiStatus } from '../features/system/ApiStatus';
+import { PresenceStatus } from '../features/presence/PresenceStatus';
 import { isRouteHandle } from './navigation';
 import { ThemeToggle } from './ThemeToggle';
 import { UserMenu } from './UserMenu';
@@ -34,7 +35,9 @@ export function Header({ onOpenNav }: { onOpenNav: () => void }) {
       </nav>
 
       <div className="ml-auto flex items-center gap-3">
-        <ApiStatus />
+        <PresenceStatus />
+        {/* Estado técnico de la API: solo en desarrollo (no es lenguaje de producto). */}
+        {import.meta.env.DEV && <ApiStatus />}
         <ThemeToggle />
         <span className="h-6 w-px bg-line" aria-hidden="true" />
         <UserMenu />

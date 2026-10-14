@@ -35,6 +35,7 @@ const overview = (o: Partial<WorkspaceOverview> = {}): WorkspaceOverview => ({
   workspace: workspace(),
   company: company(),
   personal: null,
+  avatar: null,
   ...o,
 });
 const personalPixel = (personal: WorkspaceOverview['personal']) =>
@@ -47,29 +48,58 @@ const personalPixel = (personal: WorkspaceOverview['personal']) =>
 describe('workspaceStatus', () => {
   it('un Pixel Personal sin onboarding está por configurar', () => {
     expect(
-      workspaceStatus(personalPixel({ name: null, completedSteps: 0, personalDnaVersion: null })),
-    ).toEqual({ typeLabel: 'Personal', label: 'Configurar', tone: 'idle' });
+      workspaceStatus(
+        personalPixel({
+          name: null,
+          completedSteps: 0,
+          personalDnaVersion: null,
+          avatarVersion: null,
+        }),
+      ),
+    ).toEqual({ typeLabel: 'Pixel Personal', label: 'Configurar', tone: 'idle' });
     expect(
-      workspaceStatus(personalPixel({ name: 'Jhon', completedSteps: 3, personalDnaVersion: null })),
-    ).toEqual({ typeLabel: 'Personal', label: 'Configurar', tone: 'progress' });
+      workspaceStatus(
+        personalPixel({
+          name: 'Jhon',
+          completedSteps: 3,
+          personalDnaVersion: null,
+          avatarVersion: null,
+        }),
+      ),
+    ).toEqual({ typeLabel: 'Pixel Personal', label: 'Configurando', tone: 'progress' });
   });
 
-  it('un Pixel Personal con PersonalDNA está configurado', () => {
+  it('un Pixel Personal con PersonalDNA está listo', () => {
     expect(
-      workspaceStatus(personalPixel({ name: 'Jhon', completedSteps: 8, personalDnaVersion: 1 })),
-    ).toEqual({ typeLabel: 'Personal', label: 'Configurado', tone: 'ready' });
+      workspaceStatus(
+        personalPixel({
+          name: 'Jhon',
+          completedSteps: 8,
+          personalDnaVersion: 1,
+          avatarVersion: null,
+        }),
+      ),
+    ).toEqual({ typeLabel: 'Pixel Personal', label: 'Listo', tone: 'ready' });
   });
 
-  it('una empresa lista se muestra como configurada', () => {
+  it('una marca con ADN y personaje está lista', () => {
     expect(workspaceStatus(overview())).toEqual({
-      typeLabel: 'Empresa',
-      label: 'Configurado',
+      typeLabel: 'Pixel Enterprise',
+      label: 'Listo',
       tone: 'ready',
     });
   });
 
-  it('un Pixel de empresa sin empresa está sin configurar', () => {
-    expect(workspaceStatus(overview({ company: null })).label).toBe('Sin configurar');
+  it('un Pixel de empresa sin empresa o sin ADN invita a configurar la marca', () => {
+    expect(workspaceStatus(overview({ company: null })).label).toBe('Configurar marca');
+    expect(
+      workspaceStatus(overview({ company: company({ status: 'draft', brandDnaVersion: null }) }))
+        .label,
+    ).toBe('Configurar marca');
+    expect(
+      workspaceStatus(overview({ company: company({ status: 'draft', avatarVersion: null }) }))
+        .label,
+    ).toBe('ADN listo · personaje pendiente');
   });
 
   it('refleja el avance de la empresa', () => {
@@ -77,7 +107,7 @@ describe('workspaceStatus', () => {
       workspaceStatus(
         overview({ company: company({ status: 'onboarding', brandDnaVersion: null }) }),
       ).label,
-    ).toBe('Onboarding de marca en curso');
+    ).toBe('Configurando marca');
   });
 
   it('un workspace archivado lo indica', () => {

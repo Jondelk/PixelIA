@@ -21,6 +21,10 @@ export function BrandWorkSection({ company }: { company: Company }) {
         base={base}
         copy={enterpriseOperationsCopy(company.name).overview}
         showCampaigns
+        empty={{
+          title: `${company.name} está lista.`,
+          text: 'Todavía no hay trabajo en marcha. Dime qué necesitas y lo organizo contigo.',
+        }}
       />
     </section>
   );
@@ -35,8 +39,10 @@ export function BrandWorkHeading({ base }: { base: string }) {
           Trabajo de la marca
         </h2>
       </div>
-      <Link to={`${base}/projects?new`} className={buttonClasses('secondary')}>
-        <Icon name="plus" className="size-4" /> Nuevo proyecto
+      {/* PixelCommand es la ruta principal para organizar trabajo; la creación manual sigue en
+          Proyectos. */}
+      <Link to={`${base}/projects`} className={buttonClasses('ghost')}>
+        Ver todo <Icon name="arrowRight" className="size-4" />
       </Link>
     </div>
   );

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { IsoDateSchema, ObjectIdSchema } from './common.js';
+import { AvatarConceptSchema } from './avatarProfile.js';
 import { CompanySchema } from './company.js';
 import { TimezoneSchema } from './timezone.js';
 
@@ -65,8 +66,17 @@ export const PersonalSummarySchema = z.object({
   completedSteps: z.number().int().min(0),
   /** null = sin PersonalDNA todavía ("Configurar"). */
   personalDnaVersion: z.number().int().min(1).nullable(),
+  /** Prompt 17: versión del avatar personal vigente (null = aún sin personaje). */
+  avatarVersion: z.number().int().min(1).nullable().default(null),
 });
 export type PersonalSummary = z.infer<typeof PersonalSummarySchema>;
+
+/** Lo mínimo para pintar el personaje: su concepto y su id (sin historial ni motor). */
+export const AvatarPreviewSchema = AvatarConceptSchema.extend({
+  id: ObjectIdSchema,
+  version: z.number().int().min(1),
+});
+export type AvatarPreview = z.infer<typeof AvatarPreviewSchema>;
 
 /**
  * Workspace con su contexto de dominio resumido.
@@ -77,6 +87,11 @@ export const WorkspaceOverviewSchema = z.object({
   workspace: WorkspaceSchema,
   company: CompanySchema.nullable(),
   personal: PersonalSummarySchema.nullable(),
+  /**
+   * Prompt 17 (Presence): el personaje vigente del workspace para su miniatura, el Pixel Dock y el
+   * acento. null = sin personaje todavía (nunca se inventa uno: la UI usa a Pixi neutral).
+   */
+  avatar: AvatarPreviewSchema.nullable().default(null),
 });
 export type WorkspaceOverview = z.infer<typeof WorkspaceOverviewSchema>;
 

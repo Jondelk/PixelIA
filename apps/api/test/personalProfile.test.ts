@@ -107,6 +107,7 @@ describe('PersonalProfile: onboarding con guardado progresivo', () => {
       name: null,
       completedSteps: 0,
       personalDnaVersion: null,
+      avatarVersion: null,
     });
 
     await completePersonalOnboarding(jhon, workspaceId, photographer);

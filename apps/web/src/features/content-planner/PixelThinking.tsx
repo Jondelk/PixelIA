@@ -1,7 +1,6 @@
-import { Pixi } from '../../components/Pixi';
 import { workspaceApiBase } from '../../lib/apiPaths';
 import { useResource } from '../../lib/useResource';
-import { AvatarStage } from '../avatar3d/AvatarStage';
+import { PixelPresenceAvatar } from '../presence/PixelPresenceAvatar';
 import { getAvatar } from '../pixel/avatarApi';
 
 const PLANNER_COPY = {
@@ -13,7 +12,8 @@ const PLANNER_COPY = {
 type ThinkingCopy = typeof PLANNER_COPY;
 
 /**
- * Mientras Pixel genera: su personaje en estado "thinking" y una frase. Sin barras de progreso
+ * Mientras Pixel genera: su personaje en presencia FOCUS («pensando», Prompt 17: es el mismo
+ * runtime de presencia, no un visual aparte) y una frase. Sin barras de progreso
  * falsas: no sabemos cuánto falta. Compartido (Content Planner y Campaign Manager): `copy` cambia
  * el texto.
  */
@@ -35,7 +35,7 @@ export function PixelThinkingView({
   avatar,
   copy = PLANNER_COPY,
 }: {
-  avatar: Parameters<typeof AvatarStage>[0]['avatar'] | null;
+  avatar: Parameters<typeof PixelPresenceAvatar>[0]['avatar'];
   copy?: ThinkingCopy;
 }) {
   return (
@@ -44,15 +44,7 @@ export function PixelThinkingView({
       aria-live="polite"
       className="grid items-center gap-8 overflow-hidden rounded-2xl border border-line bg-surface p-6 sm:grid-cols-[260px_1fr] sm:p-10"
     >
-      <div className="h-64">
-        {avatar ? (
-          <AvatarStage avatar={avatar} state="thinking" interactive={false} className="!h-full" />
-        ) : (
-          <div className="grid h-full place-items-center">
-            <Pixi size={140} />
-          </div>
-        )}
-      </div>
+      <PixelPresenceAvatar avatar={avatar} level="focus" state="thinking" className="!h-64" />
       <div>
         <h2 className="font-display text-xl font-bold tracking-tight">{copy.title}</h2>
         <p className="mt-3 max-w-md text-sm leading-relaxed text-muted">{copy.description}</p>

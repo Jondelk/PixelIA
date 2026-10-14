@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiRequestError } from '../../lib/api';
+import { coffeeProfile } from '../../test/avatarFixtures';
 import { WORKSPACE_ID } from '../../test/operationsFixtures';
 import { generateDailyBrief, getDailyBrief, listDailyBriefs } from './dailyBriefApi';
 import {
@@ -349,5 +350,15 @@ describe('TU DÍA (vista)', () => {
     const html = view(ready());
     expect(html).toContain('grid gap-4 lg:grid-cols-3');
     expect(html).toContain('max-lg:hidden');
+  });
+
+  it('con personaje: vista 2D (el único 3D de la pantalla es el Pixel del Inicio)', () => {
+    // El renderer 2D solo lee la parte visual del concepto.
+    const avatar = { ...coffeeProfile, id: 'a1' } as unknown as Parameters<
+      typeof DailyDirectorView
+    >[0]['avatar'];
+    const html = view(ready(), { avatar });
+    expect(html).toContain('<svg');
+    expect(html).not.toContain('Avatar 3D');
   });
 });

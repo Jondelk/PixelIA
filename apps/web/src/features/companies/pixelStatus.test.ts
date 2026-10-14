@@ -20,7 +20,10 @@ describe('pixelStatus', () => {
   });
 
   it('cubre los estados finales', () => {
-    expect(pixelStatus({ status: 'ready', brandDnaVersion: 1 }).tone).toBe('ready');
+    expect(pixelStatus({ status: 'ready', brandDnaVersion: 1 })).toEqual({
+      label: 'Listo',
+      tone: 'ready',
+    });
     expect(pixelStatus({ status: 'failed', brandDnaVersion: null }).tone).toBe('error');
   });
 });

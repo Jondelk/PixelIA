@@ -90,6 +90,15 @@ const paths = {
       <path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4" />
     </>
   ),
+  /** Micrófono (voz como entrada de Pixel). */
+  mic: (
+    <>
+      <rect x="9" y="3.5" width="6" height="11" rx="3" />
+      <path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5" />
+    </>
+  ),
+  /** Detener la voz de Pixel. */
+  stop: <rect x="6.5" y="6.5" width="11" height="11" rx="1" />,
   x: <path d="M6 6l12 12M18 6 6 18" />,
   /** Crear / generar: un píxel que aparece en una esquina libre. */
   create: (

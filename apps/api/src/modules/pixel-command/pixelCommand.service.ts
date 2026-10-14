@@ -24,6 +24,9 @@ import {
 import { formatSignal, platformSignal } from '../creative-memory/memory.signals.js';
 import { AppError, notFound } from '../../lib/errors.js';
 import { CampaignModel } from '../campaigns/campaign.model.js';
+import { ContentPlanModel } from '../content-plans/contentPlan.model.js';
+import { ContentItemModel } from '../operations/contentItem.model.js';
+import { ProjectModel } from '../operations/project.model.js';
 import { workspaceTimezone } from '../daily-director/dailyTime.js';
 import {
   guardianPreflight,
@@ -45,7 +48,11 @@ import {
 import { planMemoryCommand, type MemoryOutcome } from './pixelCommand.memory.js';
 import { matchCampaigns, planCommand } from './pixelCommand.planner.js';
 import { creativeAdviceReply, unknownReply, workStatusReply } from './pixelCommand.replies.js';
-import { resolvePixelContext, type PixelKnownContext } from './pixelContext.resolver.js';
+import {
+  resolvePixelContext,
+  type KnownProject,
+  type PixelKnownContext,
+} from './pixelContext.resolver.js';
 import type { PixelIntentResolver, PreviousInterpretation } from './pixelIntent.resolver.js';
 
 /*
@@ -84,6 +91,67 @@ async function campaignInWorkspace(workspace: WorkspaceDocument, id: string) {
   });
   if (!exists) throw fieldError('contextHint.campaignId', 'Campaña no encontrada');
   return id;
+}
+
+type ContextResource = NonNullable<NonNullable<CreatePixelCommandData['contextHint']>['resource']>;
+
+/**
+ * Prompt 17 (Pixel Dock): el recurso que el usuario está viendo. Solo orienta y SIEMPRE se valida
+ * contra el workspace (de otro workspace o inexistente → 400, sin revelar nada); de él se derivan la
+ * campaña y el proyecto. Nunca se envía a la IA como autoridad.
+ */
+async function resolveContextResource(
+  workspace: WorkspaceDocument,
+  resource: ContextResource | undefined,
+): Promise<{ campaignId: string | null; project: KnownProject | null }> {
+  const none = { campaignId: null, project: null };
+  if (!resource) return none;
+  const filter = { _id: new Types.ObjectId(resource.id), workspaceId: workspace._id };
+  const missing = () =>
+    fieldError('contextHint.resource.id', 'Ese recurso no existe en este Pixel');
+  switch (resource.type) {
+    case 'campaign':
+      return { campaignId: await campaignInWorkspace(workspace, resource.id), project: null };
+    case 'content_plan': {
+      const plan = await ContentPlanModel.findOne(filter).select({ campaignId: 1 });
+      if (!plan) throw missing();
+      return { campaignId: plan.campaignId?.toString() ?? null, project: null };
+    }
+    case 'project': {
+      const project = await ProjectModel.findOne(filter).select({ name: 1, status: 1 });
+      if (!project) throw missing();
+      return { campaignId: null, project: projectRef(project) };
+    }
+    case 'content_item': {
+      const item = await ContentItemModel.findOne(filter).select({ campaignId: 1, projectId: 1 });
+      if (!item) throw missing();
+      const project = item.projectId
+        ? await ProjectModel.findOne({ _id: item.projectId, workspaceId: workspace._id }).select({
+            name: 1,
+            status: 1,
+          })
+        : null;
+      return {
+        campaignId: item.campaignId?.toString() ?? null,
+        project: project ? projectRef(project) : null,
+      };
+    }
+  }
+}
+
+const projectRef = (project: { _id: Types.ObjectId; name: string; status: string }) => ({
+  id: project._id.toString(),
+  name: project.name,
+  status: project.status,
+});
+
+async function savedProject(workspace: WorkspaceDocument, id: Types.ObjectId | null | undefined) {
+  if (!id) return null;
+  const project = await ProjectModel.findOne({ _id: id, workspaceId: workspace._id }).select({
+    name: 1,
+    status: 1,
+  });
+  return project ? projectRef(project) : null;
 }
 
 const capitalize = (value: string) => value.charAt(0).toLocaleUpperCase('es') + value.slice(1);
@@ -173,6 +241,8 @@ interface CommandState {
   hintIntent: 'create_campaign' | 'plan_content' | null;
   tzOffset: number;
   revision: number;
+  /** Prompt 17: proyecto del recurso que el usuario estaba viendo (validado). */
+  chosenProject: KnownProject | null;
 }
 
 /** Interpreta, resuelve el contexto y decide: pregunta, propuesta o respuesta. */
@@ -237,6 +307,7 @@ async function interpretAndPlan(
           tzOffset: state.tzOffset,
           chosenCampaignId: campaignId,
           noCampaign,
+          chosenProject: state.chosenProject,
         });
   const at = new Date();
   const base = {
@@ -321,9 +392,10 @@ export async function createPixelCommand(
   input: CreatePixelCommandData,
   deps: PixelCommandDeps,
 ): Promise<PixelCommand> {
+  const fromResource = await resolveContextResource(workspace, input.contextHint?.resource);
   const campaignId = input.contextHint?.campaignId
     ? await campaignInWorkspace(workspace, input.contextHint.campaignId)
-    : null;
+    : fromResource.campaignId;
   const fields = await interpretAndPlan(
     workspace,
     input.request,
@@ -337,6 +409,7 @@ export async function createPixelCommand(
       hintIntent: input.contextHint?.intent ?? null,
       tzOffset: input.tzOffset,
       revision: 0,
+      chosenProject: fromResource.project,
     },
     deps,
   );
@@ -346,7 +419,10 @@ export async function createPixelCommand(
     request: input.request,
     source: input.source,
     tzOffset: input.tzOffset,
-    contextHint: { intent: input.contextHint?.intent ?? null },
+    contextHint: {
+      intent: input.contextHint?.intent ?? null,
+      projectId: fromResource.project ? new Types.ObjectId(fromResource.project.id) : null,
+    },
   });
   deps.logger.info('PixelCommand: solicitud interpretada', {
     workspaceId: workspace._id.toString(),
@@ -393,6 +469,7 @@ export async function adjustPixelCommand(
       hintIntent: command.contextHint?.intent ?? null,
       tzOffset: command.tzOffset,
       revision: command.plan?.revision ?? 0,
+      chosenProject: await savedProject(workspace, command.contextHint?.projectId),
     },
     deps,
   );

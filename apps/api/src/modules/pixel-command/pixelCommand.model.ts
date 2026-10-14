@@ -63,7 +63,11 @@ export interface PixelCommandAttrs {
   campaignId: Types.ObjectId | null;
   /** El usuario dijo "sin campaña" al preguntarle. */
   noCampaign: boolean;
-  contextHint: { intent: 'create_campaign' | 'plan_content' | null };
+  contextHint: {
+    intent: 'create_campaign' | 'plan_content' | null;
+    /** Prompt 17: proyecto del recurso que el usuario estaba viendo (validado). */
+    projectId?: Types.ObjectId | null;
+  };
   interpretation: { mode: 'ai' | 'demo' | 'rules'; confidence: number };
   executionId: Types.ObjectId | null;
   /** Resumen del preflight del Brand Guardian (null si no aplica). */
@@ -147,6 +151,7 @@ const pixelCommandSchema = new Schema<PixelCommandAttrs>(
     noCampaign: { type: Boolean, default: false },
     contextHint: {
       intent: { type: String, enum: ['create_campaign', 'plan_content', null], default: null },
+      projectId: { type: Schema.Types.ObjectId, ref: 'Project', default: null },
     },
     interpretation: {
       mode: { type: String, enum: ['ai', 'demo', 'rules'], required: true },

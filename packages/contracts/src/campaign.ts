@@ -27,6 +27,14 @@ export const CampaignStatusSchema = z.enum([
 ]);
 export type CampaignStatus = z.infer<typeof CampaignStatusSchema>;
 
+/** Campañas vigentes: existen como trabajo de la marca (ni completadas ni archivadas). */
+export const CURRENT_CAMPAIGN_STATUSES = [
+  'draft',
+  'planned',
+  'active',
+  'paused',
+] as const satisfies readonly CampaignStatus[];
+
 export const CampaignTypeSchema = z.enum([
   'launch',
   'brand_awareness',

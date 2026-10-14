@@ -266,6 +266,7 @@ describe('Inicio: resumen operacional', () => {
               contentInProduction: 3,
               activeContentItems: 6,
               activeCampaigns: 0,
+              currentCampaigns: 0,
             },
             upcomingTasks: [taskFixture({ dueDate: new Date().toISOString() })],
             recentProjects: [projectFixture()],

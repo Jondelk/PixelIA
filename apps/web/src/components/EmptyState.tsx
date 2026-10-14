@@ -7,15 +7,18 @@ export function EmptyState({
   description,
   stage,
   action,
+  figure,
 }: {
   title: string;
   description: string;
   stage?: string;
   action?: ReactNode;
+  /** El Pixel del workspace (presencia) en lugar de Pixi; por defecto, Pixi. */
+  figure?: ReactNode;
 }) {
   return (
     <section className="rounded-2xl border border-line bg-surface px-6 py-14 text-center sm:px-10 sm:py-20">
-      <Pixi size={112} className="mx-auto mb-8" />
+      <div className="mb-8">{figure ?? <Pixi size={112} className="mx-auto" />}</div>
       <h2 className="font-display text-lg font-bold tracking-tight">{title}</h2>
       <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted">{description}</p>
       {action && <div className="mt-8 flex justify-center">{action}</div>}

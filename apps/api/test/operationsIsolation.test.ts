@@ -188,6 +188,7 @@ describe('Operations: resumen del Inicio', () => {
         contentInProduction: 0,
         activeContentItems: 0,
         activeCampaigns: 0,
+        currentCampaigns: 0,
       },
       upcomingTasks: [],
       recentProjects: [],
@@ -222,6 +223,7 @@ describe('Operations: resumen del Inicio', () => {
       // En producción + Programado (idea); el publicado no cuenta.
       activeContentItems: 2,
       activeCampaigns: 0,
+      currentCampaigns: 0,
     });
     expect(summary.upcomingTasks.map((task) => task.title)).toEqual(['Próxima']);
     expect(summary.recentProjects.map((project) => project.name)).toEqual([

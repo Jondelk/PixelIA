@@ -6,7 +6,8 @@ import { Pixi } from '../../components/Pixi';
 import { workspaceBasePath } from '../../app/navigation';
 import { DailyDirector } from '../daily-director/DailyDirector';
 import { OperationsOverview } from '../operations/OperationsOverview';
-import { PixelCommand } from '../pixel-command/PixelCommand';
+import { PixelHomeHero } from '../presence/PixelHomeHero';
+import { PERSONAL_SUGGESTIONS } from '../presence/suggestions';
 import { useWorkspace } from '../workspaces/workspaceContext';
 
 /**
@@ -53,27 +54,49 @@ export function PersonalHomePage() {
     );
   }
 
-  return <PersonalHome name={personal.name ?? workspace.name} workspaceId={workspace.id} />;
+  return (
+    <PersonalHome
+      name={personal.name ?? workspace.name}
+      workspaceId={workspace.id}
+      avatar={overview.avatar}
+    />
+  );
 }
 
-function PersonalHome({ name, workspaceId }: { name: string; workspaceId: string }) {
+function PersonalHome({
+  name,
+  workspaceId,
+  avatar,
+}: {
+  name: string;
+  workspaceId: string;
+  avatar: Parameters<typeof PixelHomeHero>[0]['avatar'];
+}) {
   const base = workspaceBasePath(workspaceId);
   const firstName = name.split(' ')[0] ?? name;
 
   return (
     <>
-      {/* Zero-entry-first: lo primero es pedirle algo a Pixel; debajo, la dirección de hoy. */}
-      <div className="mb-12">
-        <PixelCommand
-          workspaceId={workspaceId}
-          base={base}
-          title={`¿Qué necesitas hacer, ${firstName}?`}
-        />
-      </div>
+      {/* Zero-entry-first + presencia: tu Pixel y pedirle algo; debajo, la dirección de hoy. */}
+      <PixelHomeHero
+        workspaceId={workspaceId}
+        eyebrow="Pixel Personal"
+        name={name}
+        title={`¿Qué necesitas hacer, ${firstName}?`}
+        suggestions={PERSONAL_SUGGESTIONS}
+        avatar={avatar}
+      />
 
       <DailyDirector workspaceId={workspaceId} firstName={firstName} base={base} />
 
-      <OperationsOverview workspaceId={workspaceId} base={base} />
+      <OperationsOverview
+        workspaceId={workspaceId}
+        base={base}
+        empty={{
+          title: 'Tu Pixel está listo.',
+          text: 'Todavía no hay trabajo en marcha. Dime qué necesitas y lo organizo contigo.',
+        }}
+      />
 
       <div className="grid gap-5 lg:grid-cols-3">
         <HomeCard

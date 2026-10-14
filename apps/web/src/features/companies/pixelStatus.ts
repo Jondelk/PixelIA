@@ -9,7 +9,8 @@ export function pixelStatus(company: Pick<Company, 'status' | 'brandDnaVersion'>
 } {
   switch (company.status) {
     case 'ready':
-      return { label: 'Lista para crear', tone: 'ready' };
+      // El personaje ya existe: nunca sugerir que falta crearlo (Prompt 17).
+      return { label: 'Listo', tone: 'ready' };
     case 'failed':
       return { label: 'El análisis necesita reintentarse', tone: 'error' };
     case 'analyzing':

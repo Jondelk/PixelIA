@@ -169,7 +169,7 @@ No bloquea el resto de etapas: todas se desarrollan y se prueban con el proveedo
 - [x] Web: avatar 3D + chat (escritorio lado a lado, móvil avatar compacto arriba); estados `listening`, `thinking`, `speaking`, `idle`; revelado progresivo; sugerencias; historial de conversaciones.
 - [x] Tests: flujo completo, historial, avatar relevante, validación, errores, aislamiento, y **misma pregunta → respuestas distintas** para café y startup (demo siempre; Claude real si hay `ANTHROPIC_API_KEY`).
 - [ ] Streaming de respuestas (SSE) para mostrar texto mientras el modelo genera.
-- [ ] Voz.
+- [x] Voz por turnos con el navegador (Etapa PR, Prompt 17). Voz en tiempo real: fuera de alcance.
 
 ## Etapa W — Workspaces: User → Workspace → Enterprise / Personal ✅
 
@@ -442,7 +442,7 @@ Ver `docs/BRAND-GUARDIAN.md`.
   decisiones (overrides y correcciones como evidencia) llegó en la Etapa CM (Prompt 16).
 - [x] Commit autorizado por el usuario el 2026-10-10 (sin push).
 
-## Etapa CM — Creative Memory ✅ (implementado, sin commit; Prompt 16)
+## Etapa CM — Creative Memory ✅ (implementado y confirmado en `29fbb77`, sin push; Prompt 16)
 
 Ver `docs/CREATIVE-MEMORY.md`. Sustituye a la antigua Etapa 9 (abajo, conservada como referencia).
 
@@ -463,6 +463,33 @@ Ver `docs/CREATIVE-MEMORY.md`. Sustituye a la antigua Etapa 9 (abajo, conservada
 - [ ] Probar el sintetizador y los motores con memoria con Claude real (requiere `ANTHROPIC_API_KEY`).
 - [ ] Decay, alcances `project` / `content_plan` desde la conversación, equipo y aprendizaje por
   métricas (no construir sin pedirlo).
+- [x] Commit autorizado por el usuario el 2026-10-13 (`29fbb77`, sin push).
+
+## Etapa PR — Pixel Presence V1 ✅ (implementado, sin commit ni push; Prompt 17)
+
+Ver `docs/PIXEL-PRESENCE.md` y `docs/AVATAR-ASSET-CONTRACT.md`.
+
+- [x] Presence State System efímero (8 estados, transiciones puras, transitorios que vuelven a idle,
+  textos honestos) compartido por toda la interfaz de un workspace (`PixelPresenceProvider`).
+- [x] Avatar Runtime con tres niveles (ambient 2D, interactive y focus 3D), uno solo en 3D por
+  pantalla, Pixi sin personaje, caída a 2D sin WebGL, movimiento reducido en el renderer.
+- [x] Contrato de clips (`CLIP_PREFERENCES` / `resolveClip`) y contrato del GLB (sin loader).
+- [x] Voice Runtime: `VoiceInputProvider` / `VoiceOutputProvider`, Web Speech del navegador, voz =
+  otra entrada de PixelCommand, habla solo en sesión de voz, nunca confirma, cierre al cambiar de
+  Pixel, degradación a texto (sin soporte, permiso denegado, fallo).
+- [x] VoiceProfile y BehaviorProfile derivados del personaje; preferencias por dispositivo y Pixel.
+- [x] WorkspaceAccentResolver (contraste ≥ 3:1 sobre Negro Cine; si no, acento del sistema).
+- [x] Pixel Dock persistente con el recurso en contexto; validación del recurso contra el workspace
+  en la API (400 si no es suyo).
+- [x] UI Presence Pass: Tus Pixels, Inicios Enterprise y Personal (vacío sin ceros), Campañas y Plan
+  de contenido («Más opciones»), topbar (estado de Pixel; «API en línea» solo en desarrollo),
+  navegación (Chat fuera; Marca = ADN · Guardian · Lo aprendido · Personaje), «Voz y movimiento».
+- [x] Tests (API de contexto, aislamiento, voz = texto, vista previa; web de estados, voz simulada,
+  compositor, Dock, Tus Pixels, Inicio vacío, ajustes) y smoke de navegador con voz simulada.
+- [ ] Probar la voz con micrófono y síntesis reales (Chrome/Edge, Safari) y con lector de pantalla.
+- [x] Aviso de privacidad de la voz (primera activación del micrófono y en «Voz y movimiento»).
+- [x] Inicio vacío solo sin ningún trabajo (`currentCampaigns`: también borradores) y tarjeta «Tu Pixel».
+- [ ] Loader GLB, mezclador de clips y lip-sync (no construir sin pedirlo).
 - [ ] Commit (pendiente de revisión del usuario).
 
 ## Etapa 9 — CreativeMemory básica (sustituida por la Etapa CM)
@@ -543,5 +570,5 @@ datos. Detalle en `PIXEL_ESTADO.md` §5 y §9.5.
 
 Streaming de respuestas (SSE) · extracción automática de memorias · subida de logo y análisis de
 imágenes · scraping del sitio web · equipos y roles por empresa · rate limiting y endurecimiento de
-seguridad · voz y lip-sync · generación avanzada de modelos 3D · campañas automáticas · facturación y planes ·
+seguridad · voz en tiempo real, clonación de voz y lip-sync · generación avanzada de modelos 3D · campañas automáticas · facturación y planes ·
 analytics.

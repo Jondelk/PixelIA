@@ -128,6 +128,7 @@ export async function getPersonalSummary(
     name: profile?.name || null,
     completedSteps: toProgress(profile).completedSteps.length,
     personalDnaVersion: profile?.personalDnaVersion ?? null,
+    avatarVersion: profile?.avatarVersion ?? null,
   };
 }
 

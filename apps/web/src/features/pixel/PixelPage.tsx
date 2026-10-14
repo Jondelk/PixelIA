@@ -29,6 +29,7 @@ import {
   PACE_LABEL,
 } from './labels';
 import { AvatarStage } from '../avatar3d/AvatarStage';
+import { PresenceSettings } from '../presence/PresenceSettings';
 import { AvatarStateControls } from '../avatar3d/AvatarStateControls';
 import type { AvatarState } from '../avatar3d/pose';
 
@@ -278,6 +279,9 @@ function AvatarConceptView({
         <Button variant="secondary" className="w-full" onClick={onRegenerate} loading={generating}>
           {!generating && <Icon name="create" className="size-4" />} Regenerar concepto
         </Button>
+
+        {/* Prompt 17: voz y movimiento del Pixel (preferencias de este dispositivo). */}
+        <PresenceSettings />
 
         {response.history.length > 1 && (
           <section className="rounded-2xl border border-line bg-surface p-5">

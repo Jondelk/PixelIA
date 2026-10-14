@@ -243,6 +243,7 @@ describe('Aislamiento entre workspaces del MISMO usuario (prueba crítica)', () 
       contentInProduction: 1,
       activeContentItems: 2,
       activeCampaigns: 0,
+      currentCampaigns: 0,
     });
     expect((await summary(inventia)).counts).toEqual({
       activeProjects: 0,
@@ -251,6 +252,7 @@ describe('Aislamiento entre workspaces del MISMO usuario (prueba crítica)', () 
       contentInProduction: 0,
       activeContentItems: 0,
       activeCampaigns: 0,
+      currentCampaigns: 0,
     });
   });
 });

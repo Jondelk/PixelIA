@@ -10,6 +10,8 @@ import { Alert } from '../../components/Alert';
 import { Button } from '../../components/Button';
 import { buttonClasses } from '../../components/buttonClasses';
 import { EmptyState } from '../../components/EmptyState';
+import { MoreOptions } from '../../components/MoreOptions';
+import { PresenceFigure, WithAmbientPixel } from '../presence/AmbientPixel';
 import { ErrorState } from '../../components/ErrorState';
 import { TextField } from '../../components/Field';
 import { Icon } from '../../components/Icon';
@@ -279,8 +281,9 @@ export function ContentPlannerView({
 }) {
   const plans = state.status === 'success' ? state.data.plans : [];
   const campaignNames = new Map(campaigns.map((campaign) => [campaign.id, campaign.name]));
+  // Las rutas manuales siguen a un clic, con menos peso que la entrada de Pixel (Prompt 17).
   const actions = (
-    <div className="flex flex-wrap gap-3">
+    <MoreOptions>
       <Button variant="secondary" onClick={onCreate}>
         <Icon name="create" className="size-4" /> Opciones avanzadas
       </Button>
@@ -289,7 +292,7 @@ export function ContentPlannerView({
           <Icon name="plus" className="size-4" /> Nuevo plan
         </Button>
       )}
-    </div>
+    </MoreOptions>
   );
   return (
     <>
@@ -301,7 +304,16 @@ export function ContentPlannerView({
       {creating ? (
         <div className="mb-10">{generator}</div>
       ) : (
-        command && <div className="mb-12">{command}</div>
+        command && (
+          <div className="mb-12">
+            <WithAmbientPixel>
+              {command}
+              <p className="mt-3 text-xs text-subtle">
+                Pixel ya conoce el ADN y tus preferencias creativas. Solo dime qué necesitas.
+              </p>
+            </WithAmbientPixel>
+          </div>
+        )
       )}
 
       {state.status === 'loading' && <LoadingBlock label={copy.loading} />}
@@ -310,6 +322,7 @@ export function ContentPlannerView({
         (plans.length === 0 ? (
           !creating && (
             <EmptyState
+              figure={<PresenceFigure />}
               title={copy.emptyTitle}
               description={copy.emptyDescription}
               action={actions}

@@ -95,3 +95,25 @@ export const THINKING_COPY = {
     description: 'Crea lo que aprobaste con los módulos de siempre. Puede tardar un poco.',
   },
 } as const;
+
+/**
+ * Prompt 17: qué refleja la presencia tras una respuesta de PixelCommand (campaña, plan, pieza…):
+ * éxito al organizar, aviso si el Guardian vio algo, error si falló; si no, reposo.
+ */
+export function presenceAfterCommand(
+  command: Pick<PixelCommand, 'status' | 'guardian'>,
+): 'success' | 'warn' | 'fail' | 'idle' {
+  if (command.status === 'completed') return 'success';
+  if (command.status === 'partial' || command.status === 'failed') return 'fail';
+  if (command.status === 'proposed' && command.guardian && command.guardian.status !== 'pass') {
+    return 'warn';
+  }
+  return 'idle';
+}
+
+/** Lo que Pixel dice en una sesión de voz: la pregunta, el resumen de la propuesta o la respuesta. */
+export function spokenFor(command: PixelCommand): string | null {
+  if (command.status === 'needs_information') return command.question;
+  if (command.status === 'proposed') return command.plan?.summary ?? null;
+  return command.reply;
+}

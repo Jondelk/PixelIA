@@ -15,7 +15,8 @@ import { listContentPlans } from '../content-planner/contentPlansApi';
 import { listContent } from '../operations/contentApi';
 import { useWorkspace } from '../workspaces/workspaceContext';
 import { evaluateWithGuardian, listGuardianReports } from './guardianApi';
-import { STATUS_HEADLINE } from './guardianLogic';
+import { presenceAfterReview, STATUS_HEADLINE } from './guardianLogic';
+import { usePixelPresence } from '../presence/presenceContext';
 
 type Kind = 'campaign' | 'content_plan' | 'content_item' | 'copy';
 
@@ -36,6 +37,7 @@ export function GuardianPage() {
   const workspaceId = overview.workspace.id;
   const base = workspaceBasePath(workspaceId);
   const navigate = useNavigate();
+  const presence = usePixelPresence();
   const [kind, setKind] = useState<Kind>('campaign');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,10 +48,13 @@ export function GuardianPage() {
   const run = async (input: Parameters<typeof evaluateWithGuardian>[1]) => {
     setBusy(true);
     setError(null);
+    presence.review();
     try {
       const report = await evaluateWithGuardian(workspaceId, input);
+      presence.send(presenceAfterReview(report.status));
       navigate(`${base}/guardian/reports/${report.id}`);
     } catch (err) {
+      presence.fail();
       setError(errorMessage(err));
       setBusy(false);
     }

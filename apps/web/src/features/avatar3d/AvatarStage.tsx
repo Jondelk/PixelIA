@@ -18,11 +18,13 @@ export function AvatarStage({
   state,
   className,
   interactive = true,
+  reducedMotion = false,
 }: {
   avatar: AvatarConcept & { id: string };
   state: AvatarState;
   className: string;
   interactive?: boolean;
+  reducedMotion?: boolean;
 }) {
   const [webgl] = useState(supportsWebGL);
   const fallback = (
@@ -46,6 +48,7 @@ export function AvatarStage({
           profile={avatar}
           state={state}
           interactive={interactive}
+          reducedMotion={reducedMotion}
           className={`relative w-full touch-pan-y ${className}`}
         />
       </Suspense>

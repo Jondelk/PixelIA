@@ -7,6 +7,7 @@ import {
 import { conflict } from '../../lib/errors.js';
 import { isDuplicateKeyError, isObjectIdString } from '../../lib/mongo.js';
 import { CompanyModel, toCompanyDTO, type CompanyDocument } from '../companies/company.model.js';
+import { AvatarProfileModel, toAvatarProfileDTO } from '../avatars/avatarProfile.model.js';
 import { getPersonalSummary } from '../personal/personal.service.js';
 import { ensureOwnerWorkspaces } from './workspace.migration.js';
 import { toWorkspaceDTO, WorkspaceModel, type WorkspaceDocument } from './workspace.model.js';
@@ -64,14 +65,40 @@ export async function findWorkspaceCompany(
   return CompanyModel.findOne({ workspaceId: workspace._id, ownerId: workspace.ownerId });
 }
 
+/**
+ * Prompt 17: el personaje vigente del workspace (miniatura de Tus Pixels, Pixel Dock y acento). Una
+ * consulta por workspace, filtrada por su workspaceId y su versión vigente; sin versión, null.
+ */
+async function avatarPreviewOf(
+  workspace: WorkspaceDocument,
+  version: number | null | undefined,
+): Promise<WorkspaceOverview['avatar']> {
+  if (!version) return null;
+  const doc = await AvatarProfileModel.findOne({ workspaceId: workspace._id, version });
+  if (!doc) return null;
+  const {
+    workspaceId: _w,
+    sourceType: _s,
+    companyId: _c,
+    brandDnaVersion: _b,
+    personalDnaVersion: _p,
+    engine: _e,
+    createdAt: _t,
+    ...preview
+  } = toAvatarProfileDTO(doc);
+  return preview;
+}
+
 export async function getWorkspaceOverview(
   workspace: WorkspaceDocument,
 ): Promise<WorkspaceOverview> {
   const company = await findWorkspaceCompany(workspace);
+  const personal = await getPersonalSummary(workspace);
   return {
     workspace: toWorkspaceDTO(workspace),
     company: company ? toCompanyDTO(company) : null,
-    personal: await getPersonalSummary(workspace),
+    personal,
+    avatar: await avatarPreviewOf(workspace, company?.avatarVersion ?? personal?.avatarVersion),
   };
 }
 
@@ -92,10 +119,12 @@ export async function listWorkspaceOverviews(ownerId: string): Promise<Workspace
     workspaces.map(async (workspace) => {
       const company =
         workspace.type === 'enterprise' ? byWorkspace.get(workspace._id.toString()) : undefined;
+      const personal = await getPersonalSummary(workspace);
       return {
         workspace: toWorkspaceDTO(workspace),
         company: company ? toCompanyDTO(company) : null,
-        personal: await getPersonalSummary(workspace),
+        personal,
+        avatar: await avatarPreviewOf(workspace, company?.avatarVersion ?? personal?.avatarVersion),
       };
     }),
   );

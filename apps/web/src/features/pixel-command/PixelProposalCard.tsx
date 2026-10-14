@@ -16,10 +16,11 @@ export function PixelProposalCard({
   return (
     <section
       aria-label="Propuesta de Pixel"
-      className="rounded-2xl border border-line-strong bg-surface p-6 sm:p-8"
+      className="@container rounded-2xl border border-line-strong bg-surface p-6 sm:p-8"
     >
       <p className="max-w-2xl text-[15px] leading-relaxed text-fg">{plan.summary}</p>
-      <div className="mt-6 grid gap-6 md:grid-cols-3">
+      {/* Por su propio ancho, no el de la ventana: en el Pixel Dock (estrecho) va en una columna. */}
+      <div className="mt-6 grid gap-6 @2xl:grid-cols-3">
         <ProposalList title="Lo que entendí" items={plan.understood} />
         <ProposalList title="Lo que propongo" items={plan.proposal} />
         <ProposalList title="Qué voy a crear" items={plan.creates} />

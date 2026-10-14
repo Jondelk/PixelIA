@@ -82,7 +82,6 @@ describe('rutas de workspace', () => {
           ['Mi ADN', '/workspace/w1/personal/dna'],
           ['Mi Pixel', '/workspace/w1/pixel'],
           ['Lo aprendido', '/workspace/w1/memory'],
-          ['Chat', '/workspace/w1/chat'],
         ],
       ],
     ]);
@@ -141,10 +140,9 @@ describe('rutas de workspace', () => {
         'Marca',
         [
           ['ADN de marca', '/company/c1/brand'],
-          ['Personaje', '/company/c1/pixel'],
-          ['Chat', '/company/c1/chat'],
           ['Brand Guardian', '/workspace/w1/guardian'],
           ['Lo aprendido', '/workspace/w1/memory'],
+          ['Personaje', '/company/c1/pixel'],
         ],
       ],
     ]);

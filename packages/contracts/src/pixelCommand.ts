@@ -230,6 +230,18 @@ export const CreatePixelCommandSchema = z
       .object({
         intent: z.enum(['create_campaign', 'plan_content']).optional(),
         campaignId: ObjectIdSchema.optional(),
+        /**
+         * Prompt 17 (Pixel Dock): el recurso que el usuario está viendo («haz tres Reels con esto»).
+         * Solo orienta: el backend lo valida contra el workspace y deriva de él la campaña o el
+         * proyecto; nunca es una autoridad del cliente.
+         */
+        resource: z
+          .object({
+            type: z.enum(['campaign', 'content_plan', 'project', 'content_item']),
+            id: ObjectIdSchema,
+          })
+          .strict()
+          .optional(),
       })
       .strict()
       .optional(),

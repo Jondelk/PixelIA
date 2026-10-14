@@ -27,6 +27,11 @@ export const OperationsSummarySchema = z.object({
     activeContentItems: z.number().int().min(0),
     /** Campañas activas (solo Enterprise; 0 en Personal). */
     activeCampaigns: z.number().int().min(0),
+    /**
+     * Campañas vigentes: borrador, planificada, activa o en pausa (solo Enterprise; 0 en Personal).
+     * Una campaña en borrador ya es trabajo de la marca: decide si el Inicio está vacío.
+     */
+    currentCampaigns: z.number().int().min(0),
   }),
   /** Pendientes con fecha límite desde hoy, la más cercana primero. */
   upcomingTasks: z.array(TaskSchema),

@@ -21,6 +21,7 @@ const pixel = (overrides: Partial<Workspace> = {}): WorkspaceOverview => {
     },
     company: null,
     personal: null,
+    avatar: null,
   };
 };
 

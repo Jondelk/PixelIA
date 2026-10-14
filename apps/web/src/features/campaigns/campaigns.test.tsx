@@ -73,6 +73,7 @@ describe('Navegación y gating', () => {
         },
         company: null,
         personal: null,
+        avatar: null,
       }) satisfies WorkspaceOverview;
     const at = (type: 'personal' | 'enterprise') => {
       const context: WorkspaceOutletContext = { overview: overview(type), reload: () => {} };
@@ -120,7 +121,7 @@ describe('Lista de campañas', () => {
 
   it('estado vacío: el brief detallado y la creación manual quedan como opciones', () => {
     const plain = text(view(ok({ campaigns: [], total: 0 })));
-    expect(plain).toContain('Todavía no hay campañas.');
+    expect(plain).toContain('Todavía no hemos creado ninguna campaña.');
     expect(plain).toContain('Brief detallado');
     expect(plain).toContain('Crear manualmente');
   });

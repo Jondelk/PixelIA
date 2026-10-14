@@ -38,6 +38,7 @@ export interface PixelAvatarProps {
   className?: string;
   /** Permite girar el personaje con límites (vuelve solo a la vista frontal). */
   interactive?: boolean;
+  reducedMotion?: boolean;
 }
 
 /**
@@ -49,6 +50,7 @@ export function PixelAvatar({
   state = 'idle',
   className,
   interactive = true,
+  reducedMotion = false,
 }: PixelAvatarProps) {
   const spec = useMemo(() => profileToScene(profile), [profile]);
 
@@ -75,7 +77,7 @@ export function PixelAvatar({
         polar={[-0.08, 0.18]}
         azimuth={[-0.75, 0.75]}
       >
-        <AvatarController spec={spec} state={state} />
+        <AvatarController spec={spec} state={state} reducedMotion={reducedMotion} />
       </PresentationControls>
     </Canvas>
   );

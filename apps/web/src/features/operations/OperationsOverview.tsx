@@ -9,6 +9,7 @@ import { ErrorState } from '../../components/ErrorState';
 import { Icon } from '../../components/Icon';
 import { useResource, type ResourceState } from '../../lib/useResource';
 import { platformFormatLabel } from './labels';
+import { isEmptyWork, type EmptyWork } from './emptyWork';
 import { getOperationsSummary } from './operationsApi';
 import { PERSONAL_OPERATIONS_COPY, type OperationsCopy } from './operationsCopy';
 import { DueLabel, PriorityMark } from './ui';
@@ -24,12 +25,14 @@ export function OperationsOverview({
   base,
   copy,
   showCampaigns = false,
+  empty,
 }: {
   workspaceId: string;
   base: string;
   copy?: OverviewCopy;
-  /** Enterprise: añade el contador de campañas activas. */
+  /** Enterprise: añade el contador de campañas vigentes. */
   showCampaigns?: boolean;
+  empty?: EmptyWork;
 }) {
   const { state, reload } = useResource(`operations-summary:${workspaceId}`, (signal) =>
     getOperationsSummary(workspaceId, signal),
@@ -41,6 +44,7 @@ export function OperationsOverview({
       onRetry={reload}
       copy={copy}
       showCampaigns={showCampaigns}
+      empty={empty}
     />
   );
 }
@@ -51,18 +55,31 @@ export function OperationsOverviewView({
   onRetry,
   copy = PERSONAL_OPERATIONS_COPY.overview,
   showCampaigns = false,
+  empty,
 }: {
   state: ResourceState<OperationsSummary>;
   base: string;
   onRetry: () => void;
   copy?: OverviewCopy;
   showCampaigns?: boolean;
+  empty?: EmptyWork;
 }) {
   if (state.status === 'error') {
     return <ErrorState error={state.error} onRetry={onRetry} title={copy.errorTitle} />;
   }
   const summary = state.status === 'success' ? state.data : null;
   const counts = summary?.counts;
+  if (summary && empty && isEmptyWork(summary, showCampaigns)) {
+    return (
+      <section
+        aria-label={copy.label}
+        className="mb-12 rounded-2xl border border-line bg-surface px-6 py-8 sm:px-8"
+      >
+        <p className="font-display text-base font-bold">{empty.title}</p>
+        <p className="mt-2 max-w-lg text-sm leading-relaxed text-muted">{empty.text}</p>
+      </section>
+    );
+  }
 
   return (
     <section aria-label={copy.label} aria-busy={state.status === 'loading'} className="mb-12">
@@ -73,10 +90,16 @@ export function OperationsOverviewView({
         ].join(' ')}
       >
         {showCampaigns && (
+          // Vigentes (también en borrador): con solo un borrador, el Inicio no muestra «0».
           <Counter
-            to={`${base}/campaigns?filter=active`}
-            label="Campañas activas"
-            value={counts?.activeCampaigns}
+            to={`${base}/campaigns`}
+            label="Campañas vigentes"
+            value={counts?.currentCampaigns}
+            hint={
+              counts && counts.currentCampaigns > counts.activeCampaigns
+                ? `${counts.activeCampaigns} activas`
+                : undefined
+            }
           />
         )}
         <Counter
@@ -164,11 +187,15 @@ function Counter({
   label,
   value,
   note,
+  hint,
 }: {
   to: string;
   label: string;
   value: number | undefined;
+  /** Aviso (con la marca de alerta). */
   note?: string;
+  /** Dato neutro, sin marca de alerta. */
+  hint?: string;
 }) {
   return (
     <Link to={to} className="group block bg-surface p-6 transition-colors hover:bg-elevated sm:p-7">
@@ -182,6 +209,8 @@ function Counter({
             <span className="size-1.5 bg-alert" aria-hidden="true" />
             {note}
           </>
+        ) : hint ? (
+          hint
         ) : (
           <span className="opacity-0 transition-opacity group-hover:opacity-100">
             Ver <Icon name="arrowRight" className="inline size-3" />

@@ -7,6 +7,7 @@ import { ApiRequestError } from '../../lib/api';
 import { useResource } from '../../lib/useResource';
 import { getCompany } from './companiesApi';
 import type { CompanyOutletContext } from './companyContext';
+import { CompanyPresence } from '../presence/WorkspacePresence';
 
 /**
  * Carga una vez la empresa de /company/:companyId para todas sus pantallas.
@@ -45,5 +46,10 @@ export function CompanyLayout() {
   }
 
   const context: CompanyOutletContext = { company: state.data, reload };
-  return <Outlet context={context} />;
+  return (
+    <>
+      <Outlet context={context} />
+      <CompanyPresence workspaceId={state.data.workspaceId} />
+    </>
+  );
 }

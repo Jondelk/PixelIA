@@ -43,6 +43,8 @@ export interface PlanningState {
   /** Campaña ya elegida (pantalla o respuesta), siempre de este workspace. */
   chosenCampaignId: string | null;
   noCampaign: boolean;
+  /** Prompt 17: proyecto que el usuario está viendo (validado contra el workspace). */
+  chosenProject?: KnownProject | null;
 }
 
 export type PlanningOutcome =
@@ -521,7 +523,7 @@ function planTasks(state: PlanningState): PlanningOutcome {
   if (!entities.taskTitles.length) return question('tasks', QUESTIONS.tasks);
   const project = entities.projectHint
     ? (matchProjects(context.projects, entities.projectHint)[0] ?? null)
-    : null;
+    : (state.chosenProject ?? null);
   const due = entities.timeframe ? periodFor(entities.timeframe, state.today).endDate : null;
   const where = project ? `en el proyecto «${project.name}»` : 'en tus tareas';
   return {
@@ -551,6 +553,9 @@ function planProject(state: PlanningState): PlanningOutcome {
   let existing: KnownProject | null;
   if (entities.projectHint) {
     existing = matchProjects(context.projects, entities.projectHint)[0] ?? null;
+  } else if (state.chosenProject) {
+    // «Organiza esto» desde el detalle de un proyecto: ese proyecto.
+    existing = state.chosenProject;
   } else if (context.projects.length === 1) {
     existing = context.projects[0]!;
   } else if (context.projects.length > 1) {

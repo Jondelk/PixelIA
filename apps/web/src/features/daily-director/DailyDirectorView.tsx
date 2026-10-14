@@ -11,8 +11,8 @@ import { buttonClasses } from '../../components/buttonClasses';
 import { ErrorState } from '../../components/ErrorState';
 import { Icon } from '../../components/Icon';
 import { Pixi } from '../../components/Pixi';
-import { AvatarStage } from '../avatar3d/AvatarStage';
 import { StatusTag } from '../operations/ui';
+import { PixelPreview } from '../pixel/PixelPreview';
 import {
   generationLabel,
   minutesLabel,
@@ -67,13 +67,10 @@ export function DailyDirectorView({
       className="grid gap-6 overflow-hidden rounded-3xl border border-line bg-surface p-6 sm:p-10 lg:grid-cols-[220px_1fr]"
     >
       <div className="h-52 max-lg:hidden">
+        {/* Vive en el Inicio Personal, debajo del Pixel interactivo (3D): aquí va la vista 2D para
+            que la pantalla tenga un solo contexto WebGL (Prompt 17, docs/PIXEL-PRESENCE.md). */}
         {avatar ? (
-          <AvatarStage
-            avatar={avatar}
-            state={generating ? 'thinking' : 'idle'}
-            interactive={false}
-            className="!h-full"
-          />
+          <PixelPreview key={avatar.id} profile={avatar} className="h-full w-full" />
         ) : (
           <div className="grid h-full place-items-center">
             <Pixi size={120} />

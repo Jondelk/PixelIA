@@ -139,6 +139,12 @@ revisión del Brand Guardian: estado, score heurístico, dimensiones, hallazgos 
 propuesta e instantánea de lo revisado; nunca modifica el recurso y se marca `stale` si este cambia.
 Ambos son recursos del workspace (`tenantScoped`). Detalle en [`BRAND-GUARDIAN.md`](./BRAND-GUARDIAN.md).
 
+Desde el Prompt 17, `PixelCommand.contextHint` admite `resource: { type, id }` (campaign,
+content_plan, project, content_item), validado contra el workspace, y guarda `contextHint.projectId`
+cuando el recurso lo implica. **Pixel Presence no añade entidades:** el estado de presencia y las
+preferencias de voz no se persisten en Mongo (`docs/PIXEL-PRESENCE.md`). `WorkspaceOverview` (DTO,
+no colección) incluye `avatar`, una vista previa del AvatarProfile vigente.
+
 ## 2. Company
 
 Empresa cuyo Pixel se construye (Pixel Enterprise). Pertenece a un workspace enterprise

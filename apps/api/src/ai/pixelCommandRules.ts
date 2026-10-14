@@ -225,7 +225,7 @@ const STATUS =
 const ADVICE =
   /\bque te parece\b|\bque opinas\b|\bcomo (?:lo )?mejorar(?:ia|ias|as)?\b|\bmejorarias\b|\b(?:que|sobre que) (?:deberia|debo|podria|puedo) (?:publicar|hacer|escribir|subir|contar)\b|\bdame (?:\w+ )?ideas?\b|\bideas? (?:de|para)\b|\b(?:me )?recomiendas\b|\bconsejos?\b|\bfeedback\b|\bes buena idea\b/;
 const TASKS =
-  /\b(?:crea|crear|agrega|agregar|anade|anadir|apunta|apuntar|anota|anotar|pon|haz)\b(?:\s+\w+){0,3}?\s+(?:tareas?|pendientes)\b|\btareas? (?:para|de)\b|\brecuerdame\b/;
+  /\b(?:crea|crear|agrega|agregar|anade|anadir|apunta|apuntar|anota|anotar|pon|haz)(?:me)?\b(?:\s+\w+){0,3}?\s+(?:tareas?|pendientes)\b|\btareas? (?:para|de)\b|\brecuerdame\b/;
 const SINGLE_CONTENT =
   /\b(?:crea|crear|agrega|agregar|anade|anadir|guarda|guardar|apunta|apuntar)\s+(?:un|una)\s+(?:post|reel|carrusel|historia|story|video|articulo|publicacion|pieza|foto)\b/;
 const CAMPAIGN_WORD = /\bcampanas?\b/;

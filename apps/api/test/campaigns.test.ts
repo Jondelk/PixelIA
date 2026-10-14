@@ -516,10 +516,43 @@ describe('Resumen operacional y chat Enterprise', () => {
     expect(christmas).not.toMatch(/Navidad/i);
   });
 
+  it('cuenta las campañas vigentes (también en borrador), sin completadas, archivadas ni de otro Pixel', async () => {
+    const jhon = await registerUser(app, 'Jhon');
+    const tinto = await enterprise(jhon, 'Café Tinto', cafeTinto);
+    const lab = await enterprise(jhon, 'INVENTIA', inventia);
+    const counts = async (workspaceId: string) =>
+      (await jhon.agent.get(ops(workspaceId).summary).expect(200)).body.summary.counts;
+    expect((await counts(lab.workspaceId)).currentCampaigns).toBe(0);
+
+    const create = (body: Record<string, unknown>) =>
+      jhon.agent
+        .post(campaigns(lab.workspaceId))
+        .send({ name: 'Servicio de prototipado', objective: 'Lanzar el servicio', ...body })
+        .expect(201);
+    const draft = (await create({})).body.campaign;
+    expect(draft.status).toBe('draft');
+    expect(await counts(lab.workspaceId)).toMatchObject({
+      currentCampaigns: 1,
+      activeCampaigns: 0,
+    });
+
+    await create({ status: 'active' });
+    await create({ status: 'completed' });
+    const archived = (await create({ status: 'paused' })).body.campaign;
+    await jhon.agent.delete(`${campaigns(lab.workspaceId)}/${archived.id}`).expect(200);
+    expect(await counts(lab.workspaceId)).toMatchObject({
+      currentCampaigns: 2,
+      activeCampaigns: 1,
+    });
+    // Las de INVENTIA nunca cuentan en TINTO.
+    expect((await counts(tinto.workspaceId)).currentCampaigns).toBe(0);
+  });
+
   it('Personal: activeCampaigns = 0 y su resumen no cambia', async () => {
     const jhon = await registerUser(app, 'Jhon');
     const personal = await createPersonalWorkspace(jhon);
     const summary = await jhon.agent.get(ops(personal).summary).expect(200);
     expect(summary.body.summary.counts.activeCampaigns).toBe(0);
+    expect(summary.body.summary.counts.currentCampaigns).toBe(0);
   });
 });

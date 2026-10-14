@@ -1,15 +1,19 @@
 import type { PixelCommand as PixelCommandDTO, PixelCommandSource } from '@pixel/contracts';
-import { useId, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { Alert } from '../../components/Alert';
 import { Button } from '../../components/Button';
 import { Icon } from '../../components/Icon';
 import { errorMessage } from '../../lib/api';
 import { PixelThinking } from '../content-planner/PixelThinking';
+import { PixelComposer, type ComposerSuggestion } from '../presence/PixelComposer';
+import { usePixelPresence } from '../presence/presenceContext';
 import {
   commandPhase,
   confirmLabel,
   createdResources,
+  presenceAfterCommand,
+  spokenFor,
   resourceLink,
   THINKING_COPY,
   type CommandPhase,
@@ -25,7 +29,12 @@ import { preflightBlocks, preflightOverridable } from '../guardian/guardianLogic
 import { GuardianPreflight } from './GuardianPreflight';
 import { PixelProposalCard } from './PixelProposalCard';
 
-type ContextHint = { intent?: 'create_campaign' | 'plan_content'; campaignId?: string };
+type ContextHint = {
+  intent?: 'create_campaign' | 'plan_content';
+  campaignId?: string;
+  /** Pixel Dock: el recurso que el usuario está viendo (el backend lo valida). */
+  resource?: { type: 'campaign' | 'content_plan' | 'project' | 'content_item'; id: string };
+};
 
 /**
  * La entrada principal de Pixel (zero-entry-first, docs/PIXEL-COMMAND.md): el usuario dice qué
@@ -39,6 +48,8 @@ export function PixelCommand({
   placeholder = 'Cuéntale a Pixel…',
   contextHint,
   onCompleted,
+  suggestions,
+  thinkingAvatar = 'focus',
 }: {
   workspaceId: string;
   /** Base de rutas web del workspace (para enlazar lo creado). */
@@ -48,7 +59,15 @@ export function PixelCommand({
   /** La pantalla desde la que se escribe (Campañas, Plan de contenido): orienta una frase ambigua. */
   contextHint?: ContextHint;
   onCompleted?: (command: PixelCommandDTO) => void;
+  /** Inicios de frase (máximo 4) que rellenan el campo: nunca saltan a un formulario. */
+  suggestions?: ComposerSuggestion[];
+  /**
+   * 'none' cuando la pantalla ya muestra al Pixel (Inicio, Dock): un solo runtime 3D por pantalla;
+   * el estado lo comunica ese avatar y aquí queda una línea de estado honesta.
+   */
+  thinkingAvatar?: 'focus' | 'none';
 }) {
+  const presence = usePixelPresence();
   const [command, setCommand] = useState<PixelCommandDTO | null>(null);
   const [pending, setPending] = useState<'send' | 'adjust' | 'confirm' | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -57,16 +76,29 @@ export function PixelCommand({
   async function run(kind: 'send' | 'adjust' | 'confirm', action: () => Promise<PixelCommandDTO>) {
     setPending(kind);
     setError(null);
+    presence.think();
     try {
       const next = await action();
       setCommand(next);
       setAdjusting(false);
+      reflectPresence(next);
       if (next.status === 'completed' || next.status === 'partial') onCompleted?.(next);
     } catch (err) {
       setError(errorMessage(err));
+      presence.fail();
     } finally {
       setPending(null);
     }
+  }
+
+  /**
+   * El resultado se refleja en la presencia: éxito al organizar, aviso si el Guardian detectó algo,
+   * error si falló. En una sesión de voz, Pixel dice la versión corta (la UI muestra el detalle).
+   * Hablar nunca confirma nada: «Organizar» sigue siendo un botón.
+   */
+  function reflectPresence(next: PixelCommandDTO) {
+    presence.send(presenceAfterCommand(next));
+    presence.say(spokenFor(next));
   }
 
   const send = (text: string, source: PixelCommandSource) =>
@@ -83,6 +115,7 @@ export function PixelCommand({
   const cancel = async () => {
     if (!command) return;
     setError(null);
+    presence.stopSpeaking();
     try {
       setCommand(await cancelPixelCommand(workspaceId, command.id));
     } catch (err) {
@@ -92,6 +125,7 @@ export function PixelCommand({
   const continueAnyway = () =>
     command && run('adjust', () => overrideGuardianPreflight(workspaceId, command.id));
   const reset = () => {
+    presence.stopSpeaking();
     setCommand(null);
     setAdjusting(false);
     setError(null);
@@ -106,7 +140,18 @@ export function PixelCommand({
       base={base}
       error={error}
       adjusting={adjusting}
-      thinking={(copy) => <PixelThinking workspaceId={workspaceId} copy={copy} />}
+      thinking={(copy) =>
+        thinkingAvatar === 'none' ? (
+          <ThinkingLine copy={copy} />
+        ) : (
+          <PixelThinking workspaceId={workspaceId} copy={copy} />
+        )
+      }
+      suggestions={suggestions}
+      voiceSession={presence.voiceSession}
+      speaking={presence.state === 'speaking'}
+      onStopSpeaking={presence.stopSpeaking}
+      onExitVoice={presence.endVoiceSession}
       onSend={send}
       onAdjust={adjust}
       onStartAdjust={() => setAdjusting(true)}
@@ -119,6 +164,16 @@ export function PixelCommand({
 }
 
 type ThinkingCopy = { title: string; description: string };
+
+/** Estado honesto sin avatar (la pantalla ya muestra al Pixel): sin progreso inventado. */
+function ThinkingLine({ copy }: { copy: ThinkingCopy }) {
+  return (
+    <div role="status" aria-live="polite" className="rounded-2xl border border-line bg-surface p-5">
+      <p className="font-display text-base font-bold">{copy.title}</p>
+      <p className="mt-1 text-sm text-muted">{copy.description}</p>
+    </div>
+  );
+}
 
 /** Vista sin estado (testeable): pinta cada fase de la conversación. */
 export function PixelCommandPanel({
@@ -137,6 +192,11 @@ export function PixelCommandPanel({
   onCancel,
   onReset,
   onGuardianOverride,
+  suggestions,
+  voiceSession = false,
+  speaking = false,
+  onStopSpeaking,
+  onExitVoice,
 }: {
   phase: CommandPhase;
   command: PixelCommandDTO | null;
@@ -154,6 +214,11 @@ export function PixelCommandPanel({
   onReset: () => void;
   /** "Continuar de todas formas" ante un BLOCK creativo del Guardian. */
   onGuardianOverride?: () => void;
+  suggestions?: ComposerSuggestion[];
+  voiceSession?: boolean;
+  speaking?: boolean;
+  onStopSpeaking?: () => void;
+  onExitVoice?: () => void;
 }) {
   const showInput = phase === 'idle' || phase === 'cancelled';
   return (
@@ -165,8 +230,27 @@ export function PixelCommandPanel({
           {phase === 'cancelled' && command?.reply && (
             <p className="text-sm text-muted">{command.reply}</p>
           )}
-          <PixelRequestInput placeholder={placeholder} onSubmit={onSend} />
+          <PixelComposer placeholder={placeholder} onSubmit={onSend} suggestions={suggestions} />
         </>
+      )}
+
+      {(speaking || voiceSession) && (
+        <div className="flex flex-wrap items-center gap-3 text-xs text-muted">
+          {speaking && onStopSpeaking && (
+            <Button variant="secondary" onClick={onStopSpeaking}>
+              <Icon name="stop" className="size-3.5" /> Dejar de hablar
+            </Button>
+          )}
+          {voiceSession && onExitVoice && (
+            <button
+              type="button"
+              onClick={onExitVoice}
+              className="underline-offset-4 hover:text-fg hover:underline"
+            >
+              Seguir solo por texto
+            </button>
+          )}
+        </div>
       )}
 
       {!showInput && command && phase !== 'interpreting' && (
@@ -183,7 +267,7 @@ export function PixelCommandPanel({
         command && (
           <div className="space-y-4 rounded-2xl border border-line-strong bg-surface p-6 sm:p-8">
             <p className="text-[15px] leading-relaxed text-fg">{command.question}</p>
-            <PixelRequestInput
+            <PixelComposer
               placeholder="Responde a Pixel…"
               busy={phase === 'adjusting'}
               onSubmit={onAdjust}
@@ -202,7 +286,7 @@ export function PixelCommandPanel({
             actions={
               adjusting || phase === 'adjusting' ? (
                 <div className="space-y-3">
-                  <PixelRequestInput
+                  <PixelComposer
                     placeholder="¿Qué cambio? Por ejemplo: «solo Instagram, sin Stories»"
                     busy={phase === 'adjusting'}
                     onSubmit={onAdjust}
@@ -291,57 +375,5 @@ export function PixelCommandPanel({
   );
 }
 
-/**
- * Campo de la solicitud. Entrega el texto con su origen (`source`): hoy `text`; una transcripción
- * de voz llegará por el mismo `onSubmit` con `source: 'voice'`, sin cambiar PixelCommand.
- */
-export function PixelRequestInput({
-  placeholder,
-  onSubmit,
-  busy = false,
-  compact = false,
-}: {
-  placeholder: string;
-  onSubmit: (text: string, source: PixelCommandSource) => void;
-  busy?: boolean;
-  compact?: boolean;
-}) {
-  const id = useId();
-  const [text, setText] = useState('');
-  const submit = (event?: FormEvent) => {
-    event?.preventDefault();
-    const value = text.trim();
-    if (!value || busy) return;
-    onSubmit(value, 'text');
-    setText('');
-  };
-  const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      submit();
-    }
-  };
-  return (
-    <form
-      onSubmit={submit}
-      className="flex items-end gap-2 rounded-2xl border border-line-strong bg-elevated p-2 focus-within:border-focus"
-    >
-      <label htmlFor={id} className="sr-only">
-        {placeholder}
-      </label>
-      <textarea
-        id={id}
-        value={text}
-        onChange={(event) => setText(event.target.value)}
-        onKeyDown={onKeyDown}
-        placeholder={placeholder}
-        rows={compact ? 1 : 2}
-        maxLength={2000}
-        className="min-h-11 min-w-0 flex-1 resize-none bg-transparent px-3 py-2.5 text-[15px] leading-relaxed text-fg placeholder:text-subtle focus:outline-none"
-      />
-      <Button type="submit" loading={busy} disabled={!text.trim()} aria-label="Enviar a Pixel">
-        <Icon name="arrowRight" className="size-4" />
-      </Button>
-    </form>
-  );
-}
+/** Compatibilidad: la entrada es el PixelComposer compartido (texto + voz). */
+export const PixelRequestInput = PixelComposer;

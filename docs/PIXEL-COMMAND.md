@@ -86,6 +86,13 @@ clave contra ese contexto: el modelo nunca elige ids. Por eso "usa la campaña d
 TINTO no encuentra nada y la propuesta lo dice ("No encontré una campaña «INVENTIA» en este Pixel").
 Una campaña enviada por la pantalla (`contextHint.campaignId`) se valida: de otro workspace → 400.
 
+**Recurso en contexto (Prompt 17).** El Pixel Dock envía el recurso abierto como
+`contextHint.resource = { type, id }` (`campaign`, `content_plan`, `project` o `content_item`).
+`resolveContextResource` lo busca con `{ _id, workspaceId }`; si no es de este workspace → 400
+`VALIDATION_ERROR` en `contextHint.resource.id`. Del recurso se derivan la campaña y el proyecto
+(`chosenProject` en el planificador), así que «Hazme tres Reels con esto» dentro de una campaña no
+pregunta «¿de qué campaña?». Ver `docs/PIXEL-PRESENCE.md` §8.
+
 ## 4. Información que falta
 
 `planCommand` (puro) decide con lo dicho + lo sabido. Pregunta **una** cosa, y solo si cambia
@@ -220,12 +227,17 @@ Guardian.
 - **Ajustes como evidencia**: «sin Stories» sobre una propuesta registra un
   `pixel_command_adjusted` (idempotente por revisión), nunca una memoria directa.
 
-## 9. Voz (futuro)
+## 9. Voz (Prompt 17)
 
-El texto es la única entrada hoy. `PixelRequestInput` entrega `onSubmit(text, source)` y la API acepta
-`source: 'text' | 'voice'`: una transcripción llegará por el mismo campo, sin tocar PixelCommand. No
-se integró STT, TTS, voz del navegador ni lip-sync, ni se dibujó un botón de micrófono que no
-funcione.
+La voz es **otra entrada**, no otro flujo. `PixelComposer` (antes `PixelRequestInput`, que sigue
+exportado como alias) entrega la transcripción final por el mismo `onSubmit(text, 'voice')`, y la API
+la trata igual que el texto. Pixel dice en voz alta la pregunta o el resumen de la propuesta **solo
+en una sesión de voz** (`spokenFor`), y la propuesta se muestra siempre: «Organizar» sigue siendo un
+clic, nunca una orden de voz. Sin soporte, sin permiso o con fallo, todo sigue por texto. La
+presencia sigue el flujo: `think` antes de la petición; después, `presenceAfterCommand`: `completed`
+→ `success`; `partial` o `failed` → `error`; una propuesta cuyo preflight del Guardian no es `pass` →
+`warning`; lo demás → `idle`. Un fallo de red también pasa a `error`.
+Detalle: `docs/PIXEL-PRESENCE.md` §4. Sin lip-sync ni voz en tiempo real.
 
 ## 10. Limitaciones
 

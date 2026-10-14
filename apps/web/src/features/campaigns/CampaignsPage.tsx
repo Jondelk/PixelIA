@@ -9,6 +9,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router';
 import { Alert } from '../../components/Alert';
 import { Button } from '../../components/Button';
 import { EmptyState } from '../../components/EmptyState';
+import { MoreOptions } from '../../components/MoreOptions';
+import { PresenceFigure, WithAmbientPixel } from '../presence/AmbientPixel';
 import { ErrorState } from '../../components/ErrorState';
 import { Icon } from '../../components/Icon';
 import { PageHeader } from '../../components/PageHeader';
@@ -204,15 +206,16 @@ export function CampaignsView({
 }) {
   const isFirstRun =
     state.status === 'success' && state.data.total === 0 && filter === 'all' && !creating;
+  // Las rutas manuales siguen a un clic, con menos peso que la entrada de Pixel (Prompt 17).
   const actions = (
-    <div className="flex flex-wrap gap-3">
+    <MoreOptions>
       <Button variant="secondary" onClick={onGenerate}>
         <Icon name="create" className="size-4" /> Brief detallado
       </Button>
       <Button variant="ghost" onClick={onNew}>
         <Icon name="plus" className="size-4" /> Crear manualmente
       </Button>
-    </div>
+    </MoreOptions>
   );
 
   return (
@@ -229,13 +232,18 @@ export function CampaignsView({
       {creating ? (
         <div className="mb-10">{panel}</div>
       ) : (
-        command && <div className="mb-12">{command}</div>
+        command && (
+          <div className="mb-12">
+            <WithAmbientPixel>{command}</WithAmbientPixel>
+          </div>
+        )
       )}
 
       {isFirstRun ? (
         <EmptyState
-          title="Todavía no hay campañas."
-          description="Escríbele a Pixel arriba qué necesita el negocio y construirá la estrategia desde el ADN de la marca. También puedes darle un brief detallado o crearla a mano."
+          figure={<PresenceFigure />}
+          title="Todavía no hemos creado ninguna campaña."
+          description="Cuéntame arriba qué quieres lograr y construyo la estrategia desde el ADN de la marca."
           action={actions}
         />
       ) : (

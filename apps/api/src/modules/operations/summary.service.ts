@@ -1,5 +1,6 @@
 import {
   CONTENT_PIPELINE,
+  CURRENT_CAMPAIGN_STATUSES,
   OPEN_TASK_STATUSES,
   OPERATIONS_SUMMARY_LIST_SIZE,
   type OperationsSummary,
@@ -40,6 +41,7 @@ async function operationsCounts(workspace: WorkspaceDocument, start: Date) {
     contentInProduction,
     activeContentItems,
     activeCampaigns,
+    currentCampaigns,
   ] = await Promise.all([
     ProjectModel.countDocuments({ workspaceId, status: 'active' }),
     TaskModel.countDocuments(openTasks),
@@ -47,6 +49,12 @@ async function operationsCounts(workspace: WorkspaceDocument, start: Date) {
     ContentItemModel.countDocuments({ workspaceId, status: 'production' }),
     ContentItemModel.countDocuments({ workspaceId, status: { $in: UNPUBLISHED } }),
     campaigns ? CampaignModel.countDocuments({ workspaceId, status: 'active' }) : 0,
+    campaigns
+      ? CampaignModel.countDocuments({
+          workspaceId,
+          status: { $in: [...CURRENT_CAMPAIGN_STATUSES] },
+        })
+      : 0,
   ]);
   return {
     activeProjects,
@@ -55,6 +63,7 @@ async function operationsCounts(workspace: WorkspaceDocument, start: Date) {
     contentInProduction,
     activeContentItems,
     activeCampaigns,
+    currentCampaigns,
   };
 }
 

@@ -63,7 +63,10 @@ function overviewOf(type: 'personal' | 'enterprise', company: Company | null = n
     },
     company,
     personal:
-      type === 'personal' ? { name: 'Jhon', completedSteps: 8, personalDnaVersion: 1 } : null,
+      type === 'personal'
+        ? { name: 'Jhon', completedSteps: 8, personalDnaVersion: 1, avatarVersion: null }
+        : null,
+    avatar: null,
   } satisfies WorkspaceOverview;
 }
 
@@ -250,7 +253,7 @@ describe('Tareas y Contenido Enterprise', () => {
 });
 
 describe('Inicio Enterprise', () => {
-  it('Trabajo de la marca: contadores reales y CTA a crear proyecto en el workspace', () => {
+  it('Trabajo de la marca: contadores reales y «Ver todo» hacia Proyectos (la creación manual sigue allí)', () => {
     const html = render(
       <>
         <BrandWorkHeading base={base} />
@@ -266,6 +269,7 @@ describe('Inicio Enterprise', () => {
               contentInProduction: 4,
               activeContentItems: 6,
               activeCampaigns: 0,
+              currentCampaigns: 0,
             },
             upcomingTasks: [],
             recentProjects: [],
@@ -281,7 +285,9 @@ describe('Inicio Enterprise', () => {
     expect(plain).toContain('1 vencidas');
     expect(plain).toContain('Contenido en producción 4');
     expect(plain).toContain('Aún no hay proyectos.');
-    expect(html).toContain(`href="${base}/projects?new"`);
+    expect(html).toContain(`href="${base}/projects"`);
+    expect(plain).toContain('Ver todo');
+    expect(html).not.toContain('projects?new');
     expect(html).toContain(`href="${base}/projects?filter=active"`);
     expect(html).toContain('aria-label="Trabajo de la marca"');
     expect(plain).not.toMatch(/Pixel recomienda/);
@@ -302,7 +308,7 @@ describe('Inicio Enterprise', () => {
     expect(plain).toContain('TINTO');
     expect(plain).toContain('Trabajo de la marca');
     expect(plain).toContain('Proyectos activos');
-    expect(html).toContain(`href="/workspace/${WORKSPACE_ID}/projects?new"`);
+    expect(html).toContain(`href="/workspace/${WORKSPACE_ID}/projects"`);
     expect(plain).not.toMatch(/Tu día|Plan de contenido/);
   });
 });

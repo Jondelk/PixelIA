@@ -227,6 +227,14 @@ separación por dimensión; más una para la corrección, si se pide. Las reglas
 gastan IA. Los evaluadores que no aplican no corren. El preflight hace como mucho dos evaluaciones y
 una corrección por propuesta.
 
+## 11 bis. Presencia (Prompt 17)
+
+Mientras el Guardian revisa (página de Brand Guardian y «Revisar con Guardian»), Pixel pasa a
+`reviewing`; al llegar el informe, `presenceAfterReview`: `pass` → `success`, `warning` o `block`
+→ `warning` («Requiere tu atención»); un error → `error`. Es solo presencia (efímera, en la web):
+no cambia el informe, el score ni el bloqueo. En la propuesta de PixelCommand, un preflight que no es
+`pass` también deja a Pixel en `warning`. Ver `docs/PIXEL-PRESENCE.md` §2.
+
 ## 12. Limitaciones
 
 - La evaluación semántica demo y de respaldo son reglas (léxico de estilos + señales del ADN), solo

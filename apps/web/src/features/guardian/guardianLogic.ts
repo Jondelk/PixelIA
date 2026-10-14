@@ -71,3 +71,7 @@ export const preflightOverridable = (guardian: GuardianPreflightSummary) =>
 
 export const preflightBlocks = (guardian: GuardianPreflightSummary | null) =>
   guardian !== null && guardian.status === 'block' && !guardian.overridden;
+
+/** Prompt 17: tras una revisión, «listo» si pasa y «requiere tu atención» si no (sobrio, sin alarmas). */
+export const presenceAfterReview = (status: 'pass' | 'warning' | 'block'): 'success' | 'warn' =>
+  status === 'pass' ? 'success' : 'warn';

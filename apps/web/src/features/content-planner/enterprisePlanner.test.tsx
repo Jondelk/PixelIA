@@ -69,6 +69,7 @@ const overview = (type: 'personal' | 'enterprise') =>
           }
         : null,
     personal: null,
+    avatar: null,
   }) satisfies WorkspaceOverview;
 
 const enterpriseCopy = plannerCopy(overview('enterprise'));

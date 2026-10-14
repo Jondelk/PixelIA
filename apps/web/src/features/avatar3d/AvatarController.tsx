@@ -15,7 +15,16 @@ const FAST_FIELDS = new Set<keyof Pose>(['mouthOpen', 'eyeOpen']);
  * Orquesta el personaje: calcula la pose objetivo del estado actual, la interpola con
  * suavidad (las transiciones entre estados nunca saltan) y la aplica al cuerpo y al rostro.
  */
-export function AvatarController({ spec, state }: { spec: SceneSpec; state: AvatarState }) {
+export function AvatarController({
+  spec,
+  state,
+  reducedMotion = false,
+}: {
+  spec: SceneSpec;
+  state: AvatarState;
+  /** prefers-reduced-motion: sin bucles (tiempo congelado); el cambio de pose por estado se mantiene. */
+  reducedMotion?: boolean;
+}) {
   const pose = useRef<Pose>({ ...NEUTRAL_POSE });
   const root = useRef<Group>(null);
   const face = useRef<Group>(null);
@@ -23,7 +32,7 @@ export function AvatarController({ spec, state }: { spec: SceneSpec; state: Avat
 
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.1);
-    time.current += dt;
+    if (!reducedMotion) time.current += dt;
     const target = poseAt(state, time.current, spec.motion);
     const current = pose.current;
     for (const key of Object.keys(target) as (keyof Pose)[]) {

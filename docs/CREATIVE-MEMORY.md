@@ -286,6 +286,12 @@ Memory es un efecto secundario: la acción principal siempre gana.
 - La vía principal sigue siendo hablar con Pixel; la página sirve para ver, confirmar, editar,
   olvidar y entender.
 
+**Prompt 17 (Pixel Presence):** la navegación conserva «Lo aprendido» (Enterprise: Marca = ADN de
+marca · Brand Guardian · Lo aprendido · Personaje; Personal: junto a Mi Pixel). «Recordar» y
+«Olvidar» funcionan igual desde el Pixel Dock y por voz, pero la confirmación sigue siendo un clic.
+Las preferencias de voz y movimiento **no** son memoria creativa: son del dispositivo
+(`docs/PIXEL-PRESENCE.md` §5) y nunca entran al contexto de la IA.
+
 ## 17. Coste y rendimiento
 
 - Registrar una decisión cuesta 1 inserción + 2 consultas por clave (memorias de la clave y eventos

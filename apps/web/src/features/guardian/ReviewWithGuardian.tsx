@@ -5,6 +5,8 @@ import { Button } from '../../components/Button';
 import { Icon } from '../../components/Icon';
 import { errorMessage } from '../../lib/api';
 import { evaluateWithGuardian } from './guardianApi';
+import { presenceAfterReview } from './guardianLogic';
+import { usePixelPresence } from '../presence/presenceContext';
 
 /**
  * "Revisar con Guardian" desde Campaña, Plan de contenido o Contenido: evalúa el recurso y abre el
@@ -27,6 +29,7 @@ export function ReviewWithGuardian({
   label?: string;
 }) {
   const navigate = useNavigate();
+  const presence = usePixelPresence();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   return (
@@ -37,10 +40,13 @@ export function ReviewWithGuardian({
         onClick={async () => {
           setBusy(true);
           setError(null);
+          presence.review();
           try {
             const report = await evaluateWithGuardian(workspaceId, { resourceType, resourceId });
+            presence.send(presenceAfterReview(report.status));
             navigate(`${base}/guardian/reports/${report.id}`);
           } catch (err) {
+            presence.fail();
             setError(errorMessage(err));
             setBusy(false);
           }

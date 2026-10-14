@@ -38,19 +38,26 @@ Director Creativo asistido por IA. Producto de **PIXELES — Tecnología creativ
 indispensable (una pregunta), propone y, tras una confirmación, organiza los recursos con los módulos
 existentes. Los formularios son opciones avanzadas, no la ruta principal.
 
+**Pixel Presence** (Prompt 17, `docs/PIXEL-PRESENCE.md`): «Pixel should feel present, not merely
+available». Pixel muestra qué está haciendo (escuchar, pensar, hablar, revisar) en toda la interfaz
+del workspace, acompaña fuera del Inicio con el Pixel Dock (consciente del recurso abierto) y acepta
+la voz como otra entrada. Si el avatar o la voz fallan, todo sigue funcionando por texto.
+
 El avatar **nunca** es una mascota aleatoria: es una consecuencia trazable del ADN. Ejemplos: café
 artesanal → grano de café cálido; startup → forma geométrica precisa; constructora → personaje
 estructural.
 
 **Fuera de alcance hasta que se pida explícitamente:** generación automática avanzada de modelos 3D
 (el avatar es paramétrico/procedural), generación de video, lip-sync avanzado (la animación
-`speaking` actual no lo es), voz en tiempo real, campañas automáticas completas, facturación, planes
+`speaking` actual no lo es), voz en tiempo real (la voz actual es por turnos, del navegador),
+clonación de voz, loader de avatares GLB (solo hay contrato: `docs/AVATAR-ASSET-CONTRACT.md`), campañas automáticas completas, facturación, planes
 SaaS, panel administrativo complejo y analytics avanzados.
 
 Referencia (leer lo relevante antes de trabajar): `docs/WORKSPACES.md`, `docs/PERSONAL.md`,
 `docs/WORKSPACE-MIGRATION.md`, `docs/OPERATIONS.md`, `docs/ENTERPRISE-OPERATIONS.md`,
 `docs/CAMPAIGNS.md`, `docs/CONTENT-PLANNER.md`, `docs/ENTERPRISE-CONTENT.md`, `docs/DAILY-DIRECTOR.md`,
-`docs/PIXEL-COMMAND.md`, `docs/BRAND-GUARDIAN.md` y `docs/CREATIVE-MEMORY.md` describen el diseño vigente; `docs/MVP.md`,
+`docs/PIXEL-COMMAND.md`, `docs/BRAND-GUARDIAN.md`, `docs/CREATIVE-MEMORY.md`, `docs/PIXEL-PRESENCE.md` y
+`docs/AVATAR-ASSET-CONTRACT.md` describen el diseño vigente; `docs/MVP.md`,
 `docs/ARCHITECTURE.md`, `docs/ENTITIES.md` y `docs/BACKLOG.md` tienen deriva importante (detalle en
 `PIXEL_ESTADO.md` §12). Ante un conflicto, manda el código.
 
@@ -212,7 +219,17 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
   contenido) abre con `PixelCommand` ("¿Qué necesitas hacer?"); los formularios existentes quedan
   como opciones avanzadas ("Brief detallado", "Crear manualmente", "Opciones avanzadas"), nunca se
   borran. Navegación Enterprise: Inicio · Trabajo (Campañas, Plan de contenido, Proyectos, Tareas,
-  Contenido) · Marca. La entrada entrega `onSubmit(text, source)`: la voz llegará por ahí.
+  Contenido) · Marca. La entrada entrega `onSubmit(text, source)`: la voz llega por ahí (Prompt 17).
+- **Pixel Presence** (`features/presence/`, `docs/PIXEL-PRESENCE.md`): el estado visible de Pixel
+  (idle, listening, thinking, speaking, reviewing, success, warning, error) es **efímero** (nunca en
+  Mongo) y solo lo mueven eventos de los flujos existentes. Niveles: `ambient` (siempre 2D, sin
+  WebGL), `interactive` (Inicio) y `focus`; **un solo 3D por pantalla**; Pixi si no hay personaje.
+  La voz es **otra entrada** de PixelCommand (`onSubmit(text, 'voice')`): Pixel solo habla en una
+  sesión de voz iniciada con el micrófono, nunca confirma por voz, calla al cambiar de Pixel y todo
+  degrada a texto. El acento de cada Pixel es un dato del personaje con contraste validado
+  (`workspaceAccent.ts`). El Pixel Dock (fuera del Inicio) envía el recurso de la ruta como
+  `contextHint.resource`, y la API lo valida contra el workspace. Chat no está en la navegación: se
+  llega desde el Dock y su ruta y conversaciones se conservan.
 - **Brand Guardian en la web** (`features/guardian/`): vive en Marca (`/workspace/:id/guardian`), sin
   grupo nuevo de navegación; "Revisar con Guardian" en campaña, plan y contenido; en la propuesta de
   PixelCommand, una línea compacta con el detalle bajo demanda.
@@ -257,8 +274,8 @@ Fuente de verdad: `brand-assets/PIXELES — Manual de marca (español).pdf` (no 
   brillos, neón, degradados, blur, partículas, decoración flotante ni iconografía infantil o de "IA"
   (cerebros, circuitos, robots, hexágonos, destellos): "que no se vea con tanta IA". Movimiento suave
   sin rebotes (`ease-pxl`); `<Reveal>` aparece al hacer scroll y se revierte al subir. Todo debe
-  respetar `prefers-reduced-motion` (hoy el avatar 3D y el `scrollTo` de los onboardings no lo
-  hacen: `PIXEL_ESTADO.md` §11).
+  respetar `prefers-reduced-motion` (el avatar 3D lo respeta desde el Prompt 17; el `scrollTo` de
+  los onboardings todavía no: `PIXEL_ESTADO.md` §11).
 
 ## Forma de trabajar
 
