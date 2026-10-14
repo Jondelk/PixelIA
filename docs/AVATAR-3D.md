@@ -63,8 +63,7 @@ oclusión de contacto. Vistas: `hero`, `front`, `three_quarter`, `side` y `cutou
 transparente, para el manual y otras piezas).
 
 **Rig.** El `.glb` trae nodos con nombre y pivotes en su sitio: `PixelRoot`, `Body`, `Face`,
-`Eye_L/R`, `Pupil_L/R`, `Mouth`, `Mouth_Open` (interior de la boca: cerrado en reposo, se abre
-desde el labio superior al hablar), `Arm_L/R` (hombros), `Leg_L/R` (caderas). La web lo anima con las
+`Eye_L/R`, `Pupil_L/R`, `Mouth`, `Arm_L/R` (hombros), `Leg_L/R` (caderas). La web lo anima con las
 mismas poses del avatar paramétrico (`apps/web/src/features/avatar3d/glbRig.ts`): parpadeo, mirada,
 boca al hablar, brazos y balanceo. "L" es la izquierda del personaje (+X); mira hacia +Z.
 
@@ -74,6 +73,13 @@ más ligera (≈2 MB, ≈125 mil triángulos), con más detalle en los rasgos de
 
 **Para todos los Pixels.** Se esculpe el personaje de las marcas (Enterprise) y el de las
 personas (Personal): la API toma la versión vigente del avatar de cada tipo de workspace.
+
+**Boca.** Una sola pieza por capa (interior, lengua y, en `grin`, dientes) bajo el nodo `Mouth`,
+con morph targets `open` y `round`: cerrada es el trazo de la sonrisa del estilo; al abrirse, el
+labio inferior baja en «D» y aparece la lengua; redondear estrecha la boca (o, u). El peso de
+reposo de `open` es la apertura del estilo (`open_smile`, `grin`). La forma 2D está en
+`packages/sculpt/src/mouth.ts` y la web la importa (`@pixel/sculpt/mouth`) para que el avatar
+paramétrico tenga exactamente la misma boca. Nunca hay dos bocas superpuestas.
 
 ## Sincronía labial (la boca sigue la voz)
 

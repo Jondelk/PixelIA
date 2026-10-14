@@ -4,6 +4,7 @@ import { buildCharacter } from './character.js';
 import { readGlbJson, writeGlb } from './glb.js';
 import { RENDER_VIEWS, sculptCharacter } from './index.js';
 import { meshShape, openEdges, signedVolume } from './mesh.js';
+import { mouthLayer, MOUTH_U, MOUTH_V } from './mouth.js';
 import { encodePng } from './png.js';
 import { capsule, ellipsoid, smoothUnion, sphere } from './sdf.js';
 import type { CharacterSpec } from './spec.js';
@@ -266,5 +267,56 @@ describe('Personajes de marca', () => {
     expect(Buffer.from(a.glb).equals(Buffer.from(b.glb))).toBe(true);
     expect(a.stats.triangles).toBeGreaterThan(5000);
     expect(Object.keys(RENDER_VIEWS)).toEqual(['hero', 'front', 'three_quarter', 'side', 'cutout']);
+  }, 60_000);
+});
+
+describe('Boca', () => {
+  const height = (pts: Float32Array, column: number) => {
+    const row = MOUTH_U + 1;
+    return pts[column * 2 + 1]! - pts[(MOUTH_V * row + column) * 2 + 1]!;
+  };
+  const center = MOUTH_U / 2;
+
+  it('cerrada es un trazo fino; abierta, una abertura alta', () => {
+    const closed = mouthLayer('soft_smile', 'inner', 0, 0)!;
+    const open = mouthLayer('soft_smile', 'inner', 1, 0)!;
+    expect(height(closed, center)).toBeLessThan(0.2);
+    expect(height(open, center)).toBeGreaterThan(0.9);
+  });
+
+  it('la lengua queda dentro de la boca y no asoma cerrada', () => {
+    const inner = mouthLayer('smile', 'inner', 0.6, 0)!;
+    const tongue = mouthLayer('smile', 'tongue', 0.6, 0)!;
+    const innerBottom = inner[(MOUTH_V * (MOUTH_U + 1) + center) * 2 + 1]!;
+    for (let i = 0; i < tongue.length; i += 2)
+      expect(tongue[i + 1]!).toBeGreaterThanOrEqual(innerBottom);
+    const closedTongue = mouthLayer('smile', 'tongue', 0, 0)!;
+    expect(height(closedTongue, center)).toBeCloseTo(0, 6);
+  });
+
+  it('redondear (o, u) estrecha la boca', () => {
+    const wide = mouthLayer('smile', 'inner', 0, 0)!;
+    const round = mouthLayer('smile', 'inner', 0, 1)!;
+    expect(Math.abs(round[0]!)).toBeLessThan(Math.abs(wide[0]!));
+  });
+
+  it('el .glb trae la boca como una pieza con morph targets open y round', () => {
+    const r = sculptCharacter(spec({ face: { ...spec().face, mouth: 'grin' } }), {
+      size: 32,
+      quality: 'draft',
+      views: ['hero'],
+    });
+    const { json } = readGlbJson(r.glb);
+    const meshes = json.meshes as {
+      name: string;
+      weights?: number[];
+      extras?: { targetNames: string[] };
+    }[];
+    const inner = meshes.find((m) => m.name === 'Mouth_Inner')!;
+    expect(inner.extras!.targetNames).toEqual(['open', 'round']);
+    expect(inner.weights![0]).toBeCloseTo(0.5);
+    expect(meshes.some((m) => m.name === 'Mouth_Teeth')).toBe(true);
+    // Una sola boca: no quedan piezas de la versión con capas superpuestas.
+    expect(meshes.some((m) => /Mouth_(Line|Open)/.test(m.name))).toBe(false);
   }, 60_000);
 });

@@ -2,7 +2,7 @@ import { useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import { Box3, Euler, Vector3, type Mesh, type Object3D } from 'three';
-import { poseToRig, RIG_NODES, type RigNode } from './glbRig';
+import { mouthMorphWeights, poseToRig, RIG_NODES, type RigNode } from './glbRig';
 import { dampPose, targetPose } from './livePose';
 import { NEUTRAL_POSE, type AvatarState, type Pose } from './pose';
 import type { SceneSpec } from './sceneSpec';
@@ -52,13 +52,21 @@ export function SculptedAvatarModel({
       rest.set(node, {
         position: node.position.clone(),
         rotation: node.rotation.clone(),
-        // El interior de la boca se escala en absoluto (en el archivo está cerrado).
-        scale: name === 'Mouth_Open' ? new Vector3(1, 1, 1) : node.scale.clone(),
+        scale: node.scale.clone(),
       });
     }
     const eye = nodes.get('Eye_L');
     const eyeSize = eye ? new Box3().setFromObject(eye).getSize(new Vector3()).x : 0.1;
-    return { nodes, rest, lookRange: eyeSize * 0.12, mouthInterior: nodes.has('Mouth_Open') };
+    // Piezas de la boca con morph targets (`open`, `round`) y su apertura de reposo.
+    const mouths: { mesh: Mesh; open: number; round: number | undefined; rest: number }[] = [];
+    scene.traverse((object) => {
+      const mesh = object as Mesh;
+      const dict = mesh.isMesh ? mesh.morphTargetDictionary : undefined;
+      const influences = mesh.morphTargetInfluences;
+      if (!dict || !influences || dict.open === undefined) return;
+      mouths.push({ mesh, open: dict.open, round: dict.round, rest: influences[dict.open] ?? 0 });
+    });
+    return { nodes, rest, lookRange: eyeSize * 0.12, mouths };
   }, [scene]);
 
   useEffect(() => {
@@ -87,7 +95,14 @@ export function SculptedAvatarModel({
     const current = pose.current;
     dampPose(current, target.pose, dt, target.synced);
 
-    const transforms = poseToRig(current, rig.lookRange, { mouthInterior: rig.mouthInterior });
+    const transforms = poseToRig(current, rig.lookRange, { mouthMorphs: rig.mouths.length > 0 });
+    for (const mouth of rig.mouths) {
+      const influences = mouth.mesh.morphTargetInfluences;
+      if (!influences) continue;
+      const weights = mouthMorphWeights(current, mouth.rest);
+      influences[mouth.open] = weights.open;
+      if (mouth.round !== undefined) influences[mouth.round] = weights.round;
+    }
     for (const [name, node] of rig.nodes) {
       const base = rig.rest.get(node)!;
       const t = transforms[name];

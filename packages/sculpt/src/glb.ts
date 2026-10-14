@@ -33,7 +33,15 @@ export interface GlbNode {
   /** Escala de reposo (por defecto 1). */
   scale?: Vec3;
   children: number[];
-  mesh?: { mesh: Mesh; colors: Uint8Array; material: number; name: string };
+  mesh?: {
+    mesh: Mesh;
+    colors: Uint8Array;
+    material: number;
+    name: string;
+    /** Morph targets: desplazamientos de POSITION por vértice y pesos de reposo. */
+    morphs?: { name: string; deltas: Float32Array }[];
+    weights?: number[];
+  };
 }
 
 const ARRAY_BUFFER = 34962;
@@ -136,6 +144,27 @@ export function writeGlb(input: {
         count: mesh.indices.length,
         type: 'SCALAR',
       });
+      const targets = (node.mesh.morphs ?? []).map((morph) => {
+        const lo = [Infinity, Infinity, Infinity];
+        const hi = [-Infinity, -Infinity, -Infinity];
+        for (let i = 0; i < morph.deltas.length; i += 3) {
+          for (let k = 0; k < 3; k++) {
+            const v = morph.deltas[i + k]!;
+            if (v < lo[k]!) lo[k] = v;
+            if (v > hi[k]!) hi[k] = v;
+          }
+        }
+        const accessor = accessors.push({
+          bufferView: addView(bytes(morph.deltas), ARRAY_BUFFER),
+          componentType: FLOAT,
+          count,
+          type: 'VEC3',
+          min: lo,
+          max: hi,
+        });
+        return { POSITION: accessor - 1 };
+      });
+      const morphs = node.mesh.morphs ?? [];
       meshes.push({
         name: node.mesh.name,
         primitives: [
@@ -144,8 +173,16 @@ export function writeGlb(input: {
             indices: indices - 1,
             material: node.mesh.material,
             mode: 4,
+            ...(targets.length ? { targets } : {}),
           },
         ],
+        ...(morphs.length
+          ? {
+              weights: node.mesh.weights ?? morphs.map(() => 0),
+              // three.js y Blender leen los nombres de los morph targets de aquí.
+              extras: { targetNames: morphs.map((m) => m.name) },
+            }
+          : {}),
       });
       out.mesh = meshes.length - 1;
     }

@@ -729,7 +729,9 @@ personaje generado de forma nativa y boca sincronizada con la voz. Rebasado sobr
   materiales PBR + renders de estudio. La API lo ejecuta en un `worker_thread` (`avatars/model/`);
   ahora sirve a **Enterprise y Personal** (`ModelScope`, versión vigente de `company` o
   `personalProfile`). El `.glb` para la web es una malla más ligera (~2 MB, ~125 k triángulos) y
-  trae `Mouth_Open` (interior de la boca, cerrado en reposo) para hablar. Detalle: `AVATAR-3D.md`.
+  trae la boca como una sola pieza con morph targets `open`/`round` (misma forma 2D que la boca
+  del avatar paramétrico, `@pixel/sculpt/mouth`); los modelos de una versión anterior del motor se
+  vuelven a esculpir solos. Detalle: `AVATAR-3D.md`.
 - Web: `SculptedAvatarModel` sustituye al paramétrico donde hay modelo (personaje, chat y presencia
   interactiva/foco), con respaldo automático.
 - Sincronía labial (`avatar3d/lipsync.ts`, `speechSignal.ts`, `livePose.ts`): visemas del español

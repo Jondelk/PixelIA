@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { poseToRig, RIG_NODES } from './glbRig';
+import { mouthMorphWeights, poseToRig, RIG_NODES } from './glbRig';
 import { NEUTRAL_POSE, poseAt } from './pose';
 
 const motion = {
@@ -21,18 +21,13 @@ describe('poseToRig', () => {
     near(rig.Arm_L!.rotation, [0, 0, 0]);
     near(rig.Arm_R!.rotation, [0, 0, 0]);
     near(rig.Mouth!.scale, [1, 1, 1]);
-    // El interior de la boca está cerrado en reposo.
-    expect(rig.Mouth_Open!.scale![1]).toBeLessThan(0.01);
   });
-
-  it('labios redondeados (o, u): boca más estrecha', () => {
-    const open = { ...NEUTRAL_POSE, mouthOpen: 0.7 };
-    const a = poseToRig(open, 0.02, { mouthInterior: true });
-    const o = poseToRig({ ...open, mouthRound: 1 }, 0.02, { mouthInterior: true });
-    expect(o.Mouth_Open!.scale![0]).toBeLessThan(a.Mouth_Open!.scale![0]);
-    expect(a.Mouth_Open!.scale![1]).toBeCloseTo(0.7);
-    // Con interior, la línea de la boca casi no se engrosa.
-    expect(a.Mouth!.scale![1]).toBeLessThan(1.2);
+  it('boca con morphs: abre y redondea sin estirar el nodo', () => {
+    const speaking = { ...NEUTRAL_POSE, mouthOpen: 0.7, mouthRound: 1 };
+    expect(mouthMorphWeights(speaking, 0)).toEqual({ open: 0.7, round: 1 });
+    // Una boca abierta de reposo no se cierra por debajo de su reposo.
+    expect(mouthMorphWeights(NEUTRAL_POSE, 0.5).open).toBe(0.5);
+    expect(poseToRig(speaking, 0.02, { mouthMorphs: true }).Mouth!.scale![1]).toBe(1);
   });
 
   it('cubre todos los nodos del rig que exporta Pixel Sculpt', () => {

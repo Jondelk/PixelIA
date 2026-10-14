@@ -14,7 +14,7 @@ export { encodePng } from './png.js';
 export { readGlbJson } from './glb.js';
 
 /** Versión del motor (queda registrada en cada modelo). */
-export const SCULPT_VERSION = '1.0.0';
+export const SCULPT_VERSION = '1.1.0';
 
 /** Vistas de estudio que se producen. */
 export const RENDER_VIEWS = {
@@ -58,11 +58,14 @@ const WEB_SCALE = 2.1;
 const WEB_DETAIL_SCALE = 1.4;
 
 interface BuiltPart {
-  part: CharacterPart;
+  part: Pick<CharacterPart, 'name' | 'node' | 'material'>;
   mesh: Mesh;
   /** Albedo lineal por vértice. */
   albedo: Float32Array;
   ao: Float32Array;
+  /** Morph targets (posiciones absolutas) y sus pesos de reposo: la boca. */
+  morphs?: { name: string; positions: Float32Array }[];
+  weights?: number[];
 }
 
 /** Quita los triángulos cuyos tres vértices quedan dentro de `inside` (caras ocultas). */
@@ -165,14 +168,31 @@ export function sculptCharacter(spec: CharacterSpec, options: SculptOptions = {}
   const web: BuiltPart[] = [];
   character.parts.forEach((part, i) => {
     const cell = part.cell * CELL_SCALE[quality];
-    if (!part.hiddenAtRest) {
-      const fine = buildPart(part, cell);
-      if (fine) built.push(fine);
-    }
+    const fine = buildPart(part, cell);
+    if (fine) built.push(fine);
     const light = buildPart(part, cell * (part.cell < 0.0045 * s ? WEB_DETAIL_SCALE : WEB_SCALE));
     if (light) web.push(light);
     progress('modelando', 0.05 + (0.5 * (i + 1)) / character.parts.length);
   });
+  // Piezas con malla propia (la boca): misma malla en ambas resoluciones. En los renders se
+  // dibujan en su pose de reposo (pesos de reposo aplicados).
+  for (const mp of character.meshParts) {
+    const color = character.materials[mp.material]?.color ?? [0.1, 0.05, 0.05];
+    const count = mp.mesh.positions.length / 3;
+    const albedo = new Float32Array(count * 3);
+    for (let v = 0; v < count; v++) albedo.set(color, v * 3);
+    const ao = new Float32Array(count).fill(0.92);
+    web.push({ part: mp, mesh: mp.mesh, albedo, ao, morphs: mp.morphs, weights: mp.weights });
+    const posed = Float32Array.from(mp.mesh.positions);
+    mp.morphs.forEach((morph, k) => {
+      const w = mp.weights[k] ?? 0;
+      if (!w) return;
+      for (let i = 0; i < posed.length; i++) {
+        posed[i] = posed[i]! + (morph.positions[i]! - mp.mesh.positions[i]!) * w;
+      }
+    });
+    built.push({ part: mp, mesh: { ...mp.mesh, positions: posed }, albedo, ao });
+  }
   const meshMs = Date.now() - t0;
 
   const glb = toGlb(character, web, spec);
@@ -339,6 +359,15 @@ function toGlb(character: Character, built: BuiltPart[], spec: CharacterSpec): U
         colors,
         material: Math.max(0, materialKeys.indexOf(b.part.material)),
         name: b.part.name,
+        ...(b.morphs
+          ? {
+              morphs: b.morphs.map((m) => ({
+                name: m.name,
+                deltas: m.positions.map((v, i) => v - p[i]!),
+              })),
+              weights: b.weights ?? b.morphs.map(() => 0),
+            }
+          : {}),
       },
     });
     nodes[index.get(b.part.node) ?? 0]!.children.push(nodeIndex);

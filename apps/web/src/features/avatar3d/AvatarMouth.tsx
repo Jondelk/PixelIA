@@ -1,65 +1,93 @@
+import { mouthIndices, mouthLayer, mouthStyle, type MouthLayer } from '@pixel/sculpt/mouth';
 import { useFrame } from '@react-three/fiber';
-import { useRef } from 'react';
-import type { Group, Mesh } from 'three';
+import { useEffect, useMemo } from 'react';
+import { BufferAttribute, BufferGeometry, DoubleSide } from 'three';
+import { mouthMorphWeights } from './glbRig';
 import type { PoseRef } from './poseRef';
 import { frontZ, type SceneSpec } from './sceneSpec';
 
-const BASE_OPEN: Record<SceneSpec['face']['mouth'], number> = {
-  soft_smile: 0,
-  smile: 0,
-  grin: 0,
-  line: 0,
-  open_smile: 0.3,
-  none: 0,
+/** Separación de cada capa sobre la superficie (la lengua y los dientes, sobre el interior). */
+const LIFT: Record<MouthLayer, number> = { inner: 0.006, teeth: 0.009, tongue: 0.009 };
+const COLORS: Record<MouthLayer, string | null> = {
+  inner: null,
+  teeth: '#FBFAF6',
+  tongue: '#E7737F',
 };
 
-const ARC: Record<SceneSpec['face']['mouth'], number> = {
-  soft_smile: Math.PI * 0.55,
-  smile: Math.PI * 0.75,
-  grin: Math.PI * 0.95,
-  open_smile: Math.PI * 0.75,
-  line: Math.PI * 0.3,
-  none: 0,
-};
+interface Layer {
+  layer: MouthLayer;
+  geometry: BufferGeometry;
+  base: Float32Array;
+  open: Float32Array;
+  round: Float32Array;
+}
 
-/** Boca: arco de sonrisa en reposo; al hablar sigue los visemas de lo que dice (lipsync.ts). */
+/**
+ * Boca del avatar paramétrico: la MISMA forma que el modelo esculpido (`@pixel/sculpt/mouth`),
+ * una sola pieza por capa que se abre y redondea con la pose (visemas al hablar). Cerrada es el
+ * trazo de la sonrisa; abierta, una «D» con lengua. Nunca hay dos bocas superpuestas.
+ */
 export function AvatarMouth({ spec, pose }: { spec: SceneSpec; pose: PoseRef }) {
   const { face, body } = spec;
-  const arc = useRef<Group>(null);
-  const open = useRef<Mesh>(null);
-  const s = face.scale;
-  const z = frontZ(body, 0, face.mouthY);
-  const arcAngle = ARC[face.mouth];
+  // Unidad de la boca (equivale al radio del ojo del modelo esculpido).
+  const re = 0.17 * face.scale;
+  const style = mouthStyle(face.mouth);
+
+  const layers = useMemo<Layer[]>(() => {
+    const out: Layer[] = [];
+    if (!mouthStyle(face.mouth)) return out;
+    const index = new BufferAttribute(mouthIndices(), 1);
+    for (const layer of ['inner', 'teeth', 'tongue'] as MouthLayer[]) {
+      const base = mouthLayer(face.mouth, layer, 0, 0);
+      const open = mouthLayer(face.mouth, layer, 1, 0);
+      const round = mouthLayer(face.mouth, layer, 0, 1);
+      if (!base || !open || !round) continue;
+      const geometry = new BufferGeometry();
+      const positions = new Float32Array((base.length / 2) * 3);
+      geometry.setAttribute('position', new BufferAttribute(positions, 3));
+      geometry.setIndex(index);
+      out.push({ layer, geometry, base, open, round });
+    }
+    return out;
+  }, [face.mouth]);
+
+  useEffect(() => () => layers.forEach((l) => l.geometry.dispose()), [layers]);
 
   useFrame(() => {
     const p = pose.current;
-    if (!p) return;
-    const openness = Math.min(1, Math.max(BASE_OPEN[face.mouth], p.mouthOpen));
-    const arcVisible = Math.max(0, 1 - Math.max(0, openness - 0.12) / 0.2);
-    const curve = face.mouth === 'line' ? 0.15 : 0.35 + p.mouthSmile * 0.75;
-    arc.current?.scale.set(Math.max(0.001, arcVisible), Math.max(0.001, arcVisible * curve), 1);
-    // Labios redondeados (o, u): boca más estrecha y algo más alta.
-    open.current?.scale.set(
-      0.14 * s * (0.85 + p.mouthSmile * 0.4) * (1 - 0.42 * p.mouthRound),
-      Math.max(0.002, 0.14 * s * openness * (1 + 0.15 * p.mouthRound)),
-      0.07,
-    );
+    if (!p || !style) return;
+    const { open, round } = mouthMorphWeights(p, style.restOpen);
+    for (const l of layers) {
+      const attr = l.geometry.getAttribute('position') as BufferAttribute;
+      const arr = attr.array as Float32Array;
+      for (let i = 0; i < l.base.length / 2; i++) {
+        const bx = l.base[i * 2]!;
+        const by = l.base[i * 2 + 1]!;
+        const x = (bx + (l.open[i * 2]! - bx) * open + (l.round[i * 2]! - bx) * round) * re;
+        const y = (by + (l.open[i * 2 + 1]! - by) * open + (l.round[i * 2 + 1]! - by) * round) * re;
+        arr[i * 3] = x;
+        arr[i * 3 + 1] = y;
+        // Sigue la curvatura del cuerpo.
+        arr[i * 3 + 2] = frontZ(body, x, face.mouthY + y) + LIFT[l.layer];
+      }
+      attr.needsUpdate = true;
+      l.geometry.computeBoundingSphere();
+    }
   });
 
-  if (face.mouth === 'none') return null;
+  if (!style) return null;
 
   return (
-    <group position={[0, face.mouthY, z]}>
-      <group ref={arc}>
-        <mesh rotation={[0, 0, -Math.PI / 2 - arcAngle / 2]}>
-          <torusGeometry args={[0.12 * s, 0.022 * s, 10, 32, arcAngle]} />
-          <meshStandardMaterial color={face.featureColor} roughness={0.4} />
+    <group position={[0, face.mouthY, 0]}>
+      {layers.map((l) => (
+        <mesh key={l.layer} geometry={l.geometry} renderOrder={l.layer === 'inner' ? 1 : 2}>
+          <meshStandardMaterial
+            color={COLORS[l.layer] ?? face.featureColor}
+            roughness={0.55}
+            side={DoubleSide}
+          />
         </mesh>
-      </group>
-      <mesh ref={open} position={[0, -0.03 * s, 0.005]}>
-        <sphereGeometry args={[1, 32, 16]} />
-        <meshStandardMaterial color="#2A0E0A" roughness={0.6} />
-      </mesh>
+      ))}
     </group>
   );
 }

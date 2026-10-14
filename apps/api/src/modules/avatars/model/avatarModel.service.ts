@@ -231,9 +231,23 @@ export function createAvatarModelService(options: AvatarModelServiceOptions): Av
   }
 
   async function get(scope: ModelScope): Promise<AvatarModelResponse> {
-    const doc = scope.avatarVersion
+    let doc = scope.avatarVersion
       ? await findBuild(scope.workspace._id, scope.avatarVersion)
       : null;
+    // Un modelo hecho con una versión anterior del motor se vuelve a esculpir solo (mejoras como
+    // la boca animable llegan sin que nadie tenga que pedirlo). Mientras tanto se sirve el anterior.
+    if (
+      doc?.status === 'ready' &&
+      doc.engineVersion !== ENGINE_VERSION &&
+      options.autoBuild &&
+      runner &&
+      scope.avatarVersion
+    ) {
+      await enqueue(scope, scope.avatarVersion, true).catch((err: unknown) =>
+        options.logger.error('No se pudo actualizar el modelo 3D', { err }),
+      );
+      doc = await findBuild(scope.workspace._id, scope.avatarVersion);
+    }
     return {
       engine: { name: ENGINE_NAME, version: ENGINE_VERSION, available: runner !== null },
       model: doc ? toModel(doc) : null,

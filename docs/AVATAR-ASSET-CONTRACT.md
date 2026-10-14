@@ -2,7 +2,7 @@
 
 > **Actualización:** el loader ya existe para los modelos que genera **Pixel Sculpt**
 > (`docs/AVATAR-3D.md`): rig por nodos con nombre (`PixelRoot`, `Face`, `Eye_L/R`, `Pupil_L/R`,
-> `Mouth`, `Mouth_Open`, `Arm_L/R`, `Leg_L/R`), animado con las poses procedurales y con sincronía
+> `Mouth`, `Arm_L/R`, `Leg_L/R`; la boca con morph targets `open` y `round`), animado con las poses procedurales y con sincronía
 > labial por visemas. Este contrato sigue vigente para personajes modelados a mano con clips.
 >
 > **Estado original:** contrato preparado, **sin loader**. Hoy todos los personajes son **paramétricos y

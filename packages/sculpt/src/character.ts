@@ -1,5 +1,7 @@
 import { buildBody, bodyDims, type BodyMaterial, type Paint } from './bodies.js';
 import { hexToLinear, mixLinear } from './color.js';
+import type { Mesh } from './mesh.js';
+import { mouthIndices, mouthLayer, mouthStyle, type MouthLayer } from './mouth.js';
 import type { Shape, Vec3 } from './sdf.js';
 import {
   add,
@@ -30,6 +32,7 @@ import {
   domeLift,
   ellipse2D,
   frontHit,
+  normalAt,
   roundRect2D,
   sideHit,
   topHit,
@@ -66,7 +69,7 @@ export interface CharacterNode {
   parent: string | null;
   /** Pivote en coordenadas del mundo. */
   pivot: Vec3;
-  /** Escala de reposo (p. ej. el interior de la boca, cerrado hasta que Pixel habla). */
+  /** Escala de reposo (por defecto 1). */
   scale?: Vec3;
 }
 
@@ -82,13 +85,24 @@ export interface CharacterPart {
   ao: boolean;
   /** Se descartan los triángulos ocultos dentro de esta forma (cara inferior de calcomanías). */
   cull?: Shape;
-  /** Solo existe animado (interior de la boca al hablar): no sale en los renders en reposo. */
-  hiddenAtRest?: boolean;
+}
+
+/** Pieza con malla propia (no sale de un campo de distancia): la boca con sus morph targets. */
+export interface CharacterMeshPart {
+  name: string;
+  node: string;
+  material: string;
+  mesh: Mesh;
+  /** Posiciones absolutas (mundo) de cada morph target, misma topología que `mesh`. */
+  morphs: { name: string; positions: Float32Array }[];
+  /** Peso de reposo de cada morph target. */
+  weights: number[];
 }
 
 export interface Character {
   nodes: CharacterNode[];
   parts: CharacterPart[];
+  meshParts: CharacterMeshPart[];
   materials: Record<string, PartMaterial>;
   /** Escena completa (para oclusión y sombras de contacto). */
   occluder: Shape;
@@ -175,7 +189,8 @@ export function buildCharacter(spec: CharacterSpec): Character {
       emissiveStrength: 1.6,
       sheen: 0,
     }),
-    mouth: mat('Mouth', mixLinear(L(col.feature), L('#6E1A26'), 0.5), 'satin', { roughness: 0.5 }),
+    // Oscuro como un trazo cuando está cerrada, cálido (interior) al abrirse.
+    mouth: mat('Mouth', mixLinear(L(col.feature), L('#6E1A26'), 0.38), 'satin', { roughness: 0.5 }),
     tongue: mat('Tongue', mixLinear(L(col.blush), L('#E2606C'), 0.6), 'satin'),
     teeth: mat('Teeth', L('#FBFAF6'), 'satin'),
     blush: mat('Blush', L(col.blush), 'matte'),
@@ -203,6 +218,7 @@ export function buildCharacter(spec: CharacterSpec): Character {
 
   const nodes: CharacterNode[] = [];
   const parts: CharacterPart[] = [];
+  const meshParts: CharacterMeshPart[] = [];
   const node = (name: string, parent: string | null, pivot: Vec3, scale?: Vec3) =>
     nodes.push({ name, parent, pivot, ...(scale ? { scale } : {}) });
   // Piezas apoyadas sobre el cuerpo (rasgos, bufanda, casco…): su cara interior nunca se ve y
@@ -541,129 +557,62 @@ export function buildCharacter(spec: CharacterSpec): Character {
     });
   }
 
-  // Boca
+  // Boca: una sola pieza por capa (interior, dientes, lengua) que se deforma con morph targets
+  // (`open`, `round`): cerrada es el trazo de la sonrisa; abierta, una «D» con lengua. Nunca se
+  // superponen dos bocas. La forma en 2D sale de mouth.ts (la misma que usa la web).
   const mouthHit = frontHit(W, 0, mouthY);
   const mouthAt: Vec3 = mouthHit?.p ?? [0, mouthY, faceZ];
   node('Mouth', 'Face', mouthAt);
-  const mw = re * 0.95;
-  const mouthDecal = (
-    profile: (x: number, y: number) => number,
-    half: [number, number],
-    n: number,
-    bevel = 0.0012 * s,
-  ) => decal(W, { profile, at: mouthAt, half, lift: L1 + step * n, sink, reach, bevel });
-  const style = spec.face.mouth;
-  if (style === 'soft_smile' || style === 'smile' || style === 'line') {
-    const wide = style === 'smile' ? 0.9 : style === 'line' ? 0.8 : 0.72;
-    const sag = style === 'line' ? re * 0.07 : style === 'smile' ? re * 0.42 : re * 0.3;
-    const rad = style === 'smile' ? re * 0.1 : style === 'line' ? re * 0.1 : re * 0.085;
-    const pts: [number, number][] = [];
-    for (let k = 0; k <= 14; k++) {
-      const t = -1 + (2 * k) / 14;
-      pts.push([t * mw * wide, mouthY + sag * (t * t) - sag * 0.55]);
-    }
-    part({
-      name: 'Mouth_Line',
-      node: 'Mouth',
-      material: 'brow',
-      cell: cells.decal,
-      shape: mouthDecal(
-        stroke2D(pts, (t) => rad * (0.55 + 0.45 * Math.sin(Math.PI * t))),
-        [mw * wide + rad, sag + rad * 2],
-        0,
-      ),
-    });
-  } else if (style === 'open_smile' || style === 'grin') {
-    const rx = style === 'grin' ? mw * 1.05 : mw * 0.78;
-    const ry = style === 'grin' ? re * 0.6 : re * 0.66;
-    const top = mouthY + re * 0.18;
-    const curve = (x: number) => top + (0.22 * re * (x * x)) / (rx * rx) - 0.06 * re;
-    const mouthProfile = (x: number, y: number) =>
-      smax(ellipse2D(0, top, rx, ry)(x, y), y - curve(x), re * 0.12);
-    part({
-      name: 'Mouth_Inner',
-      node: 'Mouth',
-      material: 'mouth',
-      cell: cells.decal,
-      shape: mouthDecal(mouthProfile, [rx * 1.05, ry * 1.1], 0),
-    });
-    if (style === 'grin') {
-      part({
-        name: 'Mouth_Teeth',
+  const mouthStyleName = spec.face.mouth;
+  const mouthParams = mouthStyle(mouthStyleName);
+  if (mouthParams) {
+    const project = (pts: Float32Array, lift: number): Float32Array | null => {
+      const out = new Float32Array((pts.length / 2) * 3);
+      for (let i = 0; i < pts.length / 2; i++) {
+        const x = pts[i * 2]! * re;
+        const y = mouthY + pts[i * 2 + 1]! * re;
+        const hit = frontHit(W, x, y);
+        if (!hit) return null;
+        out[i * 3] = hit.p[0] + hit.n[0] * lift;
+        out[i * 3 + 1] = hit.p[1] + hit.n[1] * lift;
+        out[i * 3 + 2] = hit.p[2] + hit.n[2] * lift;
+      }
+      return out;
+    };
+    const indices = mouthIndices();
+    const layers: [MouthLayer, string, number][] = [
+      ['inner', 'mouth', L1],
+      ['teeth', 'teeth', L1 + step],
+      ['tongue', 'tongue', L1 + step],
+    ];
+    for (const [layer, material, lift] of layers) {
+      const base = mouthLayer(mouthStyleName, layer, 0, 0);
+      const opened = mouthLayer(mouthStyleName, layer, 1, 0);
+      const rounded = mouthLayer(mouthStyleName, layer, 0, 1);
+      if (!base || !opened || !rounded) continue;
+      const positions = project(base, lift);
+      const openPos = project(opened, lift);
+      const roundPos = project(rounded, lift);
+      if (!positions || !openPos || !roundPos) continue;
+      const normals = new Float32Array(positions.length);
+      for (let i = 0; i < positions.length; i += 3) {
+        const n = normalAt(W, positions[i]!, positions[i + 1]!, positions[i + 2]!);
+        normals[i] = n[0];
+        normals[i + 1] = n[1];
+        normals[i + 2] = n[2];
+      }
+      meshParts.push({
+        name: `Mouth_${layer[0]!.toUpperCase()}${layer.slice(1)}`,
         node: 'Mouth',
-        material: 'teeth',
-        cell: cells.decal,
-        shape: mouthDecal(
-          (x, y) => smax(mouthProfile(x, y) + re * 0.05, curve(x) - re * 0.2 - y, re * 0.06),
-          [rx, ry * 0.5],
-          1,
-        ),
+        material,
+        mesh: { positions, normals, indices },
+        morphs: [
+          { name: 'open', positions: openPos },
+          { name: 'round', positions: roundPos },
+        ],
+        weights: [mouthParams.restOpen, 0],
       });
     }
-    part({
-      name: 'Mouth_Tongue',
-      node: 'Mouth',
-      material: 'tongue',
-      cell: cells.decal,
-      shape: mouthDecal(
-        (x, y) =>
-          smax(
-            ellipse2D(0, top - ry * 0.85, rx * 0.55, ry * 0.42)(x, y),
-            mouthProfile(x, y) + re * 0.04,
-            re * 0.05,
-          ),
-        [rx * 0.6, ry * 1.1],
-        1,
-      ),
-    });
-  }
-
-  // Interior de la boca para hablar: se abre hacia abajo desde el labio superior (el pivote) y la
-  // web lo escala con cada visema. En reposo está cerrado (alto ~0) y no sale en los renders.
-  if (style !== 'none') {
-    const ry = re * (style === 'grin' ? 0.5 : 0.48);
-    const rx = mw * (style === 'grin' ? 0.8 : 0.62);
-    const openTop = mouthY + (style === 'open_smile' || style === 'grin' ? re * 0.12 : re * 0.02);
-    const cy = openTop - ry * 0.85;
-    const topHitM = frontHit(W, 0, openTop);
-    const pivot: Vec3 = topHitM?.p ?? [0, openTop, mouthAt[2]];
-    node('Mouth_Open', 'Mouth', pivot, [1, 0.001, 1]);
-    const openShape = (x: number, y: number) =>
-      smax(ellipse2D(0, cy, rx, ry)(x, y), y - (openTop - ry * 0.12), re * 0.14);
-    const openDecal = (profile: (x: number, y: number) => number, n: number) =>
-      decal(W, {
-        profile,
-        at: pivot,
-        half: [rx * 1.05, ry * 2.1],
-        lift: L1 + step * n,
-        sink,
-        reach,
-        bevel: 0.0012 * s,
-      });
-    part({
-      name: 'Mouth_Open_Inner',
-      node: 'Mouth_Open',
-      material: 'mouth',
-      cell: cells.decal,
-      hiddenAtRest: true,
-      shape: openDecal(openShape, 3),
-    });
-    part({
-      name: 'Mouth_Open_Tongue',
-      node: 'Mouth_Open',
-      material: 'tongue',
-      cell: cells.decal,
-      hiddenAtRest: true,
-      shape: openDecal(
-        (x, y) =>
-          smax(
-            ellipse2D(0, cy - ry * 0.55, rx * 0.58, ry * 0.5)(x, y),
-            openShape(x, y) + re * 0.03,
-            re * 0.05,
-          ),
-        4,
-      ),
-    });
   }
 
   // Nariz del hocico
@@ -1132,13 +1081,12 @@ export function buildCharacter(spec: CharacterSpec): Character {
     }
   }
   // -------------------------------------------------------------- escena
-  const occluder = union(
-    ...parts.filter((p) => p.material !== 'bubble' && !p.hiddenAtRest).map((p) => p.shape),
-  );
+  const occluder = union(...parts.filter((p) => p.material !== 'bubble').map((p) => p.shape));
   const height = occluder.max[1];
   return {
     nodes,
     parts,
+    meshParts,
     materials,
     occluder,
     meta: { groundY: 0, bodyCenter: [0, zc, 0], floating: !legs, eyeRadius: re, height },

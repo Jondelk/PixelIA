@@ -10,6 +10,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./mouth": {
+      "types": "./dist/mouth.d.ts",
+      "import": "./dist/mouth.js"
     }
   },
   "files": [
