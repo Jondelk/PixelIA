@@ -44,6 +44,13 @@ import {
   type AuthorizedActionSnapshot,
 } from '../actions/action.snapshot.js';
 import { answerExternalRequest } from '../actions/external.capabilities.js';
+import type { CalendarDeps } from '../calendar/calendarConnection.service.js';
+import {
+  planWeekCommand,
+  replanCommand,
+  type CalendarOutcome,
+  type CalendarPlanningState,
+} from '../calendar/weekPlanning.service.js';
 import { executeCommand, type PixelExecutorDeps } from './pixelCommand.executor.js';
 import {
   PixelCommandModel,
@@ -75,6 +82,8 @@ export interface PixelCommandDeps extends PixelExecutorDeps {
   ai: AIProvider;
   defaultTimezone: string;
   guardian: GuardianDeps;
+  /** Prompt 19: Google Calendar (conexión, proveedor y reloj). */
+  calendar: CalendarDeps;
 }
 
 const conflict = (message: string, reason: string) =>
@@ -249,6 +258,96 @@ interface CommandState {
   revision: number;
   /** Prompt 17: proyecto del recurso que el usuario estaba viendo (validado). */
   chosenProject: KnownProject | null;
+  /** Prompt 19: zona IANA del navegador (último recurso para planificar) y lo planificado antes. */
+  clientTimezone: string | null;
+  calendar: {
+    planning: CalendarPlanningState | null;
+    weekPlan: PixelCommandAttrs['weekPlan'];
+  } | null;
+}
+
+/** ¿Es una petición de calendario que este Pixel atiende con Google Calendar (Prompt 19)? */
+const usesCalendar = (
+  workspace: WorkspaceDocument,
+  intent: PixelCommandIntent,
+  entities: PixelCommandEntities,
+) =>
+  hasWorkspaceFeature(workspace, 'calendar') &&
+  (intent === 'plan_week' ||
+    intent === 'replan_block' ||
+    (intent === 'external_action' &&
+      (entities.externalService === 'google_calendar' || entities.externalService === 'calendar')));
+
+/** Resultado del planificador → campos del comando (propuesta, pregunta, conectar o respuesta). */
+function calendarFields(
+  outcome: CalendarOutcome,
+  state: CommandState,
+  userTurn: Turn,
+): Partial<PixelCommandAttrs> {
+  const at = userTurn.at;
+  const common = {
+    guardian: null,
+    guardianBlocked: false,
+    connect: null,
+    weekPlan: null,
+    plan: null,
+    steps: [],
+    question: null,
+    pendingField: null,
+  };
+  switch (outcome.kind) {
+    case 'connect':
+      return {
+        ...common,
+        status: 'answered',
+        reply: outcome.reply,
+        connect: { provider: 'google_calendar', status: outcome.status },
+        turns: [...state.turns, userTurn, { role: 'pixel', text: outcome.reply, at }],
+      };
+    case 'reply':
+      return {
+        ...common,
+        status: 'answered',
+        reply: outcome.reply,
+        turns: [...state.turns, userTurn, { role: 'pixel', text: outcome.reply, at }],
+      };
+    case 'question':
+      return {
+        ...common,
+        status: 'needs_information',
+        question: outcome.question,
+        pendingField: outcome.field,
+        reply: outcome.question,
+        planning:
+          outcome.planning.interpretation || outcome.planning.timezone ? outcome.planning : null,
+        // Lo ya propuesto se conserva mientras se aclara un ajuste.
+        weekPlan: state.calendar?.weekPlan ?? null,
+        turns: [...state.turns, userTurn, { role: 'pixel', text: outcome.question, at }],
+      };
+    case 'proposal':
+      return {
+        ...common,
+        status: 'proposed',
+        reply: outcome.summary,
+        plan: {
+          summary: outcome.summary,
+          understood: outcome.understood,
+          proposal: outcome.proposal,
+          creates: outcome.creates,
+          requiresConfirmation: true,
+          revision: state.revision + 1,
+        },
+        steps: outcome.steps.map((step) => ({
+          ...step,
+          status: 'pending' as const,
+          resources: [],
+          error: null,
+        })),
+        weekPlan: outcome.weekPlan,
+        planning: outcome.planning,
+        turns: [...state.turns, userTurn, { role: 'pixel', text: outcome.summary, at }],
+      };
+  }
 }
 
 /** Interpreta, resuelve el contexto y decide: pregunta, propuesta o respuesta. */
@@ -287,6 +386,45 @@ async function interpretAndPlan(
   if (state.previous && (intent === 'organize_project' || intent === 'create_tasks')) {
     const kept = removeTaskTitles(message, entities.taskTitles);
     if (kept.length !== entities.taskTitles.length) entities = { ...entities, taskTitles: kept };
+  }
+
+  // Prompt 19: organizar la semana y mover bloques con Google Calendar (solo Personal).
+  if (usesCalendar(workspace, intent, entities)) {
+    const request = [state.previous?.request, message].filter(Boolean).join('\n');
+    const calendarDeps = {
+      ai: deps.ai,
+      logger: deps.logger,
+      calendar: deps.calendar,
+      tools: deps.tools,
+    };
+    const isReplan = intent === 'replan_block';
+    const outcome = isReplan
+      ? await replanCommand(
+          workspace,
+          { request, clientTimezone: state.clientTimezone },
+          calendarDeps,
+        )
+      : await planWeekCommand(
+          workspace,
+          {
+            request,
+            message,
+            clientTimezone: state.clientTimezone,
+            previous: state.calendar,
+          },
+          calendarDeps,
+        );
+    return {
+      intent,
+      entities,
+      campaignId: null,
+      noCampaign: false,
+      interpretation: {
+        mode: resolved.mode,
+        confidence: Math.round(resolved.confidence * 100) / 100,
+      },
+      ...calendarFields(outcome, state, { role: 'user', text: message, at: new Date() }),
+    };
   }
 
   const context = await resolvePixelContext(workspace, intent);
@@ -381,7 +519,7 @@ async function interpretAndPlan(
     outcome.kind === 'memory_reply'
       ? outcome.reply
       : intent === 'external_action'
-        ? answerExternalRequest(entities.externalService, deps.tools, workspace).reply
+        ? (await answerExternalRequest(entities.externalService, deps.tools, workspace)).reply
         : intent === 'work_status'
           ? await workStatusReply(workspace, entities, message, context, state.tzOffset)
           : intent === 'creative_advice'
@@ -424,6 +562,8 @@ export async function createPixelCommand(
       tzOffset: input.tzOffset,
       revision: 0,
       chosenProject: fromResource.project,
+      clientTimezone: input.timezone ?? null,
+      calendar: null,
     },
     deps,
   );
@@ -485,6 +625,11 @@ export async function adjustPixelCommand(
       tzOffset: command.tzOffset,
       revision: command.plan?.revision ?? 0,
       chosenProject: await savedProject(workspace, command.contextHint?.projectId),
+      clientTimezone: input.timezone ?? null,
+      calendar:
+        command.planning || command.weekPlan
+          ? { planning: command.planning ?? null, weekPlan: command.weekPlan ?? null }
+          : null,
     },
     deps,
   );
@@ -600,7 +745,7 @@ export async function confirmPixelCommand(
             revision,
             authorizedBy: actorUserId,
             authorizedAt: new Date(),
-            actions: freezeActions(current.steps, deps.tools, workspace),
+            actions: await freezeActions(current.steps, deps.tools, workspace),
           }
         : null;
 

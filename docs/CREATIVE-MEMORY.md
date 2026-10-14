@@ -319,3 +319,10 @@ política de autorización.
 - Sin aprendizaje por métricas o engagement.
 - Sin embeddings ni base vectorial.
 - Sin reescritura automática del ADN.
+
+## Calendario (Prompt 19)
+
+El planificador de la semana no aprende solo: no registra decisiones ni crea memorias. Una preferencia
+explícita («de ahora en adelante, estudio por las noches») sigue el camino de siempre
+(`manage_memory` con una confirmación). Nunca se guardan en memoria eventos ni datos del
+calendario.

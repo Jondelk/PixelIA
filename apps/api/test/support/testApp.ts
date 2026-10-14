@@ -4,21 +4,29 @@ import request from 'supertest';
 import { afterAll, afterEach, beforeAll, inject } from 'vitest';
 import type { AIProvider } from '../../src/ai/index.js';
 import { DemoProvider } from '../../src/ai/providers/demo.provider.js';
-import { createApp } from '../../src/app.js';
+import { createApp, type AppOptions } from '../../src/app.js';
 import type { PixelToolRegistry } from '../../src/modules/actions/toolRegistry.js';
 import { loadEnv } from '../../src/config/env.js';
 import { createLogger } from '../../src/lib/logger.js';
 
 export const testEnv = loadEnv({ NODE_ENV: 'test', BCRYPT_ROUNDS: '4', LOG_LEVEL: 'silent' });
 
-/** `tools`: herramientas de Pixel (Prompt 18) para simular fallos; por defecto, las de producción. */
-export function buildTestApp(ai: AIProvider = new DemoProvider(), tools?: PixelToolRegistry) {
+/**
+ * `tools`: herramientas de Pixel (Prompt 18) para simular fallos; por defecto, las de producción.
+ * `calendar`: Google Calendar falso (Prompt 19); sin él, la herramienta queda «sin configurar».
+ */
+export function buildTestApp(
+  ai: AIProvider = new DemoProvider(),
+  tools?: PixelToolRegistry,
+  calendar?: AppOptions['calendar'],
+) {
   return createApp({
     env: testEnv,
     logger: createLogger({ level: 'silent', format: 'json' }),
     getDatabaseStatus: () => 'connected',
     ai,
     ...(tools ? { tools } : {}),
+    ...(calendar ? { calendar } : {}),
   });
 }
 

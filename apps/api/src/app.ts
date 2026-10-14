@@ -26,6 +26,7 @@ import type { DatabaseStatus } from '@pixel/contracts';
 import type { AIProvider } from './ai/index.js';
 import { createDefaultToolRegistry } from './modules/actions/tools/index.js';
 import type { PixelToolRegistry } from './modules/actions/toolRegistry.js';
+import type { CalendarDeps } from './modules/calendar/calendarConnection.service.js';
 
 export interface AppOptions {
   env: Pick<
@@ -44,6 +45,11 @@ export interface AppOptions {
   ai: AIProvider;
   /** Herramientas de Pixel (inyectables en tests para simular fallos); por defecto, las internas. */
   tools?: PixelToolRegistry;
+  /**
+   * Prompt 19: Google Calendar (opcional). Sin config, la herramienta queda «sin configurar» y la
+   * API arranca igual. En tests y en el smoke, un proveedor falso sin red.
+   */
+  calendar?: Partial<Pick<CalendarDeps, 'config' | 'provider' | 'now'>>;
 }
 
 /** Construye la app Express sin efectos secundarios (sin listen ni conexión a DB): usable en tests. */
@@ -52,8 +58,16 @@ export function createApp({
   logger,
   getDatabaseStatus,
   ai,
-  tools = createDefaultToolRegistry(),
+  tools,
+  calendar: calendarOptions,
 }: AppOptions): Express {
+  const calendar: CalendarDeps = {
+    config: calendarOptions?.config ?? null,
+    provider: calendarOptions?.provider ?? null,
+    logger,
+    now: calendarOptions?.now ?? (() => new Date()),
+  };
+  const pixelTools = tools ?? createDefaultToolRegistry(calendar);
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
@@ -117,7 +131,8 @@ export function createApp({
       dailyDirector: createDailyDirectorEngine({ ai, logger }),
       campaignEngine: createCampaignStrategyEngine({ ai, logger }),
       pixelIntentResolver: createPixelIntentResolver({ ai, logger }),
-      pixelTools: tools,
+      pixelTools,
+      calendar,
       guardianEngine: createGuardianEngine({ ai, logger }),
       defaultTimezone: env.DEFAULT_TIMEZONE,
       logger,

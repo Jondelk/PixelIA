@@ -19,8 +19,12 @@ describe('PixelCommand: intenciones por capacidades', () => {
       'work_status',
       'manage_memory',
       'external_action',
+      'plan_week',
+      'replan_block',
       'unknown',
     ]);
+    // Prompt 19: planificar con Google Calendar es solo Personal.
+    expect(pixelIntentAvailable('enterprise', 'plan_week')).toBe(false);
   });
 
   it('la solicitud es texto natural (voz mañana, mismo campo) y nunca trae el tenant', () => {

@@ -54,6 +54,24 @@ export {
   type PixelCommandPayload,
 } from './pixelCommandPayload.js';
 export {
+  extractWeekPlanningPayload,
+  WEEK_PLANNING_SCHEMA_NAME,
+  WEEK_PLANNING_SYSTEM,
+  WeekPlanningPayloadSchema,
+  weekPlanningPrompt,
+  type WeekPlanningPayload,
+} from './weekPlanningPayload.js';
+export {
+  asksReplan,
+  asksWeekPlan,
+  calendarIntentOf,
+  dayOf,
+  interpretMove,
+  interpretWeekPlanning,
+  timeOf,
+  type MoveRequest,
+} from './weekPlanningRules.js';
+export {
   asksNewProject,
   externalServiceOf,
   fold,

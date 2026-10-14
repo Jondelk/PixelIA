@@ -39,7 +39,9 @@ el usuario escribió y devuelves SOLO su intención y los datos que él mismo di
   recordar, olvidar o mostrar lo que Pixel ha aprendido; external_action = hacer algo en un servicio
   externo (un evento en el calendario o Google Calendar, enviar un correo o un mensaje, comprar,
   pagar o transferir), con entities.externalService = google_calendar | calendar | email | messaging |
-  payment; unknown si no encaja. Una pregunta de definición («¿qué es…?») es creative_advice.
+  payment; plan_week = organizar la semana del usuario en su calendario («organízame la semana»,
+  «estudiar tres veces antes del viernes»; solo si está en availableIntents); replan_block = mover un
+  bloque ya agendado («no pude estudiar hoy», «muévelo al jueves»); unknown si no encaja. Una pregunta de definición («¿qué es…?») es creative_advice.
 - manage_memory SOLO con una expresión claramente persistente ("de ahora en adelante", "siempre",
   "nunca", "recuerda que", "no vuelvas a", "para esta marca", "solo en esta campaña podemos…") o
   al pedir olvidar o ver lo aprendido. "Hoy no quiero Stories" o "esta vez…" NO es memoria: es la

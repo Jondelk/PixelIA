@@ -380,6 +380,8 @@ describe('pixelCommandApi', () => {
       request: 'Necesito lanzar TINTO',
       source: 'text',
       tzOffset: new Date().getTimezoneOffset(),
+      // Prompt 19: la zona IANA del navegador (último recurso para planificar con el calendario).
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     });
   });
 });

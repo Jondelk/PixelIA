@@ -9,6 +9,7 @@ import {
 import { apiRequest } from '../../lib/api';
 import { workspaceApiBase } from '../../lib/apiPaths';
 import { browserTzOffset } from '../../lib/query';
+import { browserTimezone } from '../calendar/calendarApi';
 
 /**
  * PixelCommand: /api/workspaces/:workspaceId/pixel/commands. El texto puede venir del teclado o, en
@@ -25,7 +26,8 @@ export async function sendPixelCommand(
 ): Promise<PixelCommand> {
   const { command } = await apiRequest(commandsPath(workspaceId), PixelCommandResponseSchema, {
     method: 'POST',
-    body: { ...input, tzOffset: browserTzOffset() },
+    // Prompt 19: la zona del navegador solo es el último recurso para planificar con el calendario.
+    body: { ...input, tzOffset: browserTzOffset(), timezone: browserTimezone() },
   });
   return command;
 }
@@ -39,7 +41,7 @@ export async function adjustPixelCommand(
   const { command } = await apiRequest(
     `${commandPath(workspaceId, commandId)}/adjust`,
     PixelCommandResponseSchema,
-    { method: 'POST', body: { message, source } },
+    { method: 'POST', body: { message, source, timezone: browserTimezone() } },
   );
   return command;
 }

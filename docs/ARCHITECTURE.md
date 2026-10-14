@@ -466,3 +466,20 @@ Los tests de integración de la API arrancan un MongoDB efímero una vez por eje
 | 49 | ActionAuthorizationPolicy determinista (efecto × destino; financiero → unsupported) | Ni la IA ni el Guardian deciden si Pixel puede ejecutar |
 | 50 | **Pixel must never claim an action was completed unless execution evidence confirms it.** Verificación por acción y respuesta derivada de los resultados | «Creé» solo con un resultado success verificado |
 | 51 | Recuperación mínima de ejecuciones abandonadas (5 min sin actividad → partial/failed al consultar o reintentar) | Sin workers ni scheduler; el reintento no repite lo hecho |
+
+## Google Calendar y Personal Week Planner (Prompt 19)
+
+```
+PixelCommand (plan_week | replan_block)
+  → weekPlanning.service ─ lecturas: google.calendar/find_availability + list_events (sin confirmar)
+                         ─ intérprete (IA o reglas) → weekPlanner (determinista, luxon)
+  → propuesta (schedule_blocks | move_block) → confirmación → freezeActions
+  → ActionExecutor → google.calendar/create_event | update_event → verificar releyendo
+calendarConnection.service: OAuth (estado + PKCE), tokens cifrados, renovación centralizada
+google.provider (adaptador; ningún tipo de Google fuera) · fakeGoogleCalendar (tests y smoke)
+```
+
+Rutas: `/api/workspaces/:id/calendar/{connection,connect,disconnect}` (requireWorkspaceAccess +
+capacidad `calendar`) y `/api/calendar/google/callback` (lee la sesión de la cookie). Dependencias
+nuevas en `apps/api`: `google-auth-library@11.1.0` (OAuth oficial con PKCE), `luxon@3.7.2` (zonas
+IANA, cambio de horario) y `@types/luxon@3.7.1` (dev).

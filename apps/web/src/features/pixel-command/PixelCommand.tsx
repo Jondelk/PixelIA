@@ -29,6 +29,7 @@ import { preflightBlocks, preflightOverridable } from '../guardian/guardianLogic
 import { ActionResults } from './ActionResults';
 import { GuardianPreflight } from './GuardianPreflight';
 import { PixelProposalCard } from './PixelProposalCard';
+import { CalendarConnectButton } from '../calendar/CalendarConnection';
 
 type ContextHint = {
   intent?: 'create_campaign' | 'plan_content';
@@ -51,6 +52,7 @@ export function PixelCommand({
   onCompleted,
   suggestions,
   thinkingAvatar = 'focus',
+  calendarReturnTo = 'home',
 }: {
   workspaceId: string;
   /** Base de rutas web del workspace (para enlazar lo creado). */
@@ -67,6 +69,8 @@ export function PixelCommand({
    * el estado lo comunica ese avatar y aquí queda una línea de estado honesta.
    */
   thinkingAvatar?: 'focus' | 'none';
+  /** Prompt 19: adónde vuelve el usuario tras conectar Google Calendar desde una respuesta. */
+  calendarReturnTo?: 'home' | 'pixel';
 }) {
   const presence = usePixelPresence();
   const [command, setCommand] = useState<PixelCommandDTO | null>(null);
@@ -160,6 +164,13 @@ export function PixelCommand({
       onCancel={cancel}
       onReset={reset}
       onGuardianOverride={continueAnyway}
+      renderConnect={(status) => (
+        <CalendarConnectButton
+          workspaceId={workspaceId}
+          status={status}
+          returnTo={calendarReturnTo}
+        />
+      )}
     />
   );
 }
@@ -198,6 +209,7 @@ export function PixelCommandPanel({
   speaking = false,
   onStopSpeaking,
   onExitVoice,
+  renderConnect,
 }: {
   phase: CommandPhase;
   command: PixelCommandDTO | null;
@@ -220,6 +232,8 @@ export function PixelCommandPanel({
   speaking?: boolean;
   onStopSpeaking?: () => void;
   onExitVoice?: () => void;
+  /** Prompt 19: el botón para conectar (o reconectar) Google Calendar cuando Pixel lo pide. */
+  renderConnect?: (status: NonNullable<PixelCommandDTO['connect']>['status']) => ReactNode;
 }) {
   const showInput = phase === 'idle' || phase === 'cancelled';
   return (
@@ -284,11 +298,16 @@ export function PixelCommandPanel({
         command?.plan && (
           <PixelProposalCard
             plan={command.plan}
+            weekPlan={command.weekPlan}
             actions={
               adjusting || phase === 'adjusting' ? (
                 <div className="space-y-3">
                   <PixelComposer
-                    placeholder="¿Qué cambio? Por ejemplo: «solo Instagram, sin Stories»"
+                    placeholder={
+                      command.weekPlan
+                        ? '¿Qué cambio? Por ejemplo: «ese bloque del martes pásalo al jueves»'
+                        : '¿Qué cambio? Por ejemplo: «solo Instagram, sin Stories»'
+                    }
                     busy={phase === 'adjusting'}
                     onSubmit={onAdjust}
                     compact
@@ -345,6 +364,7 @@ export function PixelCommandPanel({
             <p className="whitespace-pre-line text-[15px] leading-relaxed text-fg">
               {command.reply}
             </p>
+            {command.connect && renderConnect?.(command.connect.status)}
             {command.plan && <ActionResults actions={command.plan.actions} />}
             {/* Solo enlaces a recursos verificados (lo que no se comprobó no se enlaza). */}
             {createdResources(command).length > 0 && (
@@ -352,7 +372,7 @@ export function PixelCommandPanel({
                 {createdResources(command).map((resource) => (
                   <li key={`${resource.kind}:${resource.id}`}>
                     <Link
-                      to={resourceLink(base, resource)}
+                      to={resourceLink(base, resource) ?? base}
                       className="inline-flex max-w-full items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm text-muted transition-colors hover:border-line-strong hover:text-fg"
                     >
                       <span className="truncate">{resource.label}</span>

@@ -49,6 +49,12 @@ sus acciones se congelan (quién, cuándo, qué) y se ejecutan con herramientas 
 verificada. Pixel solo dice «Creé…» con un resultado verificado. Lo que no puede hacer (calendario,
 correo, pagos) lo dice con honestidad.
 
+**Personal Week Planner + Google Calendar** (Prompt 19, `docs/PERSONAL-WEEK-PLANNER.md`,
+`docs/GOOGLE-CALENDAR.md`), solo Personal: «organízame la semana» → lectura del calendario real →
+plan determinista → propuesta → «Guardar semana» → `create_event` verificados. «No pude estudiar hoy»
+mueve un bloque de Pixel. La primera herramienta externa (`google.calendar`) y opcional: sin
+configuración, Pixel lo dice y todo lo demás funciona.
+
 El avatar **nunca** es una mascota aleatoria: es una consecuencia trazable del ADN. Ejemplos: café
 artesanal → grano de café cálido; startup → forma geométrica precisa; constructora → personaje
 estructural.
@@ -63,7 +69,8 @@ Referencia (leer lo relevante antes de trabajar): `docs/WORKSPACES.md`, `docs/PE
 `docs/WORKSPACE-MIGRATION.md`, `docs/OPERATIONS.md`, `docs/ENTERPRISE-OPERATIONS.md`,
 `docs/CAMPAIGNS.md`, `docs/CONTENT-PLANNER.md`, `docs/ENTERPRISE-CONTENT.md`, `docs/DAILY-DIRECTOR.md`,
 `docs/PIXEL-COMMAND.md`, `docs/BRAND-GUARDIAN.md`, `docs/CREATIVE-MEMORY.md`, `docs/PIXEL-PRESENCE.md`,
-`docs/PIXEL-ACTIONS.md`, `docs/PIXEL-TOOLS.md` y `docs/AVATAR-ASSET-CONTRACT.md` describen el diseño vigente; `docs/MVP.md`,
+`docs/PIXEL-ACTIONS.md`, `docs/PIXEL-TOOLS.md`, `docs/GOOGLE-CALENDAR.md`, `docs/PERSONAL-WEEK-PLANNER.md` y
+`docs/AVATAR-ASSET-CONTRACT.md` describen el diseño vigente; `docs/MVP.md`,
 `docs/ARCHITECTURE.md`, `docs/ENTITIES.md` y `docs/BACKLOG.md` tienen deriva importante (detalle en
 `PIXEL_ESTADO.md` §12). Ante un conflicto, manda el código.
 
@@ -85,7 +92,8 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
                   ├─ content planner: ContentPlan (contextType personal|enterprise) → ContentPlanItem (→ ContentItem al aceptar)
                   ├─ daily director: DailyBrief (versión del día; solo lee Operations, nunca modifica)
                   ├─ pixel command: PixelCommand (solicitud → propuesta → [preflight Guardian] → confirmación → snapshot autorizado → herramientas → resultados verificados)
-                  └─ brand guardian (enterprise): GuardianReport (revisión explicable; nunca modifica el recurso)
+                  ├─ brand guardian (enterprise): GuardianReport (revisión explicable; nunca modifica el recurso)
+                  └─ calendar (personal): CalendarConnection (tokens cifrados) · CalendarOAuthState (temporal, sin workspace en la URL)
 ```
 
 ## Principios (no negociables)
@@ -95,7 +103,7 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
      `personal`.
    - AvatarProfile, Conversation, Message, CreativeMemory, PersonalProfile, PersonalDNA, Project,
      Task, ContentItem, ContentPlan, ContentPlanItem, DailyBrief, Campaign, CampaignStrategy,
-     CampaignDeliverable, PixelCommand, GuardianReport y CreativeDecisionEvent llevan `workspaceId` obligatorio e
+     CampaignDeliverable, PixelCommand, GuardianReport, CreativeDecisionEvent y CalendarConnection llevan `workspaceId` obligatorio e
      indexado. BrandDNA se aísla por `companyId`, y la empresa pertenece a su workspace
      (`Company.workspaceId`).
    - Toda consulta a un modelo aislado (los que usan `tenantScoped`: BrandDNA y todos los anteriores)
@@ -203,6 +211,13 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
     derivada de los resultados. Nunca un endpoint para ejecutar herramientas, ni autorización por la
     IA, la voz o el Guardian; las herramientas reciben el workspace autorizado, nunca de la entrada.
     Añadir una herramienta no toca PixelCommand.
+12. **Integraciones externas (Prompt 19).** Credenciales solo en el servidor y cifradas
+    (`lib/secretBox.ts`, AES-256-GCM), nunca en la web, PixelCommand, snapshots, resultados, memoria
+    ni logs. OAuth con PKCE y estado de un solo uso; el callback toma usuario, workspace y destino del
+    estado guardado. Las escrituras externas son idempotentes por `ctx.idempotencyKey`, revalidan
+    antes de escribir y se verifican releyendo. Solo se modifica lo que Pixel creó (marca privada).
+    Los tipos del SDK externo no salen del adaptador. Una integración sin configurar nunca impide
+    arrancar. Las pruebas en vivo escriben solo en recursos de PRUEBA dedicados.
 
 ## Convenciones de código
 
@@ -211,7 +226,8 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
 - **API:** un módulo de dominio por carpeta (`apps/api/src/modules/<módulo>/` con `*.model`,
   `*.service`, `*.routes`), registrado solo en `modules/index.ts`: `auth`, `health`, `workspaces`,
   `companies`, `brand-dna`, `personal`, `avatars`, `conversations`, `creative-memory`, `operations`,
-  `content-plans`, `daily-director`, `campaigns`, `pixel-command`, `guardian`, `creative-memory`.
+  `content-plans`, `daily-director`, `campaigns`, `pixel-command`, `guardian`, `creative-memory`,
+  `calendar` (Prompt 19: solo el ciclo de vida de la conexión, el planificador y el adaptador de Google).
   `actions` (Prompt 18) no tiene rutas: herramientas, política, snapshot y ejecutor que usa
   PixelCommand; las herramientas viven en `actions/tools/` y se registran en
   `createDefaultToolRegistry()`. Errores con `AppError` o `lib/errors.ts` (el `errorHandler`

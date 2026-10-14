@@ -9,6 +9,7 @@ import {
   type WorkspaceType,
 } from '@pixel/contracts';
 import {
+  calendarIntentOf,
   externalServiceOf,
   fold,
   interpretPixelRequest,
@@ -151,6 +152,18 @@ export function createPixelIntentResolver(deps: {
         intent = 'plan_content';
       }
       if (!availableIntents.includes(intent)) intent = 'unknown';
+
+      // Prompt 19 (Personal): organizar la semana o mover un bloque con Google Calendar. Manda sobre
+      // la acción externa genérica («organiza mi semana en Google Calendar» es planificar).
+      const calendarIntent = previous ? null : calendarIntentOf(fold(userRequest));
+      if (calendarIntent && availableIntents.includes(calendarIntent)) {
+        return {
+          intent: calendarIntent,
+          confidence: raw.confidence,
+          entities: PixelCommandEntitiesSchema.parse({ externalService: 'google_calendar' }),
+          mode,
+        };
+      }
 
       // Prompt 18: una acción externa reconocida por las reglas manda sobre lo que diga la IA (una
       // reunión en Google Calendar nunca es un plan de contenido). Pixel la entiende y responde con

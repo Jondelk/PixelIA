@@ -109,6 +109,8 @@ docs/               Estado real (PIXEL_ESTADO), MVP, arquitectura, entidades, ba
 - [`docs/CREATIVE-MEMORY.md`](./docs/CREATIVE-MEMORY.md) — Creative Memory: lo que Pixel aprende de tus decisiones (preferencias, excepciones y patrones), confirmado por ti.
 - [`docs/PIXEL-PRESENCE.md`](./docs/PIXEL-PRESENCE.md) — Pixel Presence: estados de presencia, avatar en tres niveles, voz del navegador, acentos por Pixel y Pixel Dock con el recurso en contexto.
 - [`docs/PIXEL-ACTIONS.md`](./docs/PIXEL-ACTIONS.md) — Pixel Action Foundation: proponer → autorizar → ejecutar → verificar, con resultados veraces.
-- [`docs/PIXEL-TOOLS.md`](./docs/PIXEL-TOOLS.md) — herramientas, capacidades, registro y política de autorización (y cómo añadir Google Calendar).
+- [`docs/PIXEL-TOOLS.md`](./docs/PIXEL-TOOLS.md) — herramientas, capacidades, registro y política de autorización.
+- [`docs/GOOGLE-CALENDAR.md`](./docs/GOOGLE-CALENDAR.md) — Google Calendar (solo Personal): OAuth con PKCE, tokens cifrados, estados y la herramienta `google.calendar`.
+- [`docs/PERSONAL-WEEK-PLANNER.md`](./docs/PERSONAL-WEEK-PLANNER.md) — organizar la semana con tu disponibilidad real: proponer, guardar con una confirmación, ajustar y replanificar.
 - [`docs/AVATAR-ASSET-CONTRACT.md`](./docs/AVATAR-ASSET-CONTRACT.md) — contrato del avatar GLB futuro (escala, rig, clips y materiales).
 - [`docs/WORKSPACE-MIGRATION.md`](./docs/WORKSPACE-MIGRATION.md) — migración Company → Workspace.

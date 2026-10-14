@@ -361,3 +361,17 @@ Migración: las memorias sin `status` (anteriores al Prompt 16) quedan `legacy`,
 del retrieval (`creativeMemory.migration.ts`, al arrancar y con `npm run migrate:creative-memories`).
 Los context builders del chat ya no las leen: usan `CreativeMemoryResolver` (solo activas y
 relevantes, acotadas).
+
+## CalendarConnection y CalendarOAuthState (Prompt 19)
+
+- **CalendarConnection** (`calendar_connections`, tenantScoped por `workspaceId`): `workspaceId`,
+  `userId`, `provider: 'google'`, `status` (`connected` | `requires_reauth` | `disconnected`),
+  `refreshTokenSealed` y `accessTokenSealed` (AES-256-GCM, `select: false`), `accessTokenExpiresAt`,
+  `scopes`, `calendarId` (lo decide el servidor: `primary`), `timezone`, `accountLabel`,
+  `connectedAt`, `lastValidatedAt` y `disconnectedAt`. Única por `{ workspaceId, userId, provider }`.
+- **CalendarOAuthState** (`calendar_oauth_states`, sin tenantScoped a propósito: en el callback el
+  workspace sale de aquí): `nonceHash` (único), `userId`, `workspaceId`, `codeVerifierSealed`,
+  `returnTo` (`home` | `pixel`), `expiresAt` (TTL) y `usedAt`.
+- **PixelCommand** añade `weekPlan` (vista de la semana propuesta), `planning` (zona y lo entendido)
+  y `connect`. El recurso `calendar_event` admite ids externos (`PixelCreatedResource.id` = texto).
+- No se guardan eventos del calendario en Mongo.

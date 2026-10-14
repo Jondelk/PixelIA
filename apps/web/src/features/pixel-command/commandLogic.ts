@@ -39,8 +39,11 @@ export function commandPhase(
   }
 }
 
-/** Enlace a lo que Pixel creó (las pantallas de detalle existentes). */
-export function resourceLink(base: string, resource: PixelCreatedResource): string {
+/**
+ * Enlace a lo que Pixel creó (las pantallas de detalle existentes). Un evento de Google Calendar no
+ * tiene pantalla en Pixel (no hay calendario completo): null.
+ */
+export function resourceLink(base: string, resource: PixelCreatedResource): string | null {
   switch (resource.kind) {
     case 'campaign':
       return `${base}/campaigns/${encodeURIComponent(resource.id)}`;
@@ -54,6 +57,8 @@ export function resourceLink(base: string, resource: PixelCreatedResource): stri
       return `${base}/content`;
     case 'creative_memory':
       return `${base}/memory`;
+    case 'calendar_event':
+      return null;
   }
 }
 
@@ -65,12 +70,22 @@ export function confirmLabel(plan: PixelActionPlan): string {
   if (plan.steps.length && plan.steps.every((step) => step.type === 'forget_memory')) {
     return 'Olvidar';
   }
+  // Prompt 19: guardar la semana en Google Calendar o mover un bloque.
+  if (plan.steps.length && plan.steps.every((step) => step.type === 'schedule_blocks')) {
+    return 'Guardar semana';
+  }
+  if (plan.steps.length && plan.steps.every((step) => step.type === 'move_block')) {
+    return 'Mover bloque';
+  }
   return 'Organizar';
 }
 
 /** Recursos creados por el comando, sin repetir enlaces (varias tareas → una sola "Ver tareas"). */
 export function createdResources(command: PixelCommand): PixelCreatedResource[] {
-  const resources = command.plan?.steps.flatMap((step) => step.resources) ?? [];
+  // Los eventos de Google Calendar se ven en el resultado de cada acción (no hay enlace en Pixel).
+  const resources = (command.plan?.steps.flatMap((step) => step.resources) ?? []).filter(
+    (resource) => resource.kind !== 'calendar_event',
+  );
   const seenTasks = resources.filter((resource) => resource.kind === 'task');
   const others = resources.filter((resource) => resource.kind !== 'task');
   return seenTasks.length

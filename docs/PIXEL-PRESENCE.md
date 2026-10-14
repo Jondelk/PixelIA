@@ -246,3 +246,10 @@ sentido con herramientas externas o lentas (`PIXEL-ACTIONS.md` §12).
 - **Lip-sync** con visemas (morph targets reservados).
 - **Generación automática de avatares 3D**, **clonación de voz**, voz en tiempo real (streaming) y
   proveedores STT/TTS externos: fuera de alcance hasta que se pidan.
+
+## Calendario (Prompt 19)
+
+Planificar la semana usa los mismos estados: thinking (entender y leer el calendario) → idle
+(propuesta) → thinking («Guardar semana») → success (todo comprobado), warning (parcial) o error.
+Conectar Google Calendar no cambia la presencia. La voz entra por PixelCommand y nunca guarda la
+semana; la voz preferida sigue siendo `es-CO`.

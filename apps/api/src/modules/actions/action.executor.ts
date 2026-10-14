@@ -54,6 +54,10 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 /** Error de un servicio → código normalizado (sin stack ni detalles internos). */
 export function errorCodeOf(err: unknown): ActionErrorCode {
   if (err instanceof ZodError) return 'invalid_input';
+  // Errores de herramientas externas que ya traen su código normalizado (p. ej. Google Calendar).
+  if (typeof err === 'object' && err !== null && 'actionErrorCode' in err) {
+    return (err as { actionErrorCode: ActionErrorCode }).actionErrorCode;
+  }
   if (err instanceof AppError) {
     if (err.status === 404) return 'resource_not_found';
     if (err.status === 409) return 'resource_conflict';
@@ -123,14 +127,22 @@ async function runAction(
     );
   }
 
-  const resolved = input.registry.resolve(action.toolKey, action.capabilityKey, input.workspace);
+  // Se revalida justo antes de ejecutar: una cuenta desconectada después de proponer no ejecuta.
+  const resolved = await input.registry.resolve(
+    action.toolKey,
+    action.capabilityKey,
+    input.workspace,
+  );
   if (!resolved) {
-    const toolMissing =
-      input.registry.availability(action.toolKey, input.workspace) !== 'available';
+    const availability = await input.registry.availability(action.toolKey, input.workspace);
     return outcome(
       'failed',
       'La herramienta no está disponible',
-      toolMissing ? 'tool_unavailable' : 'capability_unavailable',
+      availability === 'requires_auth' || availability === 'requires_reauth'
+        ? availability
+        : availability !== 'available'
+          ? 'tool_unavailable'
+          : 'capability_unavailable',
     );
   }
   if (!coveredByPlanConfirmation(resolved.authorization)) {

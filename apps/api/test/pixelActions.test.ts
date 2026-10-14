@@ -210,14 +210,15 @@ describe('ActionAuthorizationPolicy (determinista, nunca la IA)', () => {
       availability: () => 'requires_auth',
     };
     const registry = createDefaultToolRegistry().register(fakeExternal);
-    expect(registry.availability('test.external', ws!)).toBe('requires_auth');
-    expect(registry.resolve('test.external', 'external.create', ws!)).toBeNull();
-    expect(registry.availability('google.calendar', ws!)).toBe('not_registered');
+    expect(await registry.availability('test.external', ws!)).toBe('requires_auth');
+    expect(await registry.resolve('test.external', 'external.create', ws!)).toBeNull();
+    // Sin dependencias de calendario, Google Calendar no se registra.
+    expect(await registry.availability('google.calendar', ws!)).toBe('not_registered');
     const connected = createDefaultToolRegistry().register({
       ...fakeExternal,
       availability: () => 'available',
     });
-    expect(connected.resolve('test.external', 'external.create', ws!)?.authorization).toBe(
+    expect((await connected.resolve('test.external', 'external.create', ws!))?.authorization).toBe(
       'confirm',
     );
   });
@@ -617,7 +618,7 @@ describe('Catálogo para la IA: referencias controladas', () => {
     const jhon = await registerUser(app, 'Jhon');
     const ws = await WorkspaceModel.findOne({ _id: await personal(jhon) });
     const registry = createDefaultToolRegistry();
-    const catalog = buildCapabilityCatalog(registry, ws!, { effects: ['create'] });
+    const catalog = await buildCapabilityCatalog(registry, ws!, { effects: ['create'] });
     expect(catalogForAI(catalog)).toEqual([
       {
         ref: 'CAPABILITY_1',
@@ -634,7 +635,7 @@ describe('Catálogo para la IA: referencias controladas', () => {
     expect(JSON.stringify(catalogForAI(catalog))).not.toMatch(/workspace\.|create_/);
 
     const resources = new Map();
-    const ok = resolveActionDrafts(
+    const ok = await resolveActionDrafts(
       {
         responseMode: 'proposal',
         actions: [
@@ -660,7 +661,7 @@ describe('Catálogo para la IA: referencias controladas', () => {
     });
 
     for (const capabilityRef of ['CAPABILITY_999', 'send_whatsapp']) {
-      const bad = resolveActionDrafts(
+      const bad = await resolveActionDrafts(
         { responseMode: 'proposal', actions: [{ capabilityRef, title: 'X', input: {} }] },
         catalog,
         registry,
@@ -670,7 +671,7 @@ describe('Catálogo para la IA: referencias controladas', () => {
       expect(bad.actions).toEqual([]);
       expect(bad.rejected[0]).toMatch(/Capacidad desconocida/);
     }
-    const missingTitle = resolveActionDrafts(
+    const missingTitle = await resolveActionDrafts(
       {
         responseMode: 'proposal',
         actions: [{ capabilityRef: 'CAPABILITY_2', title: 'Tarea', input: {} }],
@@ -683,7 +684,7 @@ describe('Catálogo para la IA: referencias controladas', () => {
     expect(missingTitle.actions).toEqual([]);
     expect(missingTitle.rejected[0]).toMatch(/Datos incompletos/);
     // Un recurso que no está en el contexto (otro Pixel) se rechaza.
-    const foreign = resolveActionDrafts(
+    const foreign = await resolveActionDrafts(
       {
         responseMode: 'proposal',
         actions: [
@@ -701,7 +702,7 @@ describe('Catálogo para la IA: referencias controladas', () => {
     );
     expect(foreign.rejected[0]).toMatch(/fuera de contexto/);
     expect(
-      resolveActionDrafts({ responseMode: 'answer' }, catalog, registry, ws!, resources),
+      await resolveActionDrafts({ responseMode: 'answer' }, catalog, registry, ws!, resources),
     ).toEqual({
       actions: [],
       rejected: [],
@@ -717,7 +718,11 @@ describe('Límites honestos: lo que Pixel no puede hacer', () => {
     expect(command.intent).toBe('external_action');
     expect(command.status).toBe('answered');
     expect(command.plan).toBeNull();
-    expect(command.reply).toMatch(/todavía no tengo acceso a tu Google Calendar/);
+    // Prompt 19: la herramienta existe, pero esta instalación (tests) no tiene Google configurado.
+    expect(command.reply).toMatch(
+      /Google Calendar todavía no está configurado en esta instalación de Pixel/,
+    );
+    expect(command.connect).toEqual({ provider: 'google_calendar', status: 'unconfigured' });
     expect(command.reply).not.toMatch(/Listo|creé|agendé/i);
     expect(await writes()).toEqual(NOTHING);
     await jhon.agent

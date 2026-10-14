@@ -1,4 +1,5 @@
 import type { PixelPlanAction } from '@pixel/contracts';
+import { DateTime } from 'luxon';
 import type { ActionErrorCode } from './action.types.js';
 import type { ActionDraft, ActionResultRecord } from './action.snapshot.js';
 
@@ -21,6 +22,18 @@ export const ACTION_ERROR_TEXT: Record<ActionErrorCode, string> = {
   verification_failed: 'No pude confirmar que se completara',
   dependency_failed: 'No se hizo porque falló lo anterior',
   execution_interrupted: 'La ejecución se interrumpió',
+  requires_auth: 'Necesito que conectes tu cuenta antes de hacerlo',
+  requires_reauth: 'Necesito que vuelvas a conectar tu cuenta',
+  calendar_not_connected: 'Google Calendar no está conectado',
+  calendar_requires_reauth: 'Necesito volver a conectar tu Google Calendar',
+  calendar_permission_denied: 'Google Calendar no dio permiso para hacerlo',
+  calendar_rate_limited: 'Google Calendar pidió esperar un momento',
+  calendar_unavailable: 'Google Calendar no responde ahora mismo',
+  calendar_event_not_found: 'Ese evento ya no está en tu Google Calendar',
+  calendar_conflict: 'Ese horario ya no está libre: apareció otro compromiso',
+  calendar_invalid_time: 'El horario no es válido',
+  calendar_execution_failed: 'Google Calendar no pudo guardarlo',
+  calendar_verification_failed: 'No pude confirmar el cambio en Google Calendar',
 };
 
 /** Vista humana de las acciones del plan, con su resultado (sin claves ni entradas internas). */
@@ -71,12 +84,73 @@ export interface ActionOutcome {
   reply: string;
 }
 
+/** «el del martes» de un bloque (día local del bloque, en su zona). */
+function blockDay(draft: ActionDraft): string {
+  const { start, timezone } = draft.input as { start?: string; timezone?: string };
+  if (!start || !timezone) return `«${draft.label}»`;
+  return `el del ${DateTime.fromISO(start, { zone: timezone }).setLocale('es').toFormat('cccc')}`;
+}
+
+const lowerFirst = (text: string) => text.charAt(0).toLocaleLowerCase('es') + text.slice(1);
+
+/**
+ * Prompt 19: lo que Pixel dice de Google Calendar sale de los eventos RELEÍDOS en Google. «Guardado»
+ * solo si la verificación lo encontró; lo que no, con su motivo.
+ */
+function describeCalendarOutcome(
+  drafts: ActionDraft[],
+  byId: Map<string, ActionResultRecord>,
+): ActionOutcome {
+  const ok = (draft: ActionDraft) => byId.get(draft.id)?.status === 'success';
+  const reason = (draft: ActionDraft) => {
+    const code = byId.get(draft.id)?.errorCode;
+    return code ? ACTION_ERROR_TEXT[code] : 'No se ejecutó';
+  };
+  const done = drafts.filter(ok);
+  const failed = drafts.filter((draft) => !ok(draft));
+  const total = drafts.length;
+  if (drafts.every((draft) => draft.effect === 'update')) {
+    const draft = drafts[0]!;
+    return done.length
+      ? {
+          status: 'completed',
+          reply: `Listo. Moví el bloque a ${lowerFirst(draft.label)} y lo comprobé en Google Calendar.`,
+        }
+      : {
+          status: 'failed',
+          reply: `No pude mover el bloque (${lowerFirst(reason(draft))}). No cambié nada en tu Google Calendar.`,
+        };
+  }
+  if (!failed.length) {
+    return {
+      status: 'completed',
+      reply: `${total} de ${total} ${total === 1 ? 'bloque guardado y comprobado' : 'bloques guardados y comprobados'} en Google Calendar.`,
+    };
+  }
+  const missing = failed
+    .map((draft) => `No pude guardar ${blockDay(draft)} (${lowerFirst(reason(draft))}).`)
+    .join(' ');
+  if (!done.length) {
+    return {
+      status: 'failed',
+      reply: `${missing} No se guardó nada en tu Google Calendar.`,
+    };
+  }
+  return {
+    status: 'partial',
+    reply: `Guardé ${done.length} de los ${total} bloques. ${missing} Puedes reintentarlo: lo que ya está guardado no se duplica.`,
+  };
+}
+
 /** Estado y respuesta del plan a partir de los resultados. Única fuente: PixelCommand.status. */
 export function describeOutcome(
   drafts: ActionDraft[],
   results: ActionResultRecord[],
 ): ActionOutcome {
   const byId = new Map(results.map((result) => [result.actionId, result]));
+  if (drafts.length && drafts.every((draft) => draft.kind === 'calendar_event')) {
+    return describeCalendarOutcome(drafts, byId);
+  }
   const ok = (draft: ActionDraft) => byId.get(draft.id)?.status === 'success';
   const projects = drafts.filter((draft) => draft.kind === 'project');
   const tasks = drafts.filter((draft) => draft.kind === 'task');

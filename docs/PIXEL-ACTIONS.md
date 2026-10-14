@@ -272,3 +272,21 @@ Snapshot y resultados viven **dentro del PixelCommand**:
 - Migrar los pasos anteriores (campaña, plan, pieza, memoria) a herramientas, uno a uno.
 - Confirmación reforzada (`elevated`) para borrados externos; voz que autorice («sí, hazlo»): no en V1.
 - Pagos y compras: no implementar (la política los marca `unsupported`).
+
+## Acciones externas: Google Calendar (Prompt 19)
+
+- **Expansión.** `schedule_blocks` se expande en una acción `create_event` por bloque
+  (`step_1.block_n`, cada una con su resultado) y `move_block` en una `update_event`
+  (`step_1.move`). Las dos son de tipo `calendar_event`.
+- **Congelado.** `freezeActions` ya es asíncrona: comprueba la conexión antes de reservar, y si el
+  usuario desconectó después de proponer, no se ejecuta nada (409).
+- **Idempotencia externa.** `ctx.idempotencyKey` determina el id del evento en Google, así que un
+  reintento, un doble clic o una caída tras crear no duplican. Lo mismo que `pixelActionKey` en
+  Project y Task, pero en el servicio externo.
+- **Verificación.** Se relee el evento en Google. Una respuesta correcta de Google sin evento
+  comprobado no cuenta.
+- **Resultado.** `describeOutcome` tiene redacción propia para calendario: «3 de 3 bloques guardados
+  y comprobados en Google Calendar.», «Guardé 2 de los 3 bloques. No pude guardar el del martes (…).»
+  y «Listo. Moví el bloque a … y lo comprobé en Google Calendar.».
+- **Nuevos códigos.** `requires_auth`, `requires_reauth` y los diez `calendar_*`
+  (`ACTION_ERROR_TEXT`).

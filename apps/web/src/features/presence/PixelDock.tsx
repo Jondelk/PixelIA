@@ -55,6 +55,7 @@ export function PixelDock({ base, chatPath }: { base: string; chatPath: string }
           placeholder="Escríbele a Pixel…"
           thinkingAvatar="none"
           contextHint={resource ? { resource } : undefined}
+          calendarReturnTo="pixel"
         />
       }
     />

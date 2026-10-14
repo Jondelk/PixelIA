@@ -31,16 +31,16 @@ export interface CatalogEntry {
   refFields: Record<string, PixelResourceKind>;
 }
 
-export function buildCapabilityCatalog(
+export async function buildCapabilityCatalog(
   registry: PixelToolRegistry,
   workspace: WorkspaceDocument,
   options: { effects?: ActionEffect[] } = {},
-): CatalogEntry[] {
+): Promise<CatalogEntry[]> {
   const entries: CatalogEntry[] = [];
-  for (const tool of registry.listAvailable(workspace)) {
+  for (const tool of await registry.listAvailable(workspace)) {
     for (const capability of tool.capabilities) {
       if (options.effects && !options.effects.includes(capability.effect)) continue;
-      const resolved = registry.resolve(tool.key, capability.key, workspace);
+      const resolved = await registry.resolve(tool.key, capability.key, workspace);
       if (!resolved) continue;
       entries.push({
         ref: `CAPABILITY_${entries.length + 1}`,
@@ -77,19 +77,31 @@ export interface DraftResolution {
  * capacidad que no está en el catálogo, una dependencia que no es anterior, un recurso que no está
  * en el contexto o una entrada que no valida con su schema. Nunca inventa un dato que falte.
  */
-export function resolveActionDrafts(
+export async function resolveActionDrafts(
   raw: unknown,
   catalog: CatalogEntry[],
   registry: PixelToolRegistry,
   workspace: WorkspaceDocument,
   /** PROJECT_1 → id real, solo de este workspace (lo resolvió el contexto). */
   resources: Map<string, { kind: PixelResourceKind; id: string }>,
-): DraftResolution {
+): Promise<DraftResolution> {
   const parsed = GeneratedActionPlanSchema.safeParse(raw);
   if (!parsed.success)
     return { actions: [], rejected: ['La salida del planificador no es válida'] };
   if (parsed.data.responseMode === 'answer') return { actions: [], rejected: [] };
 
+  // Las capacidades del catálogo, resueltas (y disponibles) una sola vez.
+  const capabilities = new Map(
+    await Promise.all(
+      catalog.map(
+        async (entry) =>
+          [
+            entry.ref,
+            (await registry.resolve(entry.toolKey, entry.capabilityKey, workspace))?.capability,
+          ] as const,
+      ),
+    ),
+  );
   const rejected: string[] = [];
   const actions: ActionDraft[] = [];
   parsed.data.actions.forEach((draft: GeneratedActionDraft, index) => {
@@ -133,7 +145,7 @@ export function resolveActionDrafts(
       dependsOnActionId = source.id;
       inputRefs.push({ field, fromAction: source.id, kind: source.kind });
     }
-    const capability = registry.resolve(entry.toolKey, entry.capabilityKey, workspace)?.capability;
+    const capability = capabilities.get(entry.ref);
     if (!capability || !capability.inputSchema.safeParse(input).success) {
       rejected.push(`Datos incompletos o no válidos para «${draft.title}»`);
       return;

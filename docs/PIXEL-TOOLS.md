@@ -118,3 +118,27 @@ necesite IA para traducirse (eventos de calendario).
 Google Calendar, OAuth, Gmail, Drive, Slack, CRM, Meta, publicación, Ads, pagos, compras, webhooks,
 schedulers, automatizaciones recurrentes, notificaciones, equipos, roles, aprobaciones formales,
 agentes autónomos ni multiagente.
+
+## Google Calendar (Prompt 19)
+
+`google.calendar` es la primera herramienta externa registrada (`createDefaultToolRegistry(calendar)`;
+sin dependencias de calendario no se registra). Solo Personal (`contextTypes: ['personal']`, capacidad
+`calendar`). Su `availability()` es asíncrona y sale del estado de la conexión: `unconfigured`,
+`requires_auth`, `requires_reauth` o `available`. Con cualquier valor distinto de `available`, la
+capacidad no se resuelve, `freezeActions` rechaza la confirmación (409 `action_requires_auth` /
+`action_requires_reauth`) y el ejecutor devuelve `requires_auth` / `requires_reauth`.
+
+| Capacidad | Efecto | Autorización |
+| --- | --- | --- |
+| `list_events` | read / external | none |
+| `find_availability` | read / external | none |
+| `create_event` | create / external | confirm |
+| `update_event` | update / external, significant | confirm |
+
+Las lecturas las usa el planificador sin confirmación; las escrituras, solo el ejecutor de un plan
+autorizado. Errores normalizados por `CalendarError.actionErrorCode` (lo lee `errorCodeOf`). Detalle
+completo: `docs/GOOGLE-CALENDAR.md`.
+
+Cambios en el contrato de herramientas: `PixelTool.availability` puede devolver una promesa;
+`ToolAvailability` añade `unconfigured` y `requires_reauth`; `registry.availability`,
+`resolve` y `listAvailable` son asíncronas (un fallo al comprobar la conexión = `unavailable`).

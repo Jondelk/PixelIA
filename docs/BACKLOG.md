@@ -492,7 +492,7 @@ Ver `docs/PIXEL-PRESENCE.md` y `docs/AVATAR-ASSET-CONTRACT.md`.
 - [ ] Loader GLB, mezclador de clips y lip-sync (no construir sin pedirlo).
 - [x] Commit autorizado por el usuario el 2026-10-14 (`8545a3e`, sin push).
 
-## Etapa AF — Pixel Action Foundation ✅ (implementado, sin commit ni push; Prompt 18)
+## Etapa AF — Pixel Action Foundation ✅ (confirmado en `8fe0682`, en `origin`; Prompt 18)
 
 Ver `docs/PIXEL-ACTIONS.md` y `docs/PIXEL-TOOLS.md`.
 
@@ -508,7 +508,25 @@ Ver `docs/PIXEL-ACTIONS.md` y `docs/PIXEL-TOOLS.md`.
 - [x] Catálogo de capacidades para la IA (CAPABILITY_n) y resolución de borradores (preparado; V1 sin llamada extra).
 - [x] Tests (contracts, API, web) y smoke de navegador con un fallo simulado solo en el entorno de prueba.
 - [ ] Migrar campaña, plan, pieza y memoria a herramientas.
-- [ ] Google Calendar (Prompt 19); confirmación reforzada (`elevated`).
+- [x] Google Calendar (Prompt 19, Etapa GC).
+- [ ] Confirmación reforzada (`elevated`).
+- [x] Commit y push (`8fe0682`, autorizados).
+
+## Etapa GC — Personal Week Planner + Google Calendar ✅ (implementado, pendiente de revisión, sin commit ni push; Prompt 19)
+
+Ver `docs/GOOGLE-CALENDAR.md` y `docs/PERSONAL-WEEK-PLANNER.md`.
+
+- [x] Capacidad `calendar` (solo Personal); intenciones `plan_week` y `replan_block`; pasos `schedule_blocks` y `move_block`; recurso `calendar_event`.
+- [x] Configuración opcional (4 variables; sin ella, «sin configurar» y la API arranca).
+- [x] OAuth Authorization Code + PKCE S256, estado de un solo uso (hash, TTL 10 min, consumo atómico), sesión y workspace revalidados, retorno a una ruta interna cerrada.
+- [x] Tokens cifrados (AES-256-GCM), `select: false`, nunca fuera del servidor ni en logs; renovación centralizada de vuelo único; `requires_reauth` sin bucle.
+- [x] Adaptador de Google separado (`google-auth-library` + Calendar v3 por `fetch`); Google falso para CI y smoke.
+- [x] Herramienta `google.calendar`: `list_events`, `find_availability`, `create_event`, `update_event` (sin borrar); id determinista (idempotencia externa), revalidación de conflicto, solo eventos de Pixel, verificación releyendo.
+- [x] Motor de disponibilidad (luxon, zona IANA, cambio de horario, medianoche) y planificador determinista (fecha límite, reparto, lo que no cabe).
+- [x] Intérprete IA + reglas (demo y respaldo); replanificar con una sola pregunta si es ambiguo; «Ajustar» = revisión nueva dentro del rango del plan.
+- [x] Web: tarjeta de conexión en «Mi Pixel», botón para conectar en la respuesta, semana agrupada por día, «Guardar semana» / «Mover bloque», resultados verificados; aviso al volver de Google.
+- [x] Tests (contracts, API, web), pruebas en vivo (SKIPPED sin configuración) y smoke de navegador 35/35.
+- [ ] Probar con una cuenta de Google real (calendario de prueba) y con Claude real.
 - [ ] Commit (pendiente de revisión del usuario).
 
 ## Etapa 9 — CreativeMemory básica (sustituida por la Etapa CM)

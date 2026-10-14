@@ -27,4 +27,5 @@ export * from './campaignDeliverable.js';
 export * from './campaignStrategy.js';
 export * from './pixelCommand.js';
 export * from './pixelActions.js';
+export * from './calendar.js';
 export * from './guardian.js';

@@ -31,7 +31,15 @@ export type ActionAuthorization = 'none' | 'confirm' | 'elevated' | 'unsupported
  * conecte. Pixel nunca finge una conexión.
  */
 export type ToolAvailability =
-  'available' | 'requires_auth' | 'disconnected' | 'unavailable' | 'not_registered';
+  | 'available'
+  /** Prompt 19: la instalación no tiene credenciales para este servicio (no se ofrece conectar). */
+  | 'unconfigured'
+  | 'requires_auth'
+  /** Prompt 19: había conexión y dejó de ser válida (revocada o caducada). */
+  | 'requires_reauth'
+  | 'disconnected'
+  | 'unavailable'
+  | 'not_registered';
 
 /** Códigos normalizados de un resultado (docs/PIXEL-ACTIONS.md §Errores). Nunca un stack trace. */
 export type ActionErrorCode =
@@ -44,7 +52,21 @@ export type ActionErrorCode =
   | 'execution_failed'
   | 'verification_failed'
   | 'dependency_failed'
-  | 'execution_interrupted';
+  | 'execution_interrupted'
+  /** Prompt 19: la herramienta necesita (re)conectar la cuenta del usuario. */
+  | 'requires_auth'
+  | 'requires_reauth'
+  /** Prompt 19: errores normalizados de Google Calendar (nunca la respuesta cruda de Google). */
+  | 'calendar_not_connected'
+  | 'calendar_requires_reauth'
+  | 'calendar_permission_denied'
+  | 'calendar_rate_limited'
+  | 'calendar_unavailable'
+  | 'calendar_event_not_found'
+  | 'calendar_conflict'
+  | 'calendar_invalid_time'
+  | 'calendar_execution_failed'
+  | 'calendar_verification_failed';
 
 /** Referencia a un recurso de Pixel, siempre del workspace de la ejecución. */
 export interface ControlledResourceRef {
@@ -126,6 +148,9 @@ export interface PixelTool {
   /** Capacidad de contracts que exige en el workspace (además del tipo). */
   feature?: WorkspaceFeature;
   capabilities: AnyCapability[];
-  /** Conexión del workspace (herramientas externas). Las internas siempre están disponibles. */
-  availability(ctx: { workspace: WorkspaceDocument }): ToolAvailability;
+  /**
+   * Conexión del workspace (herramientas externas; puede consultar la base). Las internas siempre
+   * están disponibles.
+   */
+  availability(ctx: { workspace: WorkspaceDocument }): ToolAvailability | Promise<ToolAvailability>;
 }

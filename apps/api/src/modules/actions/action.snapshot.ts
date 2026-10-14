@@ -130,6 +130,49 @@ const EXPANDERS: Partial<Record<PixelActionStepType, Expander>> = {
       };
     });
   },
+  // Prompt 19: cada bloque del plan de la semana es UNA acción create_event (su propio resultado).
+  schedule_blocks: (step) => {
+    const blocks = Array.isArray(step.params.blocks) ? step.params.blocks : [];
+    return blocks.map((raw, index) => {
+      const block = raw as { input?: Record<string, unknown>; label?: unknown };
+      const input = { ...(block.input ?? {}) };
+      const title = typeof input.summary === 'string' ? input.summary : `Bloque ${index + 1}`;
+      const label = typeof block.label === 'string' ? block.label : title;
+      return {
+        id: `${step.id}.block_${index + 1}`,
+        stepId: step.id,
+        toolKey: 'google.calendar',
+        capabilityKey: 'create_event',
+        kind: 'calendar_event',
+        effect: 'create',
+        title: `Guardar «${title}» · ${label}`,
+        label,
+        input,
+        inputRefs: [],
+        dependsOnActionId: null,
+      };
+    });
+  },
+  move_block: (step) => {
+    const input = { ...((step.params.input as Record<string, unknown> | undefined) ?? {}) };
+    const title = typeof step.params.title === 'string' ? step.params.title : 'Bloque';
+    const label = typeof step.params.label === 'string' ? step.params.label : title;
+    return [
+      {
+        id: `${step.id}.move`,
+        stepId: step.id,
+        toolKey: 'google.calendar',
+        capabilityKey: 'update_event',
+        kind: 'calendar_event',
+        effect: 'update',
+        title: `Mover «${title}» · ${label}`,
+        label,
+        input,
+        inputRefs: [],
+        dependsOnActionId: null,
+      },
+    ];
+  },
 };
 
 export const isToolStep = (type: PixelActionStepType): boolean => type in EXPANDERS;
@@ -148,14 +191,23 @@ const rejected = (message: string, reason: string) =>
  * del plan (no `elevated` ni `unsupported`) y tener una entrada válida para su capacidad (los campos
  * que vienen de otra acción se validan al ejecutar). Si algo falla, no se ejecuta NADA.
  */
-export function freezeActions(
+export async function freezeActions(
   steps: PlanStepLike[],
   registry: PixelToolRegistry,
   workspace: WorkspaceDocument,
-): FrozenAction[] {
-  return expandSteps(steps).map((draft) => {
-    const resolved = registry.resolve(draft.toolKey, draft.capabilityKey, workspace);
+): Promise<FrozenAction[]> {
+  const frozen: FrozenAction[] = [];
+  for (const draft of expandSteps(steps)) {
+    const resolved = await registry.resolve(draft.toolKey, draft.capabilityKey, workspace);
     if (!resolved) {
+      const availability = await registry.availability(draft.toolKey, workspace);
+      if (availability === 'requires_auth' || availability === 'requires_reauth') {
+        // Prompt 19: la cuenta se desconectó (o caducó) después de proponer: nada se ejecuta.
+        throw rejected(
+          'Necesito que vuelvas a conectar tu cuenta antes de guardar esto',
+          `action_${availability}`,
+        );
+      }
       throw rejected(
         'Esta acción no está disponible en este Pixel',
         'action_capability_unavailable',
@@ -178,12 +230,13 @@ export function freezeActions(
         'action_invalid_input',
       );
     }
-    return {
+    frozen.push({
       ...draft,
       target: resolved.capability.target,
       authorization: resolved.authorization,
-    };
-  });
+    });
+  }
+  return frozen;
 }
 
 /**

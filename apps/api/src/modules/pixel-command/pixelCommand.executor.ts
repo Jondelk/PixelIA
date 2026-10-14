@@ -106,6 +106,8 @@ async function runStep(
     // create_project y create_tasks: herramientas (workspace.projects / workspace.tasks).
     case 'create_project':
     case 'create_tasks':
+    case 'schedule_blocks':
+    case 'move_block':
       throw new Error(`El paso ${step.type} se ejecuta con herramientas`);
     case 'create_content_item': {
       const item = await createContentItem(workspace, CreateContentItemSchema.parse(step.params), {

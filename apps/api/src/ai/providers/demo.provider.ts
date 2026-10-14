@@ -42,6 +42,8 @@ import {
 import { composeDemoGuardianCorrection, composeDemoGuardianEvaluation } from './demoGuardian.js';
 import { extractMemoryPayload, MEMORY_SYNTHESIS_SCHEMA_NAME } from '../creativeMemoryPayload.js';
 import { composeDemoMemorySynthesis } from './demoCreativeMemory.js';
+import { extractWeekPlanningPayload, WEEK_PLANNING_SCHEMA_NAME } from '../weekPlanningPayload.js';
+import { interpretWeekPlanning } from '../weekPlanningRules.js';
 
 /**
  * Proveedor local sin IA, para desarrollo sin credenciales y para tests deterministas.
@@ -407,6 +409,17 @@ export class DemoProvider implements AIProvider {
       input.schemaName === MEMORY_SYNTHESIS_SCHEMA_NAME ? extractMemoryPayload(input.prompt) : null;
     if (memory) {
       return { data: validated(input, composeDemoMemorySynthesis(memory)), ...this.meta(start) };
+    }
+    // Prompt 19: el planificador de la semana (solo lenguaje; las fechas las calcula el backend).
+    const week =
+      input.schemaName === WEEK_PLANNING_SCHEMA_NAME
+        ? extractWeekPlanningPayload(input.prompt)
+        : null;
+    if (week) {
+      return {
+        data: validated(input, interpretWeekPlanning(week.userRequest, week.today, week.previous)),
+        ...this.meta(start),
+      };
     }
     throw new AIProviderError(
       'misconfigured',

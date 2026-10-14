@@ -10,7 +10,7 @@ import {
 } from './index.js';
 
 describe('Capacidades del workspace', () => {
-  it('Operations y Content Planner compartidos; Daily Director solo Personal; Campaigns y Brand Guardian solo Enterprise', () => {
+  it('Operations y Content Planner compartidos; Daily Director solo Personal; Campaigns y Brand Guardian solo Enterprise; Calendar solo Personal', () => {
     expect(workspaceCapabilities('personal')).toEqual({
       projects: true,
       tasks: true,
@@ -20,6 +20,7 @@ describe('Capacidades del workspace', () => {
       campaigns: false,
       brandGuardian: false,
       creativeMemory: true,
+      calendar: true,
     });
     expect(workspaceCapabilities('enterprise')).toEqual({
       projects: true,
@@ -30,6 +31,7 @@ describe('Capacidades del workspace', () => {
       campaigns: true,
       brandGuardian: true,
       creativeMemory: true,
+      calendar: false,
     });
   });
 

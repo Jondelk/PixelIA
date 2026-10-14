@@ -11,6 +11,7 @@ import type { WorkspaceType } from './workspace.js';
  * - Campaign Manager: solo Enterprise (depende del BrandDNA).
  * - Brand Guardian (Prompt 15): solo Enterprise (revisa contra el BrandDNA; Personal no lo tiene).
  * - Creative Memory (Prompt 16): ambos (cada memoria vive en su workspace; no habilita el Guardian).
+ * - Calendar (Prompt 19): solo Personal: Google Calendar y el planificador de la semana.
  */
 
 export const WORKSPACE_FEATURES = [
@@ -22,6 +23,7 @@ export const WORKSPACE_FEATURES = [
   'campaigns',
   'brandGuardian',
   'creativeMemory',
+  'calendar',
 ] as const;
 export type WorkspaceFeature = (typeof WORKSPACE_FEATURES)[number];
 
@@ -37,6 +39,7 @@ const CAPABILITIES: Record<WorkspaceType, WorkspaceCapabilities> = {
     campaigns: false,
     brandGuardian: false,
     creativeMemory: true,
+    calendar: true,
   },
   enterprise: {
     projects: true,
@@ -47,6 +50,7 @@ const CAPABILITIES: Record<WorkspaceType, WorkspaceCapabilities> = {
     campaigns: true,
     brandGuardian: true,
     creativeMemory: true,
+    calendar: false,
   },
 };
 

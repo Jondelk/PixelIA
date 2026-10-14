@@ -1,5 +1,6 @@
-import type { PixelActionPlan } from '@pixel/contracts';
+import type { PixelActionPlan, WeekPlanView } from '@pixel/contracts';
 import type { ReactNode } from 'react';
+import { WeekPlanProposal } from '../calendar/WeekPlanProposal';
 
 /**
  * La propuesta de Pixel antes de crear nada: lo que entendió, lo que propone y lo que creará al
@@ -9,10 +10,28 @@ import type { ReactNode } from 'react';
 export function PixelProposalCard({
   plan,
   actions,
+  weekPlan = null,
 }: {
   plan: PixelActionPlan;
   actions: ReactNode;
+  /** Prompt 19: la semana propuesta (agrupada por día) en lugar de las listas genéricas. */
+  weekPlan?: WeekPlanView | null;
 }) {
+  if (weekPlan) {
+    return (
+      <section
+        aria-label="Propuesta de Pixel"
+        className="@container rounded-2xl border border-line-strong bg-surface p-6 sm:p-8"
+      >
+        <p className="max-w-2xl text-[15px] leading-relaxed text-fg">{plan.summary}</p>
+        <div className="mt-6 grid gap-6 @2xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <WeekPlanProposal plan={weekPlan} />
+          <ProposalList title="Lo que entendí" items={plan.understood} />
+        </div>
+        <div className="mt-7 border-t border-line pt-5">{actions}</div>
+      </section>
+    );
+  }
   return (
     <section
       aria-label="Propuesta de Pixel"

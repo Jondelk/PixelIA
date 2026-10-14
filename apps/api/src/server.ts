@@ -4,6 +4,8 @@ import { createApp } from './app.js';
 import { loadEnv, SERVICE_NAME, SERVICE_VERSION } from './config/env.js';
 import { getDatabaseStatus, startDatabase, stopDatabase } from './db/connection.js';
 import { createLogger } from './lib/logger.js';
+import { resolveCalendarConfig } from './modules/calendar/calendar.config.js';
+import { createGoogleCalendarProvider } from './modules/calendar/google.provider.js';
 import { upgradeAvatarProfileIndexes } from './modules/avatars/avatarProfile.indexes.js';
 import { migrateContentPlanContexts } from './modules/content-plans/contentPlan.migration.js';
 import { migrateLegacyCreativeMemories } from './modules/creative-memory/creativeMemory.migration.js';
@@ -59,7 +61,22 @@ startDatabase(env.MONGODB_URI, logger, {
   },
 });
 
-const app = createApp({ env, logger, getDatabaseStatus, ai: createAIProvider(env, logger) });
+// Prompt 19: Google Calendar es opcional; una configuración incompleta se avisa (sin valores) y la
+// herramienta queda «sin configurar». Nunca impide arrancar.
+const calendarConfig = resolveCalendarConfig(env);
+if (calendarConfig.problem) {
+  logger.warn(`Google Calendar sin configurar: ${calendarConfig.problem}`);
+}
+const app = createApp({
+  env,
+  logger,
+  getDatabaseStatus,
+  ai: createAIProvider(env, logger),
+  calendar: {
+    config: calendarConfig.config,
+    provider: calendarConfig.config ? createGoogleCalendarProvider(calendarConfig.config) : null,
+  },
+});
 const server = app.listen(env.PORT, () => {
   logger.info(`${SERVICE_NAME} v${SERVICE_VERSION} escuchando en http://localhost:${env.PORT}`, {
     env: env.NODE_ENV,

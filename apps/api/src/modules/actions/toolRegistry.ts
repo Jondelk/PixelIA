@@ -46,31 +46,36 @@ export class PixelToolRegistry {
   }
 
   /** Registrada → admite el tipo de workspace y su capacidad → conectada (si es externa). */
-  availability(toolKey: string, workspace: WorkspaceDocument): ToolAvailability {
+  async availability(toolKey: string, workspace: WorkspaceDocument): Promise<ToolAvailability> {
     const tool = this.get(toolKey);
     if (!tool) return 'not_registered';
     if (!tool.contextTypes.includes(workspace.type)) return 'unavailable';
     if (tool.feature && !workspaceSupportsFeature(workspace.type, tool.feature)) {
       return 'unavailable';
     }
-    return tool.availability({ workspace });
+    try {
+      return await tool.availability({ workspace });
+    } catch {
+      // Comprobar la conexión falló (base o proveedor): no disponible, nunca «disponible».
+      return 'unavailable';
+    }
   }
 
   /** Herramientas que este workspace puede usar ahora mismo. */
-  listAvailable(workspace: WorkspaceDocument): PixelTool[] {
-    return [...this.tools.values()].filter(
-      (tool) => this.availability(tool.key, workspace) === 'available',
-    );
+  async listAvailable(workspace: WorkspaceDocument): Promise<PixelTool[]> {
+    const tools = [...this.tools.values()];
+    const states = await Promise.all(tools.map((tool) => this.availability(tool.key, workspace)));
+    return tools.filter((_, index) => states[index] === 'available');
   }
 
   /** La capacidad exacta, con la autorización que exige; null si no existe o no está disponible. */
-  resolve(
+  async resolve(
     toolKey: string,
     capabilityKey: string,
     workspace: WorkspaceDocument,
-  ): ResolvedCapability | null {
+  ): Promise<ResolvedCapability | null> {
     const tool = this.get(toolKey);
-    if (!tool || this.availability(toolKey, workspace) !== 'available') return null;
+    if (!tool || (await this.availability(toolKey, workspace)) !== 'available') return null;
     const capability = tool.capabilities.find((candidate) => candidate.key === capabilityKey);
     if (!capability) return null;
     return { tool, capability, authorization: authorizationFor(capability) };

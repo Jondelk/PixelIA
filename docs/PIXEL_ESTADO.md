@@ -4,8 +4,9 @@
 > en el repositorio**, no lo que dicen los prompts ni el resto de `docs/`, que tienen deriva (§12).
 > Si el código y este documento no coinciden, **manda el código**: corrige este documento.
 >
-> - Última revisión: **2026-10-14**, rama `feat/prompts-9-11` en `8545a3e` (Prompt 17), **2 commits
->   por delante de `origin`** (`29fbb77` y `8545a3e` sin push); hasta `79b97e7` (Prompt 15), al día con `origin` (los commits de los Prompts 14 + 14.1 y 15 ya están subidos; contiene `feat/etapa-0-foundation` en `c846956`) y el commit del Prompt 13 (Campaign Manager, `a65e28c`, ya en `origin`),
+> - Última revisión: **2026-10-14**, rama `feat/prompts-9-11` en `416354e` («Set Colombian Spanish voice
+>   preference»), **al día con `origin`** (los Prompts 16, 17 y 18 y el cambio de voz ya están subidos,
+>   con autorización del usuario). Antes: hasta `79b97e7` (Prompt 15), al día con `origin` (los commits de los Prompts 14 + 14.1 y 15 ya están subidos; contiene `feat/etapa-0-foundation` en `c846956`) y el commit del Prompt 13 (Campaign Manager, `a65e28c`, ya en `origin`),
 >   hecho con autorización del usuario el 2026-10-09 en su equipo (Windows, Claude Code en VS Code),
 >   Encima, el **Prompt 14 (Enterprise Content Planner) y el Prompt 14.1 (Zero-entry UX:
 >   PixelCommand), implementados, verificados y confirmados en un único commit** (`1593576`) ("Add Prompt 14: Enterprise Content Planner and zero-entry Pixel Command"),
@@ -16,8 +17,10 @@
 >   Memory" (`29fbb77`, autorizado el 2026-10-13, **sin push**), verificado el 2026-10-13 (§13).
 > - Encima, el **Prompt 17 (Pixel Presence V1)**, confirmado en el commit "Add Prompt 17: Pixel
 >   Presence V1" (`8545a3e`, autorizado el 2026-10-14, **sin push**), verificado el 2026-10-13/14 (§13).
-> - Encima, **sin commit y sin push**: el **Prompt 18 (Pixel Action Foundation)**, implementado y
->   verificado el 2026-10-14 (§13), **pendiente de revisión** del usuario.
+> - Encima, el **Prompt 18 (Pixel Action Foundation)**, confirmado en `8fe0682` y la preferencia de voz
+>   `es-CO` en `416354e`, ambos autorizados y en `origin`.
+> - Encima, **sin commit y sin push**: el **Prompt 19 (Personal Week Planner + Google Calendar)**,
+>   implementado y verificado el 2026-10-14 (§13), **pendiente de revisión** del usuario.
 > - Leyenda: ✅ implementado y verificado (tests automáticos; si solo hubo revisión manual, se dice) ·
 >   🟨 parcial · 📝 solo planificado (docs o prompts, sin código) · ❓ pendiente de verificación ·
 >   ⛔ bloqueado.
@@ -26,13 +29,13 @@
 
 | Tema | Estado |
 |---|---|
-| Última etapa verificada | **Etapa AF — Pixel Action Foundation (Prompt 18)**, implementada y verificada el 2026-10-14 (§13) en el equipo del usuario, **sin commit ni push, pendiente de revisión**. Debajo: Etapa PR (Prompt 17, `8545a3e`, sin push), Etapa CM (Prompt 16, `29fbb77`, sin push), Etapa G (Prompt 15, `79b97e7`), Etapas Z y EC (Prompts 14.1 y 14, `1593576`), Etapa M (Prompt 13, `a65e28c`), Etapas O, C, D y E (`e59757d`) y la entrada pública (`24e300a`); todo eso en `origin`. |
-| Prompts | Prompt 9 = Operations, 10 = Content Planner, 11 = Daily Director, **12** = Shared Operations + Enterprise Projects (Etapa E; confirmado: el texto del Prompt 12 se recibió e implementó en la sesión del equipo del usuario el 2026-10-08), **13 = Enterprise Campaign Manager** (Etapa M; el usuario envió el texto "PROMPT 13 — ENTERPRISE CAMPAIGN MANAGER" el 2026-10-09), **14 = Enterprise Content Planner** (Etapa EC; recibido el 2026-10-09), **14.1 = Zero-entry UX / PixelCommand** (Etapa Z; recibido el 2026-10-09: "PROMPT 14.1 — ZERO-ENTRY UX"), **15 = Brand Guardian Core** (Etapa G; recibido el 2026-10-10: "PIXEL BRAND GUARDIAN CORE"), **16 = Creative Memory** (Etapa CM; recibido el 2026-10-13: "PROMPT 16 — PIXEL CREATIVE MEMORY"; el mensaje llegó truncado en §142), **17 = Pixel Presence V1** (Etapa PR; recibido el 2026-10-13: "PIXEL PRESENCE V1"; llegó cortado en §150 y el usuario envió después §150–§173), **18 = Pixel Action Foundation** (Etapa AF; recibido el 2026-10-14 en dos partes: "PROMPT 18 — PIXEL ACTION FOUNDATION" Parte 1/2 —auditoría— y Parte 2/2 —«ajustada después de la auditoría real»—; un primer envío anterior llegó cortado en §134 y se descartó). La entrada pública no tiene número. |
+| Última etapa verificada | **Etapa GC — Personal Week Planner + Google Calendar (Prompt 19)**, implementada y verificada el 2026-10-14 (§13) en el equipo del usuario, **sin commit ni push, pendiente de revisión**. Debajo, todo en `origin`: Etapa AF (Prompt 18, `8fe0682`) + voz `es-CO` (`416354e`), Etapa PR (Prompt 17, `8545a3e`), Etapa CM (Prompt 16, `29fbb77`), Etapa G (`79b97e7`), Etapas Z y EC (`1593576`), Etapa M (`a65e28c`), Etapas O, C, D y E (`e59757d`) y la entrada pública (`24e300a`). |
+| Prompts | Prompt 9 = Operations, 10 = Content Planner, 11 = Daily Director, **12** = Shared Operations + Enterprise Projects (Etapa E; confirmado: el texto del Prompt 12 se recibió e implementó en la sesión del equipo del usuario el 2026-10-08), **13 = Enterprise Campaign Manager** (Etapa M; el usuario envió el texto "PROMPT 13 — ENTERPRISE CAMPAIGN MANAGER" el 2026-10-09), **14 = Enterprise Content Planner** (Etapa EC; recibido el 2026-10-09), **14.1 = Zero-entry UX / PixelCommand** (Etapa Z; recibido el 2026-10-09: "PROMPT 14.1 — ZERO-ENTRY UX"), **15 = Brand Guardian Core** (Etapa G; recibido el 2026-10-10: "PIXEL BRAND GUARDIAN CORE"), **16 = Creative Memory** (Etapa CM; recibido el 2026-10-13: "PROMPT 16 — PIXEL CREATIVE MEMORY"; el mensaje llegó truncado en §142), **17 = Pixel Presence V1** (Etapa PR; recibido el 2026-10-13: "PIXEL PRESENCE V1"; llegó cortado en §150 y el usuario envió después §150–§173), **18 = Pixel Action Foundation** (Etapa AF; recibido el 2026-10-14 en dos partes: "PROMPT 18 — PIXEL ACTION FOUNDATION" Parte 1/2 —auditoría— y Parte 2/2 —«ajustada después de la auditoría real»—; un primer envío anterior llegó cortado en §134 y se descartó), **19 = Personal Week Planner + Google Calendar** (Etapa GC; recibido el 2026-10-14 en dos partes: Parte 1/2 —auditoría, sin código— y Parte 2/2 —«Ahora sí: IMPLEMENTA»—; un primer envío llegó cortado en §128). La entrada pública no tiene número. |
 | Ramas | `feat/prompts-9-11` (nueva, en `origin`) = `feat/etapa-0-foundation` + este trabajo. `feat/etapa-0-foundation` sigue en `c846956`: **todavía no se ha fusionado**. |
-| Última etapa | **Pixel Action Foundation** (Prompt 18, Etapa AF): PixelActionPlan como propuesta (sin segundo agregado), snapshot autorizado inmutable (revisión, quién, cuándo, acciones exactas) en la reserva atómica, PixelToolRegistry con herramientas internas (`workspace.projects/create_project`, `workspace.tasks/create_task` y `update_task`), ActionAuthorizationPolicy determinista, ActionExecutor secuencial con dependencias, fallos parciales y verificación por acción, resultados embebidos y respuesta veraz, recuperación de ejecuciones abandonadas, `external_action` para calendario/correo/mensajería/pagos (respuesta honesta), y la UI de acciones y resultados (`docs/PIXEL-ACTIONS.md`, `docs/PIXEL-TOOLS.md`). Anterior: **Pixel Presence V1** (Prompt 17, Etapa PR): sistema de estados de presencia efímero (8 estados), Avatar Runtime con tres niveles (ambient 2D, interactive y focus 3D; uno solo en 3D por pantalla; Pixi sin personaje; caída a 2D sin WebGL; movimiento reducido), Voice Runtime (Web Speech del navegador; voz = otra entrada de PixelCommand, nunca confirma; degradación a texto), acentos por workspace con contraste validado, Pixel Dock persistente con el recurso en contexto (validado contra el workspace), UI Presence Pass (Tus Pixels, Inicios, Campañas, Plan de contenido, topbar y navegación sin Chat) y «Voz y movimiento» en Personaje (`docs/PIXEL-PRESENCE.md`, `docs/AVATAR-ASSET-CONTRACT.md`). Anterior: **Creative Memory** (Prompt 16, Etapa CM): CreativeDecisionEvent inmutable e idempotente, CreativeMemory extendida (candidata → confirmada; explícita con una confirmación), detector de patrones (3 señales en 2 recursos), sintetizador con refs EVENT_n, resolver con alcance y excepciones, integración en PixelCommand (`manage_memory`), campañas, planners, Daily Director, chat y Guardian, y «Lo que Pixel ha aprendido» en la web (`docs/CREATIVE-MEMORY.md`). Anterior: Brand Guardian Core (Prompt 15). |
-| Siguiente paso | Usuario: revisar el Prompt 18 y decidir su commit; decidir el push de `29fbb77` (Prompt 16) y `8545a3e` (Prompt 17). No empezar el Prompt 19 sin pedirlo (§14). |
+| Última etapa | **Personal Week Planner + Google Calendar** (Prompt 19, Etapa GC), solo Personal: la primera herramienta externa (`google.calendar`: `list_events`, `find_availability`, `create_event`, `update_event`; sin borrar), con OAuth Authorization Code + PKCE y estado de un solo uso, tokens cifrados con AES-256-GCM y renovación centralizada; motor de disponibilidad y planificador deterministas en la zona IANA del usuario (luxon); `plan_week` y `replan_block` en PixelCommand; propuesta agrupada por día → «Guardar semana» → una `create_event` por bloque, idempotente (id determinista), revalidada y verificada releyendo en Google; mover solo bloques de Pixel; estados honestos (sin configurar, conectar, reconectar, no disponible) (`docs/GOOGLE-CALENDAR.md`, `docs/PERSONAL-WEEK-PLANNER.md`). Anterior: **Pixel Action Foundation** (Prompt 18, Etapa AF; `docs/PIXEL-ACTIONS.md`, `docs/PIXEL-TOOLS.md`). |
+| Siguiente paso | Usuario: revisar el Prompt 19 y decidir su commit. Probarlo con una cuenta de Google real (cliente OAuth propio y un calendario de PRUEBA) y con Claude real. No empezar el Prompt 20 sin pedirlo (§14). |
 | Problema a conocer ya | Copiar `apps/api/.env.example` tal cual **impide arrancar la API** (`JWT_SECRET=` y `AI_PROVIDER=` vacíos no validan). Sigue igual en `e59757d`. Ver §11 y §15. |
-| Cambios sin commit | **Sí: todo el Prompt 18** (contracts `pixelCommand.ts` y `pixelActions.ts`; API: módulo nuevo `actions`, PixelCommand —modelo, servicio, ejecutor, planificador, rutas, intérprete—, reglas del intérprete y `app.ts`; web: `PixelProposalCard`, `ActionResults`, `commandLogic`; tests y docs). El Prompt 17 está en `8545a3e` y el 16 en `29fbb77`, **sin push**. Antes: **todo el Prompt 17** (contracts `workspace.ts` y `pixelCommand.ts`; API `workspaces`, `personal`, `pixel-command` y `pixelCommandRules`; web: feature nueva `presence`, shell, navegación, Inicios, Tus Pixels, Campañas, Plan de contenido, Guardian, Daily Director, avatar 3D y Personaje; tests y docs). El Prompt 16 está en `29fbb77` **sin push**; los Prompts 13–15, en `origin`. |
+| Cambios sin commit | **Sí: todo el Prompt 19** (contracts `calendar.ts` —nuevo—, `capabilities.ts` y `pixelCommand.ts`; API: módulo nuevo `calendar`, herramienta `actions/tools/googleCalendar.tool.ts`, Action Foundation con disponibilidad asíncrona, PixelCommand —modelo, servicio, intérprete—, `ai/weekPlanning*`, `lib/secretBox.ts`, `requestLogger`, `env.ts`, `app.ts`, `server.ts`, `.env.example`, `package.json` + `package-lock.json` (`google-auth-library`, `luxon`); web: feature nueva `calendar`, PixelCommand, «Mi Pixel», Inicio, Dock, sugerencias; tests y docs). Nada más pendiente: los Prompts 16–18 y la voz `es-CO` están en `origin`. |
 
 ## 1. Rama, commits y git
 
@@ -51,9 +54,11 @@
 
 | Commit | Fecha (UTC) | Autor | Mensaje |
 |---|---|---|---|
-| (sin commit) | 2026-10-14 | Claude | Prompt 18: Pixel Action Foundation (pendiente de revisión y autorización del usuario; sin push) |
-| `8545a3e` | 2026-10-14 | Claude | Add Prompt 17: Pixel Presence V1 (autorizado; **sin push**) |
-| `29fbb77` | 2026-10-13 | Claude | Add Prompt 16: Pixel Creative Memory (autorizado; **sin push**) |
+| (sin commit) | 2026-10-14 | Claude | Prompt 19: Personal Week Planner + Google Calendar (pendiente de revisión y autorización del usuario; sin push) |
+| `416354e` | 2026-10-14 | Claude | Set Colombian Spanish voice preference (autorizado; en `origin`) |
+| `8fe0682` | 2026-10-14 | Claude | Add Prompt 18: Pixel Action Foundation (autorizado; en `origin`) |
+| `8545a3e` | 2026-10-14 | Claude | Add Prompt 17: Pixel Presence V1 (autorizado; en `origin`) |
+| `29fbb77` | 2026-10-13 | Claude | Add Prompt 16: Pixel Creative Memory (autorizado; en `origin`) |
 | `79b97e7` | 2026-10-10 | Claude | Add Prompt 15: Pixel Brand Guardian Core (autorizado; en `origin`) |
 | `1593576` | 2026-10-10 | Claude | Add Prompt 14: Enterprise Content Planner and zero-entry Pixel Command (Prompts 14 y 14.1, autorizado; en `origin`) |
 | `a65e28c` | 2026-10-09 | Claude | Add Prompt 13: Enterprise Campaign Manager (en `origin`) |
@@ -232,6 +237,7 @@ packages/contracts/src   25 módulos reexportados por index.ts (se consume solo 
 | `pixel-command` | PixelCommand: `PixelIntentResolver` (IA + reglas en español de respaldo; saneado del backend), `PixelContextResolver`, `planCommand` (información que falta + ActionPlan, puro), respuestas sin escritura (estado, consejo, desconocido) y ejecutor que llama a los servicios existentes; confirmación única con reserva atómica + revisión; `partial` con reintento | ✅ Personal y Enterprise (2026-10-09); sin prueba con Claude real (`PIXEL-COMMAND.md` §10) |
 | `guardian` | GuardianReport (`guardian_reports`); `GuardianEngine` con 8 evaluadores (identidad, comunicación, claims, restricciones, estrategia, alineación de campaña, contenido, dirección visual estructurada), una sola llamada semántica con referencias controladas (`BRAND_*`, `CAMPAIGN_*`, `RESOURCE_TEXT_n`) y respaldo por reglas; `GuardianScoreAggregator`; override registrado; corrección de una pasada (`guardian_correction`) y aplicación con el servicio del recurso; `stale` por hash de la instantánea; preflight de PixelCommand (`guardian`/`guardianBlocked`, 409 `guardian_preflight_blocked`) | ✅ solo Enterprise (2026-10-10); sin prueba con Claude real (`BRAND-GUARDIAN.md` §12) |
 | `actions` (Prompt 18, sin rutas) | PixelTool / capacidades (schema, efecto, destino, verificación), PixelToolRegistry, ActionAuthorizationPolicy, snapshot autorizado, ActionExecutor (dependencias, parciales, verificación, límite de tiempo), informe veraz, catálogo CAPABILITY_n para la IA, respuesta a acciones externas; herramientas `workspace.projects` y `workspace.tasks` | ✅ (2026-10-14); `update_task` sin flujo que la proponga; sin Claude real |
+| `calendar` (Prompt 19, solo Personal) | Ciclo de vida de Google Calendar (`/calendar/{connection,connect,disconnect}` + `/api/calendar/google/callback`): OAuth con PKCE y estado de un solo uso, tokens cifrados (AES-256-GCM), renovación centralizada; adaptador `google.provider`; motor de disponibilidad, planificador de la semana y orquestación con PixelCommand; herramienta `google.calendar` (en `actions/tools`) | ✅ (2026-10-14) con Google falso; sin Google ni Claude reales |
 | `daily-director` | DailyBrief por día local y versión; `DailyDataCollector`, `PriorityScorer`, `ProjectHealth`, `ContentHealth`, `DailyDirectorEngine` (IA + fallback determinístico), detección de "desactualizado" | ✅ solo Personal; sin prueba con Claude real |
 
 ### Web (`apps/web/src/features`)
@@ -247,6 +253,7 @@ packages/contracts/src   25 módulos reexportados por index.ts (se consume solo 
 | `campaigns` (Campañas, "Crear con Pixel" / "Nueva campaña", detalle con Estrategia · Piezas · Proyectos · Contenido · Plan de contenido, versiones e hipótesis) | ✅ (2026-10-09; recorrido en navegador en el smoke del Prompt 14) |
 | `content-planner` Enterprise ("Plan de contenido de {marca}", selector y resumen de campaña, `?campaign=`, plan con estrategia editorial → alineación → pilares → plan, tarjetas con campaña y porqué de marca) | ✅ (2026-10-09; verificado en navegador) |
 | `pixel-command` (`PixelCommand`, `PixelCommandPanel`, `PixelProposalCard`, `PixelRequestInput`): "¿Qué necesitas hacer?" dominante en los Inicios Enterprise (con ADN) y Personal; "¿Qué quieres lograr?" en Campañas y "¿Qué quieres comunicar?" en Plan de contenido, con los formularios como opciones avanzadas; navegación Enterprise Inicio · Trabajo · Marca | ✅ (2026-10-09; verificado en navegador) |
+| `calendar` (Prompt 19): tarjeta de conexión en «Mi Pixel», botón para conectar en la respuesta de Pixel, aviso al volver de Google, semana propuesta agrupada por día (`WeekPlanProposal`) en `PixelProposalCard`; «Guardar semana» / «Mover bloque» | ✅ (2026-10-14; smoke 35/35 con Google falso) |
 | `guardian` (Brand Guardian en Marca: revisar campaña, plan, pieza o texto pegado; informe con estado, score heurístico, dimensiones aplicables, hallazgos explicados, override, "Corregir con Pixel" y "Aplicar"; historial) · "Revisar con Guardian" en el detalle de campaña, el plan de contenido y Contenido · preflight compacto en la propuesta de PixelCommand (`GuardianPreflight`) | ✅ (2026-10-10; verificado en navegador) |
 | `presence` (Prompt 17): `PixelPresenceProvider` (estado efímero + voz), `PresenceScope`, `PixelPresenceAvatar` (ambient 2D / interactive / focus), `PixelComposer` (texto + micrófono), `PixelDock` (Pixel persistente con el recurso en contexto), `PixelHomeHero`, `PresenceStatus` (chip de la topbar), `PresenceSettings` («Voz y movimiento»), `workspaceAccent`, `presenceProfile` (VoiceProfile, BehaviorProfile, preferencias por dispositivo) | ✅ (2026-10-13; verificado en navegador con voz simulada) |
 | `creative-memory` («Lo que Pixel ha aprendido»: candidatas con su patrón y «¿Por qué Pixel piensa esto?», activas con alcance y origen, editar = reemplazar, olvidar con confirmación, historial plegado; en Marca «Lo aprendido» o junto a Mi Pixel) · PixelCommand confirma con «Recordar» / «Olvidar» | ✅ (2026-10-13; verificado en navegador) |
@@ -675,6 +682,21 @@ a "no convertida") y **R11** (el rollback borra también los ítems). El resto s
 
 ## 13. Última verificación
 
+### 2026-10-14: Prompt 19 (Personal Week Planner + Google Calendar), equipo del usuario, sin commit ni push
+
+| Comprobación | Resultado |
+|---|---|
+| `npm run typecheck` | 0 errores |
+| `npm run lint` | sin errores ni avisos |
+| Prettier | OK en los archivos tocados, con su EOL (`--end-of-line auto`) |
+| `npm run test` | contracts 82/82 · API 591 + 7 omitidos (pruebas en vivo: Claude y Google, incluidas las 2 nuevas de `googleCalendar.live`) · web 292/292 |
+| `npm run build` | OK (aviso de chunk grande, no error) |
+| Arranque | La API del usuario (:4000, `tsx watch`) se recargó sola con el código nuevo y responde `/api/health` 200 sin configuración de Google (herramienta «sin configurar»); la web (:5173) responde 200. No se tocaron. |
+| Navegador (API :4100 con un arranque temporal y Google FALSO, control del falso en :4101, build de producción :5180, base `pixel_smoke_p19` borrada; el arranque temporal se borró del repo) | **35/35**: sin conectar → la frase exacta, «Conectar Google Calendar», aviso de privacidad, 0 lecturas, presencia thinking → idle; OAuth con estado + PKCE contra el falso → vuelve a `/workspace/:id?calendar=connected` con aviso, estado `connected` sin tokens; parcial el viernes + reunión el miércoles + 3 sesiones → lunes, martes y jueves, duración estimada y supuestos visibles, «Guardar semana»/«Ajustar», 0 escrituras; «Ese bloque del martes pásalo al jueves» → revisión nueva (lunes 1 · jueves 2), 0 escrituras; «Guardar semana» → «3 de 3 bloques guardados y comprobados en Google Calendar.», 3 eventos, presencia success; «El bloque del lunes muévelo al jueves a las 6» → «Mover bloque» → «Listo. Moví el bloque a jueves 15 de octubre, 18:00–19:30 y lo comprobé…», sin duplicar; conflicto (cita nueva en el hueco antes de guardar) → «Guardé 1 de los 2 bloques. No pude guardar el del domingo (ese horario ya no está libre…)», Reintentar, presencia warning; 390/820/1440 px sin desbordes; botones con nombre; «Mi Pixel»: permisos y privacidad → Desconectar → «Sin conectar», eventos intactos, Pixel vuelve a pedir conectar; consola y API sin errores |
+| Encontrado y corregido en el smoke | «Ajustar» un plan de la PRÓXIMA semana con «al jueves» buscaba el jueves más cercano (fuera del plan) y preguntaba: ahora se busca dentro del rango del plan (`findMoveSlot({ within })`, test añadido) |
+| Encontrado y corregido en los tests | Dos lecturas en paralelo renovaban el token dos veces: renovación de vuelo único por conexión que relee el token guardado (test «se renueva una vez») |
+| Claude real y Google real | SKIPPED: no hay `ANTHROPIC_API_KEY` ni `apps/api/.env`, ni `GOOGLE_*` / calendario de prueba |
+
 ### 2026-10-14: Prompt 18 (Pixel Action Foundation), equipo del usuario, sin commit ni push
 
 | Comprobación | Resultado |
@@ -882,8 +904,11 @@ Verificación anterior: `c846956` (2026-10-08): contracts 27 · API 185 + 1 · w
 
 ## 14. Siguiente paso (no implementado)
 
-0. **Usuario: revisar el Prompt 18 (Pixel Action Foundation) y autorizar (o no) su commit**; decidir el
-   push de `29fbb77` (Prompt 16) y `8545a3e` (Prompt 17). No empezar el Prompt 19 sin pedirlo. Probar la voz con un
+0. **Usuario: revisar el Prompt 19 (Personal Week Planner + Google Calendar) y autorizar (o no) su
+   commit.** Para probarlo de verdad: crear un cliente OAuth «Aplicación web» en Google Cloud con la URL
+   `http://localhost:5173/api/calendar/google/callback`, rellenar las 4 variables en `apps/api/.env`
+   (`docs/GOOGLE-CALENDAR.md`) y usar un calendario de PRUEBA para `googleCalendar.live`. No empezar el
+   Prompt 20 sin pedirlo. Probar la voz con un
    micrófono real en Chrome/Edge y Safari. Probar `CAMPAIGN_SYSTEM`, `ENTERPRISE_PLANNING_SYSTEM`,
    `PIXEL_COMMAND_SYSTEM`, `GUARDIAN_SYSTEM`, `GUARDIAN_CORRECTION_SYSTEM` y `MEMORY_SYSTEM` con Claude real
    cuando haya `ANTHROPIC_API_KEY`.
@@ -903,7 +928,8 @@ Verificación anterior: `c846956` (2026-10-08): contracts 27 · API 185 + 1 · w
    Planner~~ y ~~Prompt 14.1 — Zero-entry UX~~: hechos (Etapas EC y Z, §13), en `1593576`, sin push. ~~Prompt 15 — Brand Guardian
    Core~~: hecho (Etapa G, §13), en `79b97e7`. ~~Prompt 16 — Creative Memory~~: hecho (Etapa CM, §13), en `29fbb77`, sin push. ~~Prompt 17 — Pixel
    Presence V1~~: hecho (Etapa PR, §13), en `8545a3e`, sin push. ~~Prompt 18 — Pixel Action
-   Foundation~~: hecho (Etapa AF, §13), sin commit.
+   Foundation~~: hecho (Etapa AF, §13), en `8fe0682`. ~~Prompt 19 — Personal Week Planner + Google
+   Calendar~~: hecho (Etapa GC, §13), sin commit.
 7. Opcional, previa petición: corregir la deriva de §12.
 
 ## 15. Comandos reales

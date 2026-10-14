@@ -14,6 +14,7 @@ import {
   type PixelCommandStatus,
   type PixelCreatedResource,
   type GuardianPreflightSummary,
+  type WeekPlanView,
 } from '@pixel/contracts';
 import { model, Schema, type HydratedDocument, type Types } from 'mongoose';
 import { tenantScoped } from '../../db/tenantScoped.plugin.js';
@@ -23,6 +24,7 @@ import {
   type ActionResultRecord,
   type AuthorizedActionSnapshot,
 } from '../actions/action.snapshot.js';
+import type { CalendarPlanningState } from '../calendar/weekPlanning.service.js';
 
 /*
  * PixelCommand (docs/PIXEL-COMMAND.md): una solicitud natural y su ciclo de vida
@@ -90,6 +92,12 @@ export interface PixelCommandAttrs {
   /** Detecta una ejecución abandonada (caída del proceso): ver PIXEL-ACTIONS.md §Recuperación. */
   executionStartedAt: Date | null;
   executionUpdatedAt: Date | null;
+  /** Prompt 19: el plan de la semana propuesto (vista humana, sin datos de Google). */
+  weekPlan: WeekPlanView | null;
+  /** Prompt 19: lo que se entendió para planificar (base de «Ajustar»). Nunca datos de Google. */
+  planning: CalendarPlanningState | null;
+  /** Prompt 19: Pixel necesita conectar (o reconectar) Google Calendar para seguir. */
+  connect: { provider: 'google_calendar'; status: string } | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -255,6 +263,9 @@ pixelCommandSchema.add({
   actionResults: { type: [actionResultSchema], default: [] },
   executionStartedAt: { type: Date, default: null },
   executionUpdatedAt: { type: Date, default: null },
+  weekPlan: { type: Schema.Types.Mixed, default: null },
+  planning: { type: Schema.Types.Mixed, default: null },
+  connect: { type: Schema.Types.Mixed, default: null },
 });
 
 pixelCommandSchema.index({ workspaceId: 1, createdAt: -1 });
@@ -316,6 +327,8 @@ export function toPixelCommandDTO(doc: PixelCommandDocument): PixelCommand {
         }
       : null,
     guardian: doc.guardian ?? null,
+    weekPlan: doc.weekPlan ?? null,
+    connect: doc.connect ?? null,
     interpretation: { mode: doc.interpretation.mode, confidence: doc.interpretation.confidence },
     createdAt: doc.createdAt.toISOString(),
     updatedAt: doc.updatedAt.toISOString(),

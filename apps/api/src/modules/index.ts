@@ -46,6 +46,8 @@ import {
 } from './personal/personal.routes.js';
 import { workspaceRouter, workspacesRouter } from './workspaces/workspaces.routes.js';
 import type { Logger } from '../lib/logger.js';
+import { createCalendarCallbackRouter, createCalendarRouter } from './calendar/calendar.routes.js';
+import type { CalendarDeps } from './calendar/calendarConnection.service.js';
 
 export interface ApiDependencies {
   getDatabaseStatus: () => DatabaseStatus;
@@ -62,6 +64,8 @@ export interface ApiDependencies {
   pixelIntentResolver: PixelIntentResolver;
   /** Herramientas que Pixel puede usar al ejecutar un plan autorizado (Prompt 18). */
   pixelTools: PixelToolRegistry;
+  /** Prompt 19: Google Calendar (config opcional, proveedor y reloj inyectables). */
+  calendar: CalendarDeps;
   guardianEngine: GuardianEngine;
   defaultTimezone: string;
   logger: Logger;
@@ -83,6 +87,9 @@ export function createApiRouter(deps: ApiDependencies): Router {
 
   api.use('/health', createHealthRouter(deps));
   api.use('/auth', createAuthRouter(deps));
+
+  // Callback de OAuth: lee la sesión de la cookie él mismo (redirección humana si falta).
+  api.use('/calendar', createCalendarCallbackRouter(deps.calendar, deps.session));
 
   api.use('/workspaces', requireAuth(deps.session));
   api.use('/workspaces', workspacesRouter);
@@ -116,8 +123,11 @@ export function createApiRouter(deps: ApiDependencies): Router {
       contentPlans: deps,
       guardian: { engine: deps.guardianEngine, ai: deps.chat.ai, logger: deps.logger },
       tools: deps.pixelTools,
+      calendar: deps.calendar,
     }),
   );
+  // Google Calendar (Prompt 19): solo el ciclo de vida de la conexión (capacidad `calendar`).
+  workspace.use('/calendar', createCalendarRouter(deps.calendar));
   // Brand Guardian: solo Enterprise (capacidad `brandGuardian`, la comprueba el servicio).
   workspace.use(
     '/guardian',

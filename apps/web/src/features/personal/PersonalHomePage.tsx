@@ -7,6 +7,7 @@ import { workspaceBasePath } from '../../app/navigation';
 import { DailyDirector } from '../daily-director/DailyDirector';
 import { OperationsOverview } from '../operations/OperationsOverview';
 import { PixelHomeHero } from '../presence/PixelHomeHero';
+import { CalendarReturnNotice } from '../calendar/CalendarConnection';
 import { PERSONAL_SUGGESTIONS } from '../presence/suggestions';
 import { useWorkspace } from '../workspaces/workspaceContext';
 
@@ -77,6 +78,8 @@ function PersonalHome({
 
   return (
     <>
+      {/* Prompt 19: al volver de conectar Google Calendar desde una respuesta de Pixel. */}
+      <CalendarReturnNotice />
       {/* Zero-entry-first + presencia: tu Pixel y pedirle algo; debajo, la dirección de hoy. */}
       <PixelHomeHero
         workspaceId={workspaceId}

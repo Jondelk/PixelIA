@@ -17,6 +17,7 @@ const STATUS_TEXT: Record<PixelPlanAction['status'], string> = {
 const KIND_TEXT: Partial<Record<PixelPlanAction['kind'], string>> = {
   project: 'Proyecto',
   task: 'Tarea',
+  calendar_event: 'Bloque',
 };
 
 export function ActionResults({ actions }: { actions: PixelPlanAction[] }) {
@@ -25,8 +26,9 @@ export function ActionResults({ actions }: { actions: PixelPlanAction[] }) {
   return (
     <div className="space-y-2">
       <p className="text-xs text-muted">
-        {done} de {actions.length} {actions.length === 1 ? 'acción hecha' : 'acciones hechas'} y
-        comprobadas.
+        {actions.every((action) => action.kind === 'calendar_event')
+          ? `${done} de ${actions.length} comprobados en Google Calendar.`
+          : `${done} de ${actions.length} ${actions.length === 1 ? 'acción hecha' : 'acciones hechas'} y comprobadas.`}
       </p>
       <ul aria-label="Resultado de cada acción" className="space-y-1.5 text-sm">
         {actions.map((action) => (

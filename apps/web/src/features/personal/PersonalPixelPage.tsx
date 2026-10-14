@@ -10,9 +10,23 @@ import { useResource } from '../../lib/useResource';
 import { getAvatar } from '../pixel/avatarApi';
 import { PixelStudio } from '../pixel/PixelPage';
 import { useWorkspace } from '../workspaces/workspaceContext';
+import { CalendarConnectionCard } from '../calendar/CalendarConnection';
 
-/** /workspace/:workspaceId/pixel en Personal: el mismo estudio de personaje, desde el PersonalDNA. */
+/**
+ * /workspace/:workspaceId/pixel en Personal: el estudio de personaje (desde el PersonalDNA) y, debajo,
+ * la conexión con Google Calendar (Prompt 19; sin una sección nueva en la navegación).
+ */
 export function PersonalPixelPage() {
+  const { overview } = useWorkspace();
+  return (
+    <div className="space-y-12">
+      <PersonalCharacter />
+      <CalendarConnectionCard workspaceId={overview.workspace.id} />
+    </div>
+  );
+}
+
+function PersonalCharacter() {
   const { overview, reload: reloadWorkspace } = useWorkspace();
   const { workspace, personal } = overview;
   const apiBase = workspaceApiBase(workspace.id);

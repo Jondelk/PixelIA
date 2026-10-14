@@ -259,3 +259,19 @@ Detalle: `docs/PIXEL-PRESENCE.md` §4. Sin lip-sync ni voz en tiempo real.
 - La ejecución es síncrona; un comando que se queda en `executing` por una caída del proceso no se
   recupera solo.
 - Sin historial de solicitudes en la interfaz (el modelo las guarda).
+
+## Calendario (Prompt 19)
+
+Intenciones solo Personal (capacidad `calendar`): `plan_week` («organízame la semana», «estudiar tres
+veces antes del viernes») y `replan_block` («no pude estudiar hoy», «muévelo al jueves a las 6»). Las
+reconocen las reglas antes que la acción externa genérica (`calendarIntentOf`), y «calendario de
+contenido» sigue siendo `plan_content`. Una `external_action` de Google Calendar en Personal también
+pasa por el planificador.
+
+- El comando lleva `weekPlan` (la semana propuesta) y `connect` (Pixel pide conectar o reconectar);
+  internamente guarda `planning` (zona y lo entendido) para «Ajustar».
+- Sin conexión: `answered` con la frase exacta y `connect.status`. Sin configurar: lo dice, sin botón.
+- Ajustar crea la revisión N+1; la anterior responde 409 `pixel_command_revision_changed`.
+- La entrada (`CreatePixelCommandSchema` y `AdjustPixelCommandSchema`) acepta `timezone` (IANA del
+  navegador), que solo es el último recurso para planificar.
+- Confirmar: «Guardar semana» o «Mover bloque». Detalle en `docs/PERSONAL-WEEK-PLANNER.md`.

@@ -7,6 +7,12 @@ export const SERVICE_VERSION = '0.1.0';
 /** Solo para desarrollo/test cuando no se define JWT_SECRET. Nunca se acepta en producción. */
 const DEV_JWT_SECRET = 'pixel-dev-only-secret-change-me-0123456789';
 
+/** Opcional: un valor vacío («GOOGLE_CLIENT_ID=» copiado de .env.example) cuenta como ausente. */
+const optionalText = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  z.string().trim().min(1).optional(),
+);
+
 const EnvSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -40,6 +46,18 @@ const EnvSchema = z
       .string()
       .refine(isValidTimezone, 'Usa una zona horaria IANA, p. ej. America/Bogota')
       .default(DEFAULT_TIMEZONE),
+    /*
+     * Google Calendar (Prompt 19, docs/GOOGLE-CALENDAR.md). Opcional: si falta algo, la herramienta
+     * queda «sin configurar» y el resto de Pixel funciona igual (nunca impide arrancar).
+     */
+    GOOGLE_CLIENT_ID: optionalText,
+    GOOGLE_CLIENT_SECRET: optionalText,
+    /** URL de vuelta registrada en Google: …/api/calendar/google/callback. */
+    GOOGLE_CALENDAR_REDIRECT_URI: optionalText,
+    /** 32 bytes en base64 (o 64 caracteres hex): cifra los tokens de Google en Mongo. */
+    GOOGLE_TOKEN_ENCRYPTION_KEY: optionalText,
+    /** Solo pruebas en vivo: un calendario de PRUEBA (nunca el principal). */
+    GOOGLE_CALENDAR_TEST_CALENDAR_ID: optionalText,
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV === 'production' && !env.JWT_SECRET) {

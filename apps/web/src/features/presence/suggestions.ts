@@ -11,6 +11,7 @@ export const ENTERPRISE_SUGGESTIONS: ComposerSuggestion[] = [
 export const PERSONAL_SUGGESTIONS: ComposerSuggestion[] = [
   { label: 'Planear contenido', text: 'Necesito contenido para esta semana sobre ' },
   { label: 'Organizar trabajo', text: 'Crea tareas para ' },
-  { label: 'Tengo una idea', text: 'Crea una pieza sobre ' },
+  // Prompt 19: planificar con Google Calendar (si no está conectado, Pixel lo pide).
+  { label: 'Organizar mi semana', text: 'Organízame la semana: ' },
   { label: '¿Qué hago hoy?', text: '¿Qué tengo pendiente hoy?' },
 ];

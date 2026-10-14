@@ -1,3 +1,4 @@
+import { CalendarConnectionStatusSchema, WeekPlanViewSchema } from './calendar.js';
 import { z } from 'zod';
 import { CampaignTypeSchema } from './campaign.js';
 import { workspaceSupportsFeature, type WorkspaceFeature } from './capabilities.js';
@@ -30,6 +31,10 @@ export const PIXEL_COMMAND_INTENTS = [
    * entiende y responde con honestidad si no tiene esa capacidad: nunca finge que la hizo.
    */
   'external_action',
+  /** Prompt 19 (solo Personal): organizar la semana con Google Calendar. */
+  'plan_week',
+  /** Prompt 19 (solo Personal): mover un bloque que Pixel creó («no pude estudiar hoy»). */
+  'replan_block',
   'unknown',
 ] as const;
 export const PixelCommandIntentSchema = z.enum(PIXEL_COMMAND_INTENTS);
@@ -46,6 +51,8 @@ const INTENT_FEATURES: Record<PixelCommandIntent, WorkspaceFeature | null> = {
   work_status: null,
   manage_memory: 'creativeMemory',
   external_action: null,
+  plan_week: 'calendar',
+  replan_block: 'calendar',
   unknown: null,
 };
 
@@ -150,6 +157,10 @@ export const PixelActionStepTypeSchema = z.enum([
   'create_content_item',
   'remember_memory',
   'forget_memory',
+  /** Prompt 19: guardar los bloques del plan en Google Calendar (una acción por bloque). */
+  'schedule_blocks',
+  /** Prompt 19: mover un bloque de Pixel en Google Calendar. */
+  'move_block',
 ]);
 export type PixelActionStepType = z.infer<typeof PixelActionStepTypeSchema>;
 
@@ -160,12 +171,15 @@ export const PixelResourceKindSchema = z.enum([
   'task',
   'content_item',
   'creative_memory',
+  /** Prompt 19: un evento de Google Calendar creado o movido por Pixel. */
+  'calendar_event',
 ]);
 export type PixelResourceKind = z.infer<typeof PixelResourceKindSchema>;
 
 export const PixelCreatedResourceSchema = z.object({
   kind: PixelResourceKindSchema,
-  id: ObjectIdSchema,
+  /** Id de Pixel, o referencia controlada de un recurso externo (nunca un token). */
+  id: z.string().min(1).max(200),
   label: z.string(),
 });
 export type PixelCreatedResource = z.infer<typeof PixelCreatedResourceSchema>;
@@ -251,6 +265,13 @@ export const PixelCommandSchema = z.object({
   plan: PixelActionPlanSchema.nullable(),
   /** Brand Guardian preflight (solo Enterprise, solo propuestas que crean recursos). */
   guardian: GuardianPreflightSummarySchema.nullable(),
+  /** Prompt 19: el plan de la semana propuesto (vista humana, sin datos de Google). */
+  weekPlan: WeekPlanViewSchema.nullable().default(null),
+  /** Prompt 19: Pixel necesita que conectes (o reconectes) Google Calendar para seguir. */
+  connect: z
+    .object({ provider: z.literal('google_calendar'), status: CalendarConnectionStatusSchema })
+    .nullable()
+    .default(null),
   interpretation: z.object({
     mode: z.enum(['ai', 'demo', 'rules']),
     confidence: z.number().min(0).max(1),
@@ -267,6 +288,11 @@ const requestText = z
   .min(1, 'Cuéntale a Pixel qué necesitas')
   .max(PIXEL_COMMAND_REQUEST_MAX, `Máximo ${PIXEL_COMMAND_REQUEST_MAX} caracteres`);
 const tzOffset = z.number().int().min(-840).max(840).default(0);
+/**
+ * Prompt 19: zona IANA del navegador. Solo es el TERCER recurso para planificar (después de la zona
+ * del Pixel y la del Google Calendar conectado); la API la valida y la ignora si no existe.
+ */
+const clientTimezone = z.string().trim().min(1).max(64).optional();
 
 /**
  * POST /api/workspaces/:workspaceId/pixel/commands. `contextHint` lo envía la pantalla desde la que
@@ -278,6 +304,7 @@ export const CreatePixelCommandSchema = z
     request: requestText,
     source: PixelCommandSourceSchema.default('text'),
     tzOffset,
+    timezone: clientTimezone,
     contextHint: z
       .object({
         intent: z.enum(['create_campaign', 'plan_content']).optional(),
@@ -304,7 +331,11 @@ export type CreatePixelCommandData = z.output<typeof CreatePixelCommandSchema>;
 
 /** POST …/:commandId/adjust — responder la pregunta o ajustar la propuesta con texto libre. */
 export const AdjustPixelCommandSchema = z
-  .object({ message: requestText, source: PixelCommandSourceSchema.default('text') })
+  .object({
+    message: requestText,
+    source: PixelCommandSourceSchema.default('text'),
+    timezone: clientTimezone,
+  })
   .strict();
 export type AdjustPixelCommandInput = z.input<typeof AdjustPixelCommandSchema>;
 
@@ -329,4 +360,5 @@ export const PIXEL_RESOURCE_LABELS: Record<PixelResourceKind, string> = {
   task: 'Tarea',
   content_item: 'Contenido',
   creative_memory: 'Lo que Pixel ha aprendido',
+  calendar_event: 'Google Calendar',
 };
