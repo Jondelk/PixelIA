@@ -327,6 +327,40 @@ describe('Voice runtime', () => {
     expect(spoken[1]!.voice?.name).toBe('España');
   });
 
+  it('salida: avisa de cada palabra para sincronizar la boca (y no de las frases)', () => {
+    type BoundaryEvent = { name?: string; charIndex: number };
+    const utterances: { onboundary?: (e: BoundaryEvent) => void }[] = [];
+    class Utterance {
+      lang = '';
+      rate = 1;
+      voice: unknown = null;
+      onboundary: ((e: BoundaryEvent) => void) | null = null;
+      constructor(public text: string) {
+        utterances.push(this as never);
+      }
+    }
+    const output = browserVoiceOutput({
+      speechSynthesis: {
+        cancel: vi.fn(),
+        speak: vi.fn(),
+        getVoices: () => [],
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      },
+      SpeechSynthesisUtterance: Utterance,
+    } as never);
+    const onBoundary = vi.fn();
+    output.speak(
+      'Hola equipo',
+      { lang: 'es-ES', rate: 1, voiceId: null },
+      { onEnd: vi.fn(), onError: vi.fn(), onBoundary },
+    );
+    utterances[0]!.onboundary!({ name: 'word', charIndex: 5 });
+    utterances[0]!.onboundary!({ name: 'sentence', charIndex: 0 });
+    expect(onBoundary).toHaveBeenCalledTimes(1);
+    expect(onBoundary).toHaveBeenCalledWith(5);
+  });
+
   it('lo hablado es corto: sin ids, viñetas ni listas largas', () => {
     expect(spokenText(`Listo. Organicé «Cosecha» ${ID}.\n• Pieza 1\n• Pieza 2`)).toBe(
       'Listo. Organicé «Cosecha» .',

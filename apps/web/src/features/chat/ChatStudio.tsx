@@ -9,6 +9,7 @@ import { Icon } from '../../components/Icon';
 import { Pixi } from '../../components/Pixi';
 import { errorMessage, errorReason } from '../../lib/api';
 import { AvatarStage } from '../avatar3d/AvatarStage';
+import { usePixelPresence } from '../presence/presenceContext';
 import type { AvatarState } from '../avatar3d/pose';
 import { createConversation, getMessages, sendMessage } from './chatApi';
 import type { ChatData } from './chatData';
@@ -86,10 +87,11 @@ export function ChatStudio({
   const [switching, setSwitching] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
+  const presence = usePixelPresence();
 
   const avatarState: AvatarState = pending
     ? 'thinking'
-    : speakingId
+    : speakingId || presence.state === 'speaking'
       ? 'speaking'
       : focused && draft.trim()
         ? 'listening'
@@ -114,6 +116,8 @@ export function ChatStudio({
         setConversation(active);
       }
       const result = await sendMessage(apiBase, active.id, content);
+      // En una sesión de voz Pixel lee la respuesta; la boca y el texto siguen a la voz.
+      presence.say(result.pixelMessage.content);
       setMessages((current) => [...current, result.userMessage, result.pixelMessage]);
       setSpeakingId(result.pixelMessage.id);
       setConversation(result.conversation);
@@ -183,6 +187,7 @@ export function ChatStudio({
               avatar={avatar}
               state={avatarState}
               interactive={false}
+              modelUrl={initial.modelUrl}
               className="!h-full"
             />
           ) : (

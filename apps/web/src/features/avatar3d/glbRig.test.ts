@@ -21,6 +21,18 @@ describe('poseToRig', () => {
     near(rig.Arm_L!.rotation, [0, 0, 0]);
     near(rig.Arm_R!.rotation, [0, 0, 0]);
     near(rig.Mouth!.scale, [1, 1, 1]);
+    // El interior de la boca está cerrado en reposo.
+    expect(rig.Mouth_Open!.scale![1]).toBeLessThan(0.01);
+  });
+
+  it('labios redondeados (o, u): boca más estrecha', () => {
+    const open = { ...NEUTRAL_POSE, mouthOpen: 0.7 };
+    const a = poseToRig(open, 0.02, { mouthInterior: true });
+    const o = poseToRig({ ...open, mouthRound: 1 }, 0.02, { mouthInterior: true });
+    expect(o.Mouth_Open!.scale![0]).toBeLessThan(a.Mouth_Open!.scale![0]);
+    expect(a.Mouth_Open!.scale![1]).toBeCloseTo(0.7);
+    // Con interior, la línea de la boca casi no se engrosa.
+    expect(a.Mouth!.scale![1]).toBeLessThan(1.2);
   });
 
   it('cubre todos los nodos del rig que exporta Pixel Sculpt', () => {

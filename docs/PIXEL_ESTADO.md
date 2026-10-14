@@ -23,6 +23,8 @@
 >   (autorizado; en `origin`). Google Calendar real conectado en el equipo del usuario el 2026-10-17.
 > - Encima, **sin commit y sin push**: el **Prompt 20 (Mi agenda)**, implementado y verificado el
 >   2026-10-17 (§13), **pendiente de revisión** del usuario.
+> - Encima, en la rama **`feat/avatar-3d-lipsync`** (sin push): **Personaje 3D (Pixel Sculpt) y
+>   sincronía labial**, más el onboarding desde documentos y el manual de marca (§13, 2026-10-14).
 > - Leyenda: ✅ implementado y verificado (tests automáticos; si solo hubo revisión manual, se dice) ·
 >   🟨 parcial · 📝 solo planificado (docs o prompts, sin código) · ❓ pendiente de verificación ·
 >   ⛔ bloqueado.
@@ -717,6 +719,30 @@ a "no convertida") y **R11** (el rollback borra también los ítems). El resto s
 | Encontrado y corregido en el smoke | «Ajustar» un plan de la PRÓXIMA semana con «al jueves» buscaba el jueves más cercano (fuera del plan) y preguntaba: ahora se busca dentro del rango del plan (`findMoveSlot({ within })`, test añadido) |
 | Encontrado y corregido en los tests | Dos lecturas en paralelo renovaban el token dos veces: renovación de vuelo único por conexión que relee el token guardado (test «se renueva una vez») |
 | Claude real y Google real | SKIPPED: no hay `ANTHROPIC_API_KEY` ni `apps/api/.env`, ni `GOOGLE_*` / calendario de prueba |
+
+### 2026-10-14: Personaje 3D (Pixel Sculpt) + sincronía labial, rama `feat/avatar-3d-lipsync`
+
+Pedido explícito del usuario (amplía el alcance de `CLAUDE.md`): modelo 3D profesional del
+personaje generado de forma nativa y boca sincronizada con la voz. Rebasado sobre `8fe0682`.
+
+- `packages/sculpt` (nuevo, sin dependencias): campos de distancia → malla → `.glb` con rig y
+  materiales PBR + renders de estudio. La API lo ejecuta en un `worker_thread` (`avatars/model/`);
+  ahora sirve a **Enterprise y Personal** (`ModelScope`, versión vigente de `company` o
+  `personalProfile`). El `.glb` para la web es una malla más ligera (~2 MB, ~125 k triángulos) y
+  trae `Mouth_Open` (interior de la boca, cerrado en reposo) para hablar. Detalle: `AVATAR-3D.md`.
+- Web: `SculptedAvatarModel` sustituye al paramétrico donde hay modelo (personaje, chat y presencia
+  interactiva/foco), con respaldo automático.
+- Sincronía labial (`avatar3d/lipsync.ts`, `speechSignal.ts`, `livePose.ts`): visemas del español
+  desde el texto; la voz del navegador ancla el reloj en cada palabra (`onBoundary`) y adapta su
+  velocidad. Sin voz, el chat muestra la respuesta al ritmo de la boca (`RevealingText`). En una
+  sesión de voz el chat también lee la respuesta (`presence.say`, mismas reglas de Presence).
+- Onboarding desde documentos (`brand-dna/extraction`, `pdfjs-dist`) y manual de marca
+  (`features/manual`), portados a `WizardLayout` y a `apiBase`.
+- Verificado en el entorno de la sesión (sin MongoDB ni dependencias de la web): tests de
+  `packages/sculpt`, `characterSpec`, `sculptRunner` (en línea y en hilo), `env`, `lipsync`,
+  `glbRig`, `pose`, `sceneSpec`, `chat`; typecheck de los archivos tocados. **Pendiente en el
+  equipo del usuario:** `npm install`, `npm run test` completo (avatarModel, presence, onboarding) y
+  revisar el visor 3D en el navegador.
 
 ### 2026-10-14: Prompt 18 (Pixel Action Foundation), equipo del usuario, sin commit ni push
 

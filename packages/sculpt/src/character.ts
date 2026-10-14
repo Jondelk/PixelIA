@@ -66,6 +66,8 @@ export interface CharacterNode {
   parent: string | null;
   /** Pivote en coordenadas del mundo. */
   pivot: Vec3;
+  /** Escala de reposo (p. ej. el interior de la boca, cerrado hasta que Pixel habla). */
+  scale?: Vec3;
 }
 
 export interface CharacterPart {
@@ -80,6 +82,8 @@ export interface CharacterPart {
   ao: boolean;
   /** Se descartan los triángulos ocultos dentro de esta forma (cara inferior de calcomanías). */
   cull?: Shape;
+  /** Solo existe animado (interior de la boca al hablar): no sale en los renders en reposo. */
+  hiddenAtRest?: boolean;
 }
 
 export interface Character {
@@ -149,8 +153,8 @@ export function buildCharacter(spec: CharacterSpec): Character {
   const limbFinish: FinishName = finish === 'glass' || finish === 'metallic' ? 'satin' : finish;
 
   const materials: Record<string, PartMaterial> = {
-    body: mat('Body', palette.body, finish),
-    body2: mat('BodySecondary', palette.secondary, finish === 'glass' ? 'glossy' : finish),
+    body: mat('Primary', palette.body, finish),
+    body2: mat('Secondary', palette.secondary, finish === 'glass' ? 'glossy' : finish),
     body3: mat('BodyShade', palette.shade, 'satin'),
     pages: mat('Pages', L('#F3EEE2'), 'matte', { sheen: 0.2 }),
     limb: mat('Limb', L(col.limb), limbFinish),
@@ -181,7 +185,7 @@ export function buildCharacter(spec: CharacterSpec): Character {
       clearcoat: 1,
       clearcoatRoughness: 0.03,
     }),
-    glow: mat('Glow', L(col.accent), 'satin', { emissive: L(col.accent), emissiveStrength: 2.2 }),
+    glow: mat('Accent', L(col.accent), 'satin', { emissive: L(col.accent), emissiveStrength: 1.4 }),
   };
   for (const acc of spec.accessories) {
     materials[`prop_${acc.id}`] = mat(`Prop_${acc.id}`, L(acc.color), 'satin');
@@ -199,8 +203,8 @@ export function buildCharacter(spec: CharacterSpec): Character {
 
   const nodes: CharacterNode[] = [];
   const parts: CharacterPart[] = [];
-  const node = (name: string, parent: string | null, pivot: Vec3) =>
-    nodes.push({ name, parent, pivot });
+  const node = (name: string, parent: string | null, pivot: Vec3, scale?: Vec3) =>
+    nodes.push({ name, parent, pivot, ...(scale ? { scale } : {}) });
   // Piezas apoyadas sobre el cuerpo (rasgos, bufanda, casco…): su cara interior nunca se ve y
   // se descarta para aligerar el modelo.
   const CULLED = /^(Visor|Eye_|Brow_|Mouth_|Nose|Acc_Scarf|Acc_Hardhat|Acc_Badge|Ear_Inner)/;
@@ -610,6 +614,54 @@ export function buildCharacter(spec: CharacterSpec): Character {
           ),
         [rx * 0.6, ry * 1.1],
         1,
+      ),
+    });
+  }
+
+  // Interior de la boca para hablar: se abre hacia abajo desde el labio superior (el pivote) y la
+  // web lo escala con cada visema. En reposo está cerrado (alto ~0) y no sale en los renders.
+  if (style !== 'none') {
+    const ry = re * (style === 'grin' ? 0.5 : 0.48);
+    const rx = mw * (style === 'grin' ? 0.8 : 0.62);
+    const openTop = mouthY + (style === 'open_smile' || style === 'grin' ? re * 0.12 : re * 0.02);
+    const cy = openTop - ry * 0.85;
+    const topHitM = frontHit(W, 0, openTop);
+    const pivot: Vec3 = topHitM?.p ?? [0, openTop, mouthAt[2]];
+    node('Mouth_Open', 'Mouth', pivot, [1, 0.001, 1]);
+    const openShape = (x: number, y: number) =>
+      smax(ellipse2D(0, cy, rx, ry)(x, y), y - (openTop - ry * 0.12), re * 0.14);
+    const openDecal = (profile: (x: number, y: number) => number, n: number) =>
+      decal(W, {
+        profile,
+        at: pivot,
+        half: [rx * 1.05, ry * 2.1],
+        lift: L1 + step * n,
+        sink,
+        reach,
+        bevel: 0.0012 * s,
+      });
+    part({
+      name: 'Mouth_Open_Inner',
+      node: 'Mouth_Open',
+      material: 'mouth',
+      cell: cells.decal,
+      hiddenAtRest: true,
+      shape: openDecal(openShape, 3),
+    });
+    part({
+      name: 'Mouth_Open_Tongue',
+      node: 'Mouth_Open',
+      material: 'tongue',
+      cell: cells.decal,
+      hiddenAtRest: true,
+      shape: openDecal(
+        (x, y) =>
+          smax(
+            ellipse2D(0, cy - ry * 0.55, rx * 0.58, ry * 0.5)(x, y),
+            openShape(x, y) + re * 0.03,
+            re * 0.05,
+          ),
+        4,
       ),
     });
   }
@@ -1080,7 +1132,9 @@ export function buildCharacter(spec: CharacterSpec): Character {
     }
   }
   // -------------------------------------------------------------- escena
-  const occluder = union(...parts.filter((p) => p.material !== 'bubble').map((p) => p.shape));
+  const occluder = union(
+    ...parts.filter((p) => p.material !== 'bubble' && !p.hiddenAtRest).map((p) => p.shape),
+  );
   const height = occluder.max[1];
   return {
     nodes,

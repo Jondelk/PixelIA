@@ -1,9 +1,10 @@
 import { useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
-import { Box3, Euler, MathUtils, Vector3, type Mesh, type Object3D } from 'three';
+import { Box3, Euler, Vector3, type Mesh, type Object3D } from 'three';
 import { poseToRig, RIG_NODES, type RigNode } from './glbRig';
-import { NEUTRAL_POSE, poseAt, type AvatarState, type Pose } from './pose';
+import { dampPose, targetPose } from './livePose';
+import { NEUTRAL_POSE, type AvatarState, type Pose } from './pose';
 import type { SceneSpec } from './sceneSpec';
 
 /** Caja que ocupa el modelo, para encuadrar la cámara (unidades de escena). */
@@ -19,9 +20,6 @@ interface RestTransform {
   scale: Vector3;
 }
 
-/** Campos que se interpolan más rápido (parpadeo, boca). */
-const FAST_FIELDS = new Set<keyof Pose>(['mouthOpen', 'eyeOpen']);
-
 /**
  * Personaje de la marca esculpido por Pixel Sculpt (.glb). Se anima con las mismas poses que el
  * avatar paramétrico (poseAt), aplicadas a los nodos con nombre del rig.
@@ -30,11 +28,14 @@ export function SculptedAvatarModel({
   url,
   motion,
   state,
+  reducedMotion = false,
   onBounds,
 }: {
   url: string;
   motion: SceneSpec['motion'];
   state: AvatarState;
+  /** prefers-reduced-motion: sin bucles (tiempo congelado), como el avatar paramétrico. */
+  reducedMotion?: boolean;
   onBounds: (bounds: ModelBounds) => void;
 }) {
   const gltf = useGLTF(url);
@@ -51,12 +52,13 @@ export function SculptedAvatarModel({
       rest.set(node, {
         position: node.position.clone(),
         rotation: node.rotation.clone(),
-        scale: node.scale.clone(),
+        // El interior de la boca se escala en absoluto (en el archivo está cerrado).
+        scale: name === 'Mouth_Open' ? new Vector3(1, 1, 1) : node.scale.clone(),
       });
     }
     const eye = nodes.get('Eye_L');
     const eyeSize = eye ? new Box3().setFromObject(eye).getSize(new Vector3()).x : 0.1;
-    return { nodes, rest, lookRange: eyeSize * 0.12 };
+    return { nodes, rest, lookRange: eyeSize * 0.12, mouthInterior: nodes.has('Mouth_Open') };
   }, [scene]);
 
   useEffect(() => {
@@ -80,14 +82,12 @@ export function SculptedAvatarModel({
 
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.1);
-    time.current += dt;
-    const target = poseAt(state, time.current, motion);
+    if (!reducedMotion) time.current += dt;
+    const target = targetPose(state, time.current, motion, reducedMotion);
     const current = pose.current;
-    for (const key of Object.keys(target) as (keyof Pose)[]) {
-      current[key] = MathUtils.damp(current[key], target[key], FAST_FIELDS.has(key) ? 22 : 7, dt);
-    }
+    dampPose(current, target.pose, dt, target.synced);
 
-    const transforms = poseToRig(current, rig.lookRange);
+    const transforms = poseToRig(current, rig.lookRange, { mouthInterior: rig.mouthInterior });
     for (const [name, node] of rig.nodes) {
       const base = rig.rest.get(node)!;
       const t = transforms[name];

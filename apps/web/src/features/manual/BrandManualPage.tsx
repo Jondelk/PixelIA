@@ -73,7 +73,9 @@ export function BrandManualPage() {
           ? getAvatar(companyApiBase(company.id), signal).then((res) => res.avatar)
           : Promise.resolve(null),
         // El manual no depende del modelo 3D: sin él usa la vista 2D del personaje.
-        company.avatarVersion ? getAvatarModel(companyApiBase(company.id), signal).catch(() => null) : null,
+        company.avatarVersion
+          ? getAvatarModel(companyApiBase(company.id), signal).catch(() => null)
+          : null,
       ]);
       return { dna: brain.brandDna, avatar, model };
     },

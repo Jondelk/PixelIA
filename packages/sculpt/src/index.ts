@@ -52,6 +52,10 @@ export interface SculptResult {
 }
 
 const CELL_SCALE: Record<SculptQuality, number> = { draft: 1.7, standard: 1, high: 0.8 };
+/** Celda del .glb respecto a la de los renders: cuerpo, extremidades y utilería. */
+const WEB_SCALE = 2.1;
+/** Rasgos del rostro y piezas pequeñas en el .glb. */
+const WEB_DETAIL_SCALE = 1.4;
 
 interface BuiltPart {
   part: CharacterPart;
@@ -145,22 +149,33 @@ export function sculptCharacter(spec: CharacterSpec, options: SculptOptions = {}
   const s = character.meta.eyeRadius / 0.12;
   progress('modelando', 0.05);
 
-  const built: BuiltPart[] = [];
-  character.parts.forEach((part, i) => {
-    const cell = part.cell * CELL_SCALE[quality];
+  // Dos resoluciones: una fina para los renders de estudio y otra ligera para el .glb que carga
+  // la web (los rasgos del rostro conservan más detalle: sus bordes son lo que más se ve).
+  const buildPart = (part: CharacterPart, cell: number): BuiltPart | null => {
     let mesh = meshShape(part.shape, { cell });
     if (part.cull) mesh = cullInside(mesh, part.cull, cell * 0.5);
-    if (mesh.indices.length === 0) return;
+    if (mesh.indices.length === 0) return null;
     const albedo = paintVertices(character, part, mesh);
     const ao = part.ao
       ? bakeAo(mesh, character.occluder, character.meta.groundY, s)
       : new Float32Array(mesh.positions.length / 3).fill(1);
-    built.push({ part, mesh, albedo, ao });
+    return { part, mesh, albedo, ao };
+  };
+  const built: BuiltPart[] = [];
+  const web: BuiltPart[] = [];
+  character.parts.forEach((part, i) => {
+    const cell = part.cell * CELL_SCALE[quality];
+    if (!part.hiddenAtRest) {
+      const fine = buildPart(part, cell);
+      if (fine) built.push(fine);
+    }
+    const light = buildPart(part, cell * (part.cell < 0.0045 * s ? WEB_DETAIL_SCALE : WEB_SCALE));
+    if (light) web.push(light);
     progress('modelando', 0.05 + (0.5 * (i + 1)) / character.parts.length);
   });
   const meshMs = Date.now() - t0;
 
-  const glb = toGlb(character, built, spec);
+  const glb = toGlb(character, web, spec);
   progress('exportando', 0.6);
 
   // ------------------------------------------------------------ renders
@@ -227,7 +242,7 @@ export function sculptCharacter(spec: CharacterSpec, options: SculptOptions = {}
 
   let triangles = 0;
   let vertices = 0;
-  for (const b of built) {
+  for (const b of web) {
     triangles += b.mesh.indices.length / 3;
     vertices += b.mesh.positions.length / 3;
   }
@@ -284,6 +299,7 @@ function toGlb(character: Character, built: BuiltPart[], spec: CharacterSpec): U
         n.pivot[1] - parentPivot[1],
         n.pivot[2] - parentPivot[2],
       ],
+      ...(n.scale ? { scale: n.scale } : {}),
       children: [],
     });
   }

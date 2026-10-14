@@ -2,6 +2,7 @@ import { BRAND_ARCHETYPES, type BrandDna } from '@pixel/contracts';
 import { Link } from 'react-router';
 import { buttonClasses } from '../../components/buttonClasses';
 import { BulletList, Chips, Label, Meter, Section } from '../../components/DnaBlocks';
+import { Icon } from '../../components/Icon';
 import { rise } from '../../components/rise';
 import { brandAssets } from '../../brand/assets';
 import { DIMENSIONS, PALETTE_ROLE_LABEL, SHAPE_LANGUAGE_LABEL, TEMPERATURE_LABEL } from './labels';

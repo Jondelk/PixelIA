@@ -600,6 +600,9 @@ programas externos.
 - [x] `GET/POST /avatar/model`, `GET /avatar/model/files/:archivo` con descarga.
 - [x] Web: visor del `.glb` animado con las mismas poses (respaldo automático al paramétrico),
   panel de estado y descargas, renders de estudio, modelo también en el chat y el manual.
+- [x] Producción 3D también para Pixels personales; `.glb` ligero para la web (~2 MB).
+- [x] Sincronía labial por visemas anclada a la voz del navegador; texto del chat al ritmo de la
+  boca; modelo esculpido también en la presencia (Inicio y foco).
 - [ ] Probar el `.glb` en el visor web de la app con las tres marcas y ajustar exposición del
   entorno de three.js si hace falta (los renders del servidor ya están verificados).
 - [ ] Concepto con IA: que Claude elija sujeto, forma y accesorios dentro del catálogo para marcas

@@ -2,6 +2,7 @@ import type { AvatarPreview } from '@pixel/contracts';
 import { Pixi } from '../../components/Pixi';
 import { AvatarStage } from '../avatar3d/AvatarStage';
 import { PixelPreview } from '../pixel/PixelPreview';
+import { useModelUrl } from '../pixel/useModelUrl';
 import { avatarStateFor, PRESENCE_LABELS, type PixelPresenceState } from './presenceMachine';
 import { usePixelPresence } from './presenceContext';
 
@@ -45,6 +46,11 @@ export function PixelPresenceAvatar({
   const state = stateOverride ?? presence.state;
   const active = ACTIVE.includes(state);
   const accent = presence.accent.color;
+  // En 3D, el modelo esculpido del personaje si ya existe (si no, el paramétrico).
+  const modelUrl = useModelUrl(
+    level === 'ambient' ? null : (presence.scope?.workspaceId ?? null),
+    avatar?.version ?? null,
+  );
   const ring = level === 'ambient' ? 'rounded-xl' : 'rounded-2xl';
 
   return (
@@ -74,6 +80,7 @@ export function PixelPresenceAvatar({
               state={avatarStateFor(state)}
               interactive={false}
               reducedMotion={presence.reducedMotion}
+              modelUrl={modelUrl}
               className="!h-full"
             />
           )

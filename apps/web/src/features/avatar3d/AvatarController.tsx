@@ -1,15 +1,13 @@
 import { useFrame } from '@react-three/fiber';
 import { useRef } from 'react';
-import { MathUtils, type Group } from 'three';
+import type { Group } from 'three';
 import { AvatarAccessory, ThinkingDots } from './AvatarAccessory';
 import { AvatarBody } from './AvatarBody';
 import { AvatarFace } from './AvatarFace';
 import { AvatarLimbs } from './AvatarLimbs';
-import { NEUTRAL_POSE, poseAt, type AvatarState, type Pose } from './pose';
+import { dampPose, targetPose } from './livePose';
+import { NEUTRAL_POSE, type AvatarState, type Pose } from './pose';
 import type { SceneSpec } from './sceneSpec';
-
-/** Velocidad de interpolación por campo (más alta = transición más rápida). */
-const FAST_FIELDS = new Set<keyof Pose>(['mouthOpen', 'eyeOpen']);
 
 /**
  * Orquesta el personaje: calcula la pose objetivo del estado actual, la interpola con
@@ -33,11 +31,9 @@ export function AvatarController({
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.1);
     if (!reducedMotion) time.current += dt;
-    const target = poseAt(state, time.current, spec.motion);
+    const target = targetPose(state, time.current, spec.motion, reducedMotion);
     const current = pose.current;
-    for (const key of Object.keys(target) as (keyof Pose)[]) {
-      current[key] = MathUtils.damp(current[key], target[key], FAST_FIELDS.has(key) ? 22 : 7, dt);
-    }
+    dampPose(current, target.pose, dt, target.synced);
 
     if (root.current) {
       root.current.position.y = current.bodyY;

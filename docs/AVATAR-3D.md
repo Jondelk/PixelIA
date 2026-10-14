@@ -63,9 +63,34 @@ oclusión de contacto. Vistas: `hero`, `front`, `three_quarter`, `side` y `cutou
 transparente, para el manual y otras piezas).
 
 **Rig.** El `.glb` trae nodos con nombre y pivotes en su sitio: `PixelRoot`, `Body`, `Face`,
-`Eye_L/R`, `Pupil_L/R`, `Mouth`, `Arm_L/R` (hombros), `Leg_L/R` (caderas). La web lo anima con las
+`Eye_L/R`, `Pupil_L/R`, `Mouth`, `Mouth_Open` (interior de la boca: cerrado en reposo, se abre
+desde el labio superior al hablar), `Arm_L/R` (hombros), `Leg_L/R` (caderas). La web lo anima con las
 mismas poses del avatar paramétrico (`apps/web/src/features/avatar3d/glbRig.ts`): parpadeo, mirada,
 boca al hablar, brazos y balanceo. "L" es la izquierda del personaje (+X); mira hacia +Z.
+
+**Dos resoluciones.** Los renders usan la malla fina; el `.glb` que carga la web usa una malla
+más ligera (≈2 MB, ≈125 mil triángulos), con más detalle en los rasgos del rostro. Materiales
+`Primary`, `Secondary` y `Accent` (`docs/AVATAR-ASSET-CONTRACT.md`).
+
+**Para todos los Pixels.** Se esculpe el personaje de las marcas (Enterprise) y el de las
+personas (Personal): la API toma la versión vigente del avatar de cada tipo de workspace.
+
+## Sincronía labial (la boca sigue la voz)
+
+`apps/web/src/features/avatar3d/lipsync.ts`, `speechSignal.ts` y `livePose.ts`:
+
+1. **Del texto a visemas.** Lo que Pixel va a decir se convierte en visemas del español (a, e, i,
+   o, u, m/b/p con labios cerrados, f, s, t/d/l, k/g/j, ch/ll/ñ, r, n), con dígrafos, h muda,
+   c/g suaves, tónica más larga (tilde o penúltima sílaba) y pausas en comas y puntos.
+2. **Coarticulación.** Cada sonido se funde con el siguiente; las consonantes entre vocales no
+   cierran del todo; la mandíbula acompaña un poco la apertura.
+3. **Anclado a la voz real.** La voz del navegador avisa al empezar cada palabra (`onboundary`):
+   el reloj se reancla ahí, adopta la velocidad de esa voz y no se adelanta a ella. Mientras el
+   audio no empieza, la boca está cerrada; al terminar, vuelve a reposo.
+4. **Sin voz.** En el chat, la respuesta aparece palabra por palabra al ritmo de la boca; las
+   respuestas largas no hacen esperar (pasados 9 s el resto aparece enseguida).
+5. **Los dos avatares.** El paramétrico y el esculpido usan la misma pose: apertura, anchura
+   (sonrisa) y redondez (o, u). Con movimiento reducido no hay animación de la boca.
 
 ## Qué se modela
 

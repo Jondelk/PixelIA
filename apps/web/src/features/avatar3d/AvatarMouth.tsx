@@ -22,7 +22,7 @@ const ARC: Record<SceneSpec['face']['mouth'], number> = {
   none: 0,
 };
 
-/** Boca: arco de sonrisa en reposo; se abre al hablar o al estar feliz (sin lip-sync real). */
+/** Boca: arco de sonrisa en reposo; al hablar sigue los visemas de lo que dice (lipsync.ts). */
 export function AvatarMouth({ spec, pose }: { spec: SceneSpec; pose: PoseRef }) {
   const { face, body } = spec;
   const arc = useRef<Group>(null);
@@ -38,9 +38,10 @@ export function AvatarMouth({ spec, pose }: { spec: SceneSpec; pose: PoseRef }) 
     const arcVisible = Math.max(0, 1 - Math.max(0, openness - 0.12) / 0.2);
     const curve = face.mouth === 'line' ? 0.15 : 0.35 + p.mouthSmile * 0.75;
     arc.current?.scale.set(Math.max(0.001, arcVisible), Math.max(0.001, arcVisible * curve), 1);
+    // Labios redondeados (o, u): boca más estrecha y algo más alta.
     open.current?.scale.set(
-      0.14 * s * (0.85 + p.mouthSmile * 0.4),
-      Math.max(0.002, 0.14 * s * openness),
+      0.14 * s * (0.85 + p.mouthSmile * 0.4) * (1 - 0.42 * p.mouthRound),
+      Math.max(0.002, 0.14 * s * openness * (1 + 0.15 * p.mouthRound)),
       0.07,
     );
   });

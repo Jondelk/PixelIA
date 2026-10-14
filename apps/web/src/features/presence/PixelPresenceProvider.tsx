@@ -30,6 +30,7 @@ import {
   type VoiceOutputProvider,
 } from './voice';
 import { resolveAccent } from './workspaceAccent';
+import { startSpeech, type SpeechTrack } from '../avatar3d/speechSignal';
 
 /*
  * PixelPresenceProvider (Prompt 17): UN estado de presencia para todo el árbol (Inicio, Campañas,
@@ -65,6 +66,13 @@ export function PixelPresenceProvider({
   const input = useMemo(() => inputOverride ?? browserVoiceInput(), [inputOverride]);
   const output = useMemo(() => outputOverride ?? browserVoiceOutput(), [outputOverride]);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Lo que Pixel está diciendo ahora (la boca del avatar lo sigue). */
+  const track = useRef<SpeechTrack | null>(null);
+  const silence = useCallback(() => {
+    output.cancel();
+    track.current?.end();
+    track.current = null;
+  }, [output]);
   // Lo que decide si Pixel habla se lee en el momento de hablar, no al crear el callback: la
   // respuesta llega tras un await (y el micrófono entrega el texto desde un handler creado al
   // pulsar), así que un cierre viejo callaría a Pixel o hablaría con la sesión de otro Pixel.
@@ -108,9 +116,9 @@ export function PixelPresenceProvider({
   }, []);
 
   const stopAll = useCallback(() => {
-    output.cancel();
+    silence();
     input.stop();
-  }, [input, output]);
+  }, [input, silence]);
 
   const scopeRef = useRef<PresenceScopeInfo | null>(null);
   const bind = useCallback(
@@ -136,18 +144,30 @@ export function PixelPresenceProvider({
     (spoken: string) => {
       const { scope: current, preferences: prefs } = live.current;
       const profile = voiceProfileOf(current?.avatar ?? null);
+      const rate = prefs.rate ?? profile.pace;
       send('speak');
+      // Sincronía labial: la boca sigue el texto, anclada a cada palabra que dice la voz.
+      track.current?.end();
+      const lips = startSpeech(spoken, { source: 'voice', rate });
+      track.current = lips;
       output.speak(
         spoken,
-        { lang: profile.language, rate: prefs.rate ?? profile.pace, voiceId: prefs.voiceId },
+        { lang: profile.language, rate, voiceId: prefs.voiceId },
         {
-          onEnd: () => send('idle'),
+          onStart: () => lips.begin(),
+          onBoundary: (charIndex) => lips.boundary(charIndex),
+          onEnd: () => {
+            lips.end();
+            send('idle');
+          },
           onError: () => {
+            lips.end();
             reportPresence('voice_output_failed');
             send('idle');
           },
         },
       );
+      return true;
     },
     [output, send],
   );
@@ -161,7 +181,7 @@ export function PixelPresenceProvider({
         autoSpeak: prefs.autoSpeak,
         outputSupported: output.supported,
       });
-      if (spoken) speakNow(spoken);
+      return spoken ? speakNow(spoken) : false;
     },
     [output, speakNow],
   );
@@ -169,7 +189,7 @@ export function PixelPresenceProvider({
   const preview = useCallback(
     (text: string) => {
       if (!output.supported || !live.current.preferences.voiceEnabled) return;
-      speakNow(text);
+      void speakNow(text);
     },
     [output, speakNow],
   );
@@ -178,9 +198,9 @@ export function PixelPresenceProvider({
     (next: PresencePreferences) => {
       applyPrefs(next);
       if (scope) savePreferences(scope.workspaceId, next);
-      if (!next.voiceEnabled) output.cancel();
+      if (!next.voiceEnabled) silence();
     },
-    [scope, output, applyPrefs],
+    [scope, silence, applyPrefs],
   );
 
   const value = useMemo<PixelPresence>(
@@ -201,13 +221,13 @@ export function PixelPresenceProvider({
       say,
       preview,
       stopSpeaking: () => {
-        output.cancel();
+        silence();
         send('idle');
       },
       voiceSession,
       startVoiceSession: () => setSession(true),
       endVoiceSession: () => {
-        output.cancel();
+        silence();
         input.stop();
         setSession(false);
         send('idle');
@@ -232,6 +252,7 @@ export function PixelPresenceProvider({
       setPreferences,
       bind,
       setSession,
+      silence,
     ],
   );
 

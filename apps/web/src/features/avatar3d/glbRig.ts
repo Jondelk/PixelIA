@@ -18,6 +18,7 @@ export const RIG_NODES = [
   'Pupil_L',
   'Pupil_R',
   'Mouth',
+  'Mouth_Open',
   'Arm_L',
   'Arm_R',
   'Leg_L',
@@ -34,8 +35,15 @@ export interface NodeTransform {
 /**
  * Transformaciones relativas al reposo de cada nodo.
  * `lookRange` es cuánto se desplaza la pupila (proporcional al tamaño del ojo).
+ * `Mouth_Open` (interior de la boca de Pixel Sculpt) se escala en absoluto: en reposo está
+ * cerrado (alto ~0) y crece con la apertura; los labios redondeados (o, u) lo estrechan. Cuando
+ * existe, la línea de la boca (`Mouth`) apenas se engrosa: la apertura la dibuja el interior.
  */
-export function poseToRig(pose: Pose, lookRange: number): Partial<Record<RigNode, NodeTransform>> {
+export function poseToRig(
+  pose: Pose,
+  lookRange: number,
+  options: { mouthInterior?: boolean } = {},
+): Partial<Record<RigNode, NodeTransform>> {
   const sideways = 1 / Math.sqrt(pose.squash);
   const blink = Math.max(0.06, pose.eyeOpen * (1 - 0.55 * pose.eyeHappy));
   // Brazos: en reposo cuelgan; la pose paramétrica los describe con una elevación neutra.
@@ -54,8 +62,18 @@ export function poseToRig(pose: Pose, lookRange: number): Partial<Record<RigNode
     Pupil_R: { position: [pose.lookX * lookRange, pose.lookY * lookRange, 0] },
     Mouth: {
       scale: [
-        1 + (pose.mouthSmile - NEUTRAL_POSE.mouthSmile) * 0.15 - pose.mouthOpen * 0.08,
-        1 + pose.mouthOpen * 1.4,
+        1 +
+          (pose.mouthSmile - NEUTRAL_POSE.mouthSmile) * 0.15 -
+          pose.mouthOpen * 0.08 -
+          pose.mouthRound * 0.3,
+        1 + pose.mouthOpen * (options.mouthInterior ? 0.2 : 1.4),
+        1,
+      ],
+    },
+    Mouth_Open: {
+      scale: [
+        (0.5 + 0.5 * Math.min(1, pose.mouthOpen * 1.5)) * (1 - 0.45 * pose.mouthRound),
+        Math.max(0.001, Math.min(1, pose.mouthOpen) * (1 + 0.15 * pose.mouthRound)),
         1,
       ],
     },

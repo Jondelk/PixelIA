@@ -37,8 +37,11 @@ export interface PixelPresence {
   warn: () => void;
   fail: () => void;
   idle: () => void;
-  /** Habla SOLO dentro de una sesión de voz (nunca al abrir una pantalla). */
-  say: (text: string | null | undefined) => void;
+  /**
+   * Habla SOLO dentro de una sesión de voz o con «leer respuestas» activado (nunca al abrir una
+   * pantalla). Devuelve true si Pixel va a hablar.
+   */
+  say: (text: string | null | undefined) => boolean;
   /** «Escuchar a Pixel» en los ajustes: una acción explícita, fuera de la sesión de voz. */
   preview: (text: string) => void;
   stopSpeaking: () => void;
@@ -69,7 +72,7 @@ export const INERT_PRESENCE: PixelPresence = {
   warn: noop,
   fail: noop,
   idle: noop,
-  say: noop,
+  say: () => false,
   preview: noop,
   stopSpeaking: noop,
   voiceSession: false,

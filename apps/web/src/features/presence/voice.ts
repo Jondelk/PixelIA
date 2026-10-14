@@ -36,11 +36,16 @@ export interface SpeakOptions {
   voiceId: string | null;
 }
 
-/** Ganchos para un lip-sync futuro (visemas, nivel de audio): hoy solo inicio y fin. */
+/**
+ * Eventos de la voz. `onBoundary` (inicio de cada palabra, con su posición en el texto) es lo que
+ * ancla la sincronía labial a la voz real (avatar3d/lipsync.ts); no todas las voces lo emiten, y
+ * sin él la boca sigue el cronograma estimado. `onAudioLevel`/`onViseme` quedan para un TTS externo.
+ */
 export interface VoiceOutputHandlers {
   onStart?: () => void;
   onEnd: () => void;
   onError: (error: 'unsupported' | 'failed') => void;
+  onBoundary?: (charIndex: number) => void;
   onAudioLevel?: (level: number) => void;
   onViseme?: (viseme: string) => void;
 }
@@ -206,6 +211,10 @@ export function browserVoiceOutput(win: VoiceWindow | null = browser()): VoiceOu
           : undefined) ?? preferredVoice(voices, options.lang);
       if (voice) utterance.voice = voice;
       utterance.onstart = () => handlers.onStart?.();
+      utterance.onboundary = (event) => {
+        // Solo límites de palabra (algunas voces también avisan de frases).
+        if (!event.name || event.name === 'word') handlers.onBoundary?.(event.charIndex);
+      };
       utterance.onend = () => handlers.onEnd();
       utterance.onerror = (event) => {
         // Cancelar (cambiar de Pixel, «Detener») no es un fallo.

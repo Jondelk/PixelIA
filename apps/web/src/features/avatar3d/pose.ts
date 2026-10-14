@@ -1,3 +1,4 @@
+import type { MouthShape } from './lipsync';
 import type { SceneSpec } from './sceneSpec';
 
 /*
@@ -33,6 +34,8 @@ export interface Pose {
   eyeHappy: number;
   mouthOpen: number;
   mouthSmile: number;
+  /** 0–1: labios redondeados (o, u). */
+  mouthRound: number;
   /** Elevación de brazos: 0 colgando, ~2.4 arriba. */
   armLeftRaise: number;
   armRightRaise: number;
@@ -57,6 +60,7 @@ export const NEUTRAL_POSE: Pose = {
   eyeHappy: 0,
   mouthOpen: 0,
   mouthSmile: 0.6,
+  mouthRound: 0,
   armLeftRaise: 0.25,
   armRightRaise: 0.25,
   armLeftForward: 0,
@@ -94,7 +98,7 @@ function idleMotion(motion: SceneSpec['motion'], t: number): Partial<Pose> {
   }
 }
 
-/** Habla simulada: aperturas tipo sílaba con pausas entre frases (no es lip-sync). */
+/** Habla simulada (sin texto que seguir): aperturas tipo sílaba con pausas entre frases. */
 export function speechMouth(t: number): number {
   const syllables = Math.abs(Math.sin(t * 9.1)) * 0.65 + Math.abs(Math.sin(t * 4.3 + 1)) * 0.35;
   const phrase = Math.sin(t * 0.85) > -0.55 ? 1 : 0.12;
@@ -170,3 +174,22 @@ export function poseAt(state: AvatarState, t: number, motion: SceneSpec['motion'
     }
   }
 }
+
+/**
+ * Boca sincronizada con lo que Pixel dice (speechSignal → lipsync): sustituye la apertura simulada
+ * de la pose `speaking` por la forma del visema actual. La mandíbula acompaña un poco la apertura.
+ */
+export function withSpeech(pose: Pose, mouth: MouthShape, motion: SceneSpec['motion']): Pose {
+  const e = 0.75 + motion.expressiveness * 0.45;
+  return {
+    ...pose,
+    mouthOpen: Math.min(1, mouth.open * e),
+    mouthRound: mouth.round,
+    // Las vocales anchas (e, i) estiran la sonrisa; las redondas (o, u) la recogen.
+    mouthSmile: 0.35 + mouth.wide * 0.45,
+    headNod: pose.headNod + mouth.open * 0.025 * e,
+  };
+}
+
+/** Campos que siguen al habla: se interpolan mucho más rápido para no ir detrás de la voz. */
+export const SPEECH_FIELDS = new Set<keyof Pose>(['mouthOpen', 'mouthRound', 'mouthSmile']);

@@ -30,6 +30,8 @@ export interface GlbNode {
   name: string;
   /** Traslación relativa al padre. */
   translation: Vec3;
+  /** Escala de reposo (por defecto 1). */
+  scale?: Vec3;
   children: number[];
   mesh?: { mesh: Mesh; colors: Uint8Array; material: number; name: string };
 }
@@ -79,6 +81,7 @@ export function writeGlb(input: {
   const nodes = input.nodes.map((node) => {
     const out: Record<string, unknown> = { name: node.name };
     if (node.translation.some((v) => v !== 0)) out.translation = node.translation;
+    if (node.scale && node.scale.some((v) => v !== 1)) out.scale = node.scale;
     if (node.children.length) out.children = node.children;
     if (node.mesh) {
       const { mesh, colors } = node.mesh;
