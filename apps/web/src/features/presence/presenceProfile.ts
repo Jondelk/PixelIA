@@ -23,7 +23,13 @@ export interface BehaviorProfile {
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
-export function voiceProfileOf(avatar: AvatarPreview | null, language = 'es-ES'): VoiceProfile {
+/** Español de Colombia: idioma de Pixel para hablar (síntesis) y escuchar (reconocimiento). */
+export const PIXEL_VOICE_LANGUAGE = 'es-CO';
+
+export function voiceProfileOf(
+  avatar: AvatarPreview | null,
+  language = PIXEL_VOICE_LANGUAGE,
+): VoiceProfile {
   const energy = avatar?.idleBehavior.energy ?? 0.5;
   return { language, pace: Math.round(clamp(0.9 + energy * 0.2, 0.85, 1.15) * 100) / 100, energy };
 }

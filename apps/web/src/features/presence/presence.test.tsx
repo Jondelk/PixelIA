@@ -36,6 +36,7 @@ import {
   browserVoiceInput,
   browserVoiceOutput,
   NO_VOICE_INPUT,
+  preferredVoice,
   spokenText,
   voiceCapabilities,
   type VoiceInputProvider,
@@ -275,6 +276,55 @@ describe('Voice runtime', () => {
     output.speak('Hola', { lang: 'es-ES', rate: 1, voiceId: null }, { onEnd, onError });
     handlers[1]!.onerror!({ error: 'synthesis-failed' });
     expect(onError).toHaveBeenCalledWith('failed');
+  });
+
+  it('español de Colombia: voz es-CO si existe; si no, otra en español; si no, la del navegador', () => {
+    const v = (lang: string, name = lang) => ({ lang, name, voiceURI: name });
+    expect(preferredVoice([v('en-US'), v('es-ES'), v('es-CO', 'Salomé')], 'es-CO')?.name).toBe(
+      'Salomé',
+    );
+    // Varias es-CO: una de ellas (la primera).
+    expect(preferredVoice([v('es-CO', 'A'), v('es-CO', 'B')], 'es-CO')?.name).toBe('A');
+    // Formato Android (es_CO) también cuenta como es-CO.
+    expect(preferredVoice([v('es-MX'), v('es_CO', 'Android')], 'es-CO')?.name).toBe('Android');
+    expect(preferredVoice([v('en-US'), v('es-MX', 'México')], 'es-CO')?.name).toBe('México');
+    expect(preferredVoice([v('en-US'), v('fr-FR')], 'es-CO')).toBeNull();
+    // El idioma de Pixel (síntesis y reconocimiento), con el ritmo de siempre.
+    expect(voiceProfileOf(null)).toMatchObject({ language: 'es-CO', pace: 1 });
+  });
+
+  it('al hablar usa la voz es-CO… salvo que el usuario haya elegido otra', () => {
+    const spoken: { lang: string; voice?: { name: string } }[] = [];
+    class Utterance {
+      lang = '';
+      rate = 1;
+      voice?: { name: string };
+      onstart?: () => void;
+      onend?: () => void;
+      onerror?: (event: { error: string }) => void;
+      constructor(public text: string) {
+        spoken.push(this);
+      }
+    }
+    const voices = [
+      { lang: 'es-ES', name: 'España', voiceURI: 'es-es' },
+      { lang: 'es-CO', name: 'Colombia', voiceURI: 'es-co' },
+    ];
+    const output = browserVoiceOutput({
+      speechSynthesis: {
+        cancel: vi.fn(),
+        speak: vi.fn(),
+        getVoices: () => voices,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      },
+      SpeechSynthesisUtterance: Utterance,
+    } as never);
+    const handlers = { onEnd: vi.fn(), onError: vi.fn() };
+    output.speak('Hola', { lang: 'es-CO', rate: 1, voiceId: null }, handlers);
+    expect([spoken[0]!.lang, spoken[0]!.voice?.name]).toEqual(['es-CO', 'Colombia']);
+    output.speak('Hola', { lang: 'es-CO', rate: 1, voiceId: 'es-es' }, handlers);
+    expect(spoken[1]!.voice?.name).toBe('España');
   });
 
   it('lo hablado es corto: sin ids, viñetas ni listas largas', () => {

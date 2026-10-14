@@ -161,6 +161,26 @@ export function browserVoiceInput(win: VoiceWindow | null = browser()): VoiceInp
   };
 }
 
+/** «es_CO» (algunos Android) y «ES-co» cuentan como «es-CO». */
+const normalizeLang = (lang: string) => lang.replace('_', '-').toLowerCase();
+
+/**
+ * La voz de Pixel cuando el usuario no eligió una: primero una cuyo idioma sea EXACTAMENTE `lang`
+ * (es-CO); si no hay, cualquier voz en español (es-*); si tampoco, ninguna (la del navegador).
+ */
+export function preferredVoice<V extends { lang: string }>(voices: V[], lang: string): V | null {
+  const wanted = normalizeLang(lang);
+  const family = wanted.split('-')[0]!;
+  return (
+    voices.find((voice) => normalizeLang(voice.lang) === wanted) ??
+    voices.find((voice) => {
+      const voiceLang = normalizeLang(voice.lang);
+      return voiceLang === family || voiceLang.startsWith(`${family}-`);
+    }) ??
+    null
+  );
+}
+
 export function browserVoiceOutput(win: VoiceWindow | null = browser()): VoiceOutputProvider {
   const synth = win?.speechSynthesis;
   const Utterance = win?.SpeechSynthesisUtterance;
@@ -178,9 +198,12 @@ export function browserVoiceOutput(win: VoiceWindow | null = browser()): VoiceOu
       const utterance = new Utterance(text);
       utterance.lang = options.lang;
       utterance.rate = options.rate;
-      const voice = options.voiceId
-        ? synth.getVoices().find((candidate) => candidate.voiceURI === options.voiceId)
-        : undefined;
+      // La voz elegida en «Voz y movimiento» manda; si no, la preferida para el idioma (es-CO).
+      const voices = synth.getVoices();
+      const voice =
+        (options.voiceId
+          ? voices.find((candidate) => candidate.voiceURI === options.voiceId)
+          : undefined) ?? preferredVoice(voices, options.lang);
       if (voice) utterance.voice = voice;
       utterance.onstart = () => handlers.onStart?.();
       utterance.onend = () => handlers.onEnd();
