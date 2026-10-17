@@ -689,6 +689,14 @@ a "no convertida") y **R11** (el rollback borra también los ítems). El resto s
 
 ## 13. Última verificación
 
+### 2026-10-17: lectura de documentos sin pérdidas (rama `feat/avatar-3d-lipsync`)
+
+| Comprobación | Resultado |
+|---|---|
+| Lector local | `localExtractor.ts` reescrito: secciones persistentes, renglones unidos, títulos con apellido y sinónimos, campos que se suman, notas con lo que no tiene campo |
+| Office | `documentReader.ts`: tablas, viñetas numeradas, `w:br`/`a:br`, `mc:Fallback` sin duplicar, notas de PowerPoint, Excel (`.xlsx`) |
+| Tests | `documentCoverage`, `localReading`, `extraction`: 39/39 ✅ (los de rutas con Mongo no se pudieron correr aquí ❓) |
+
 ### 2026-10-17: Prompt 20 (Mi agenda), equipo del usuario, sin commit ni push
 
 | Comprobación | Resultado |

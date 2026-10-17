@@ -624,6 +624,14 @@ programas externos.
   (pdf.js: renglones y bloques reconstruidos, interletrado deshecho); **colores del diseño del PDF**
   (rellenos) y **de las imágenes** (medidos en el navegador con canvas), elegidos con
   `pickBrandColors` (contracts). PDF escaneados y dañados se explican.
+- [x] Lectura sin IA sin pérdidas: secciones que siguen tras líneas en blanco y saltos de página;
+  renglones partidos y palabras con guion unidos; títulos con apellido ("Misión institucional",
+  "VALORES CORPORATIVOS", "1. Nuestra esencia") y muchos sinónimos; dos secciones del mismo campo se
+  suman; valores "TÍTULO + explicación" en un solo elemento; listas recortadas sin partir palabras;
+  Word con tablas, listas numeradas, saltos `w:br` y cuadros de texto sin duplicar; PowerPoint con
+  viñetas y **notas del orador**; **Excel** (fichas en dos columnas). Lo que no tiene campo
+  (contacto, slogan…) se nombra en las notas y no se cuela en otros campos
+  (`test/documentCoverage.test.ts`).
 - [x] Web: panel "¿Tienes documentos de tu marca?" en el onboarding; la fusión nunca reemplaza lo
   escrito (llena vacíos y agrega a listas); aviso por paso de lo completado, lo que falta y de qué
   documento salió; marca en la barra de pasos hasta que el usuario guarda.

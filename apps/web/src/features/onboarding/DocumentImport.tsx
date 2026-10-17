@@ -35,7 +35,8 @@ export function validateFiles(files: { name: string; size: number }[]): string |
   const unsupported = files.find(
     (file) => !ACCEPTED.some((ext) => file.name.toLowerCase().endsWith(ext)),
   );
-  if (unsupported) return `${unsupported.name}: usa PDF, Word, PowerPoint, texto o imágenes.`;
+  if (unsupported)
+    return `${unsupported.name}: usa PDF, Word, PowerPoint, Excel, texto o imágenes.`;
   const total = files.reduce((sum, file) => sum + file.size, 0);
   if (total > EXTRACTION_LIMITS.maxTotalBytes) {
     return `Los documentos suman ${formatSize(total)}; el máximo es ${MAX_MB} MB.`;
@@ -165,8 +166,8 @@ export function DocumentImport({
               Arrastra los archivos aquí o haz clic para elegirlos
             </span>
             <span className="text-xs text-subtle">
-              PDF, Word, PowerPoint, texto o imágenes · hasta {EXTRACTION_LIMITS.maxFiles} archivos
-              y {MAX_MB} MB en total
+              PDF, Word, PowerPoint, Excel, texto o imágenes · hasta {EXTRACTION_LIMITS.maxFiles}{' '}
+              archivos y {MAX_MB} MB en total
             </span>
             <input
               id={inputId}

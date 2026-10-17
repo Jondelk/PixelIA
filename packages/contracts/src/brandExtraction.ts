@@ -120,7 +120,7 @@ export const EXTRACTION_LIMITS = {
   /** Suma de los archivos, en bytes (antes de codificar en base64). */
   maxTotalBytes: 15 * 1024 * 1024,
   /** Extensiones que se aceptan en el selector de archivos. */
-  accept: '.pdf,.docx,.pptx,.txt,.md,.png,.jpg,.jpeg,.webp',
+  accept: '.pdf,.docx,.pptx,.xlsx,.txt,.md,.csv,.png,.jpg,.jpeg,.webp',
 } as const;
 
 export const ExtractionDocumentInputSchema = z.object({

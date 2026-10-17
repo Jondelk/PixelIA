@@ -4,7 +4,7 @@ import { isZip, readZip, ZipError } from './zip.js';
 /*
  * Convierte cada archivo subido en algo que la IA pueda leer:
  * - PDF e imágenes: se envían tal cual (el modelo los lee directamente).
- * - Word (.docx) y PowerPoint (.pptx): se extrae el texto aquí, sin dependencias.
+ * - Word (.docx), PowerPoint (.pptx) y Excel (.xlsx): se extrae el texto aquí, sin dependencias.
  * - Texto (.txt, .md, .csv): se decodifica como UTF-8.
  * El tipo se decide por el contenido (firma del archivo) y la extensión, no por lo que diga el
  * navegador. Nada de esto se guarda en disco.
@@ -39,7 +39,7 @@ export type ReadDocument =
 export const MAX_TEXT_CHARS = 120_000;
 
 const UNSUPPORTED =
-  'Formato no soportado. Usa PDF, Word (.docx), PowerPoint (.pptx), texto o imágenes.';
+  'Formato no soportado. Usa PDF, Word (.docx), PowerPoint (.pptx), Excel (.xlsx), texto o imágenes.';
 
 function extension(name: string): string {
   return /\.([a-z0-9]+)$/i.exec(name)?.[1]?.toLowerCase() ?? '';
@@ -60,10 +60,27 @@ function imageType(bytes: Buffer): 'image/png' | 'image/jpeg' | 'image/webp' | '
 export function officeXmlToText(xml: string): string {
   return decodeEntities(
     xml
+      // Cuadros de texto de Word: el contenido viene dos veces (versión moderna y respaldo).
+      .replace(/<mc:Fallback>[\s\S]*?<\/mc:Fallback>/g, '')
+      // Viñetas y listas numeradas de Word (la viñeta no es texto: es formato del párrafo).
+      // (Los títulos numerados —estilo Título/Heading— no son viñetas.)
+      .replace(
+        /<w:p\b[^>]*>(?=(?:(?!<\/w:p>)[\s\S])*?<w:numPr>)(?!(?:(?!<\/w:p>)[\s\S])*?<w:pStyle w:val="(?:Heading|Ttulo|Titulo|Title|Subtitle)[^"]*")/g,
+        '$&- ',
+      )
+      // Viñetas de PowerPoint declaradas en el párrafo.
+      .replace(/<a:p\b[^>]*>(?=(?:(?!<\/a:p>)[\s\S])*?<a:buChar\b)/g, '$&- ')
       .replace(/<w:tab\/>|<a:tab\/>/g, '\t')
-      .replace(/<w:br\/>|<a:br\/>|<\/w:p>|<\/a:p>/g, '\n')
+      .replace(
+        /<w:br\b[^>]*\/>|<w:cr\b[^>]*\/>|<a:br\b[^>]*\/>|<a:br\b[^>]*>[\s\S]*?<\/a:br>/g,
+        '\n',
+      )
+      // Tablas: cada fila en su renglón y las celdas separadas (no pegadas entre sí).
+      .replace(/<\/w:tc>/g, '\t')
+      .replace(/<\/w:tr>|<\/w:p>|<\/a:p>/g, '\n')
       .replace(/<[^>]+>/g, ''),
   )
+    .replace(/\t+\n/g, '\n')
     .replace(/[ \t]+\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
@@ -80,22 +97,73 @@ function decodeEntities(value: string): string {
     .replace(/&amp;/g, '&');
 }
 
-/** Texto de un .docx (cuerpo, encabezados no) o de un .pptx (diapositivas en orden). */
+/** Texto de una hoja de Excel: una fila por renglón; dos celdas → "Etiqueta: valor". */
+export function sheetText(sheetXml: string, shared: string[]): string {
+  const rows: string[] = [];
+  for (const row of sheetXml.match(/<row\b[\s\S]*?<\/row>/g) ?? []) {
+    const cells: string[] = [];
+    for (const cell of row.match(/<c\b[^>]*\/>|<c\b[\s\S]*?<\/c>/g) ?? []) {
+      const type = /\bt="([^"]+)"/.exec(cell)?.[1];
+      let value = '';
+      if (type === 's') value = shared[Number(/<v>(\d+)<\/v>/.exec(cell)?.[1])] ?? '';
+      else if (type === 'inlineStr') value = officeXmlToText(cell);
+      else value = decodeEntities(/<v>([\s\S]*?)<\/v>/.exec(cell)?.[1] ?? '');
+      if (value.trim()) cells.push(value.trim());
+    }
+    if (cells.length === 2) rows.push(`${cells[0]}: ${cells[1]}`);
+    else if (cells.length) rows.push(cells.join('\t'));
+  }
+  return rows.join('\n');
+}
+
+/**
+ * Texto de un .docx (cuerpo y notas al pie), de un .pptx (diapositivas en orden y sus notas)
+ * o de un .xlsx (hojas en orden).
+ */
 export function officeText(bytes: Buffer): string | null {
   const entries = readZip(bytes);
-  const document = entries.get('word/document.xml');
-  if (document) return officeXmlToText(document().toString('utf8'));
+  const read = (name: string) => entries.get(name)?.().toString('utf8') ?? null;
+  const document = read('word/document.xml');
+  if (document !== null) {
+    const footnotes = read('word/footnotes.xml');
+    return [officeXmlToText(document), footnotes ? officeXmlToText(footnotes) : '']
+      .filter(Boolean)
+      .join('\n\n');
+  }
 
-  const slides = [...entries.keys()]
-    .map((name) => ({ name, n: Number(/^ppt\/slides\/slide(\d+)\.xml$/.exec(name)?.[1]) }))
-    .filter((slide) => Number.isFinite(slide.n) && slide.n > 0)
-    .sort((a, b) => a.n - b.n);
+  const numbered = (pattern: RegExp) =>
+    [...entries.keys()]
+      .map((name) => ({ name, n: Number(pattern.exec(name)?.[1]) }))
+      .filter((entry) => Number.isFinite(entry.n) && entry.n > 0)
+      .sort((a, b) => a.n - b.n);
+
+  const slides = numbered(/^ppt\/slides\/slide(\d+)\.xml$/);
   if (slides.length) {
     return slides
-      .map(
-        ({ name, n }) =>
-          `Diapositiva ${n}\n${officeXmlToText(entries.get(name)!().toString('utf8'))}`,
-      )
+      .map(({ name, n }) => {
+        const body = officeXmlToText(read(name)!);
+        // Las notas del orador suelen ampliar lo que la diapositiva solo enuncia.
+        const notesXml = read(`ppt/notesSlides/notesSlide${n}.xml`);
+        const notes = notesXml
+          ? officeXmlToText(notesXml)
+              .split('\n')
+              .filter((line) => line.trim() && !/^\d+$/.test(line.trim()))
+              .join('\n')
+          : '';
+        return `Diapositiva ${n}\n${body}${notes ? `\n\n${notes}` : ''}`;
+      })
+      .join('\n\n');
+  }
+
+  const sheets = numbered(/^xl\/worksheets\/sheet(\d+)\.xml$/);
+  if (sheets.length) {
+    const sharedXml = read('xl/sharedStrings.xml') ?? '';
+    const shared = (sharedXml.match(/<si>[\s\S]*?<\/si>/g) ?? []).map((si) =>
+      officeXmlToText(si).replace(/\n+/g, ' '),
+    );
+    return sheets
+      .map(({ name }) => sheetText(read(name)!, shared))
+      .filter(Boolean)
       .join('\n\n');
   }
   return null;
@@ -140,7 +208,10 @@ export function readDocument(input: DocumentInput): ReadDocument {
     };
   }
 
-  if (isZip(bytes) && (ext === 'docx' || ext === 'pptx' || media.includes('officedocument'))) {
+  if (
+    isZip(bytes) &&
+    (['docx', 'pptx', 'xlsx'].includes(ext) || media.includes('officedocument'))
+  ) {
     try {
       const text = officeText(bytes)?.trim();
       if (!text)
