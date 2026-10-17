@@ -125,14 +125,68 @@ export function horizonRange(horizon: PlanningHorizon, now: Date, timezone: stri
   if (horizon === 'next_7_days') {
     return { start: now.getTime(), end: local.plus({ days: 7 }).endOf('day').toMillis() + 1 };
   }
-  const monday = local.startOf('week');
-  if (horizon === 'this_week') {
-    return { start: now.getTime(), end: monday.plus({ weeks: 1 }).toMillis() };
-  }
+  if (horizon === 'this_week') return { start: now.getTime(), end: weekRange(local).end };
+  const next = weekRange(local.plus({ weeks: 1 }));
+  return { start: next.start, end: next.end };
+}
+
+/*
+ * Rangos de «Mi agenda» (Prompt 20) y del planificador: un único sitio para «hoy», «la semana»
+ * (lunes a domingo), «el mes» y «los próximos N días» en la zona del usuario. La web nunca calcula
+ * fechas: recibe días y etiquetas ya resueltos.
+ */
+
+/** Un rango local: instantes [start, end) y sus días locales (fin INCLUIDO). */
+export interface LocalRange extends Span {
+  startDate: string;
+  endDate: string;
+}
+
+const localRange = (from: DateTime, to: DateTime): LocalRange => ({
+  start: from.toMillis(),
+  end: to.toMillis(),
+  startDate: from.toISODate()!,
+  endDate: to.minus({ days: 1 }).toISODate()!,
+});
+
+/** El día local de `anchor` («YYYY-MM-DD» válido) o el de hoy. */
+export function anchorDay(
+  anchor: string | null | undefined,
+  now: Date,
+  timezone: string,
+): DateTime {
+  const parsed = anchor ? DateTime.fromISO(anchor, { zone: timezone }) : null;
+  return (parsed?.isValid ? parsed : DateTime.fromJSDate(now, { zone: timezone })).startOf('day');
+}
+
+export const todayRange = (day: DateTime): LocalRange =>
+  localRange(day.startOf('day'), day.startOf('day').plus({ days: 1 }));
+
+export const weekRange = (day: DateTime): LocalRange =>
+  localRange(day.startOf('week'), day.startOf('week').plus({ weeks: 1 }));
+
+export const monthRange = (day: DateTime): LocalRange =>
+  localRange(day.startOf('month'), day.startOf('month').plus({ months: 1 }));
+
+/** Desde AHORA hasta el final del día N (nunca el pasado). */
+export function upcomingRange(now: Date, timezone: string, days: number): LocalRange {
+  const local = DateTime.fromJSDate(now, { zone: timezone });
+  const end = local.startOf('day').plus({ days: days + 1 });
   return {
-    start: monday.plus({ weeks: 1 }).toMillis(),
-    end: monday.plus({ weeks: 2 }).toMillis(),
+    start: now.getTime(),
+    end: end.toMillis(),
+    startDate: local.toISODate()!,
+    endDate: end.minus({ days: 1 }).toISODate()!,
   };
+}
+
+/** Días locales entre dos fechas «YYYY-MM-DD» (ambas incluidas; máximo 400). */
+export function eachLocalDay(startDate: string, endDate: string, timezone: string): string[] {
+  const days: string[] = [];
+  let day = DateTime.fromISO(startDate, { zone: timezone });
+  const last = DateTime.fromISO(endDate, { zone: timezone });
+  for (; day <= last && days.length < 400; day = day.plus({ days: 1 })) days.push(day.toISODate()!);
+  return days;
 }
 
 /** ¿Existe esta zona IANA? (luxon la valida contra Intl.) */

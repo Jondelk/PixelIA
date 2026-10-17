@@ -75,6 +75,8 @@ export interface PixelCommandAttrs {
     intent: 'create_campaign' | 'plan_content' | null;
     /** Prompt 17: proyecto del recurso que el usuario estaba viendo (validado). */
     projectId?: Types.ObjectId | null;
+    /** Prompt 20: la tarea que se pidió organizar desde «Mi agenda» (validada). */
+    taskId?: Types.ObjectId | null;
   };
   interpretation: { mode: 'ai' | 'demo' | 'rules'; confidence: number };
   executionId: Types.ObjectId | null;
@@ -176,6 +178,7 @@ const pixelCommandSchema = new Schema<PixelCommandAttrs>(
     contextHint: {
       intent: { type: String, enum: ['create_campaign', 'plan_content', null], default: null },
       projectId: { type: Schema.Types.ObjectId, ref: 'Project', default: null },
+      taskId: { type: Schema.Types.ObjectId, ref: 'Task', default: null },
     },
     interpretation: {
       mode: { type: String, enum: ['ai', 'demo', 'rules'], required: true },

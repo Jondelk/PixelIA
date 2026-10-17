@@ -18,12 +18,22 @@ export interface CalendarEventSummary {
   start: string;
   end: string;
   allDay: boolean;
+  /**
+   * Prompt 20: días de un evento de todo el día tal como los da Google («YYYY-MM-DD»; `endDate`
+   * EXCLUSIVO). null en eventos con hora. Así no se convierte en «00:00 UTC» (el día anterior en
+   * América).
+   */
+  startDate: string | null;
+  endDate: string | null;
   /** Cancelado: no ocupa. */
   cancelled: boolean;
   /** «Disponible» en Google (transparente): no ocupa. */
   transparent: boolean;
-  /** Propiedades privadas de Pixel (marca de evento gestionado, acción, workspace). */
-  pixel: { managed: boolean; workspace: string | null; action: string | null };
+  /**
+   * Propiedades privadas de Pixel (marca de evento gestionado, acción, workspace) y, si el bloque se
+   * organizó para una tarea, su referencia opaca (Prompt 20).
+   */
+  pixel: { managed: boolean; workspace: string | null; action: string | null; task: string | null };
 }
 
 export interface NewCalendarEvent {
@@ -33,7 +43,8 @@ export interface NewCalendarEvent {
   end: string;
   timezone: string;
   description: string | null;
-  pixel: { workspace: string; action: string };
+  /** `task`: referencia opaca de la tarea que cubre este bloque (Prompt 20); null si no hay. */
+  pixel: { workspace: string; action: string; task?: string | null };
 }
 
 export interface CalendarEventPatch {

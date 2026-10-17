@@ -24,6 +24,8 @@ export const WORKSPACE_FEATURES = [
   'brandGuardian',
   'creativeMemory',
   'calendar',
+  /** Prompt 20: «Mi agenda», la vista unificada del tiempo (solo Personal). */
+  'agenda',
 ] as const;
 export type WorkspaceFeature = (typeof WORKSPACE_FEATURES)[number];
 
@@ -40,6 +42,7 @@ const CAPABILITIES: Record<WorkspaceType, WorkspaceCapabilities> = {
     brandGuardian: false,
     creativeMemory: true,
     calendar: true,
+    agenda: true,
   },
   enterprise: {
     projects: true,
@@ -51,6 +54,7 @@ const CAPABILITIES: Record<WorkspaceType, WorkspaceCapabilities> = {
     brandGuardian: true,
     creativeMemory: true,
     calendar: false,
+    agenda: false,
   },
 };
 

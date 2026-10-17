@@ -48,6 +48,7 @@ import { workspaceRouter, workspacesRouter } from './workspaces/workspaces.route
 import type { Logger } from '../lib/logger.js';
 import { createCalendarCallbackRouter, createCalendarRouter } from './calendar/calendar.routes.js';
 import type { CalendarDeps } from './calendar/calendarConnection.service.js';
+import { createAgendaRouter } from './calendar/agenda.routes.js';
 
 export interface ApiDependencies {
   getDatabaseStatus: () => DatabaseStatus;
@@ -128,6 +129,17 @@ export function createApiRouter(deps: ApiDependencies): Router {
   );
   // Google Calendar (Prompt 19): solo el ciclo de vida de la conexión (capacidad `calendar`).
   workspace.use('/calendar', createCalendarRouter(deps.calendar));
+  // «Mi agenda» (Prompt 20): solo lectura, solo Personal (capacidad `agenda`).
+  workspace.use(
+    '/agenda',
+    createAgendaRouter({
+      ai: deps.chat.ai,
+      logger: deps.logger,
+      calendar: deps.calendar,
+      tools: deps.pixelTools,
+      defaultTimezone: deps.defaultTimezone,
+    }),
+  );
   // Brand Guardian: solo Enterprise (capacidad `brandGuardian`, la comprueba el servicio).
   workspace.use(
     '/guardian',

@@ -78,8 +78,8 @@ function workNav(workspaceId: string, type: WorkspaceType): NavGroup {
 
 /**
  * Navegación de un workspace según su tipo:
- * - personal: Inicio · Trabajo (Proyectos, Tareas, Contenido, Plan de contenido) · Pixel (Mi ADN,
- *   Mi Pixel, Lo aprendido). Chat se abre desde el Pixel Dock (Prompt 17).
+ * - personal: Inicio · Mi agenda (Prompt 20) · Trabajo (Proyectos, Tareas, Contenido, Plan de
+ *   contenido) · Pixel (Mi ADN, Mi Pixel, Lo aprendido). Chat se abre desde el Pixel Dock (Prompt 17).
  * - enterprise con empresa: la de la empresa (enterpriseNav).
  * - enterprise sin empresa (o tipo aún desconocido): solo el resumen.
  */
@@ -92,7 +92,15 @@ export function workspaceNav(
   if (type === 'enterprise' && companyId) return enterpriseNav(companyId, workspaceId);
   if (type === 'personal') {
     return [
-      { items: [{ to: base, label: 'Inicio', icon: 'overview', end: true }] },
+      {
+        items: [
+          { to: base, label: 'Inicio', icon: 'overview', end: true },
+          // «Mi agenda» justo debajo de Inicio: cómo está organizado tu tiempo (Prompt 20).
+          ...(workspaceSupportsFeature(type, 'agenda')
+            ? [{ to: `${base}/agenda`, label: 'Mi agenda', icon: 'planner' as const }]
+            : []),
+        ],
+      },
       workNav(workspaceId, type),
       {
         label: 'Pixel',

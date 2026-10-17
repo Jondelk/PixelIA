@@ -512,7 +512,7 @@ Ver `docs/PIXEL-ACTIONS.md` y `docs/PIXEL-TOOLS.md`.
 - [ ] Confirmación reforzada (`elevated`).
 - [x] Commit y push (`8fe0682`, autorizados).
 
-## Etapa GC — Personal Week Planner + Google Calendar ✅ (implementado, pendiente de revisión, sin commit ni push; Prompt 19)
+## Etapa GC — Personal Week Planner + Google Calendar ✅ (confirmado en `44caecf`, en `origin`; Prompt 19)
 
 Ver `docs/GOOGLE-CALENDAR.md` y `docs/PERSONAL-WEEK-PLANNER.md`.
 
@@ -527,6 +527,21 @@ Ver `docs/GOOGLE-CALENDAR.md` y `docs/PERSONAL-WEEK-PLANNER.md`.
 - [x] Web: tarjeta de conexión en «Mi Pixel», botón para conectar en la respuesta, semana agrupada por día, «Guardar semana» / «Mover bloque», resultados verificados; aviso al volver de Google.
 - [x] Tests (contracts, API, web), pruebas en vivo (SKIPPED sin configuración) y smoke de navegador 35/35.
 - [ ] Probar con una cuenta de Google real (calendario de prueba) y con Claude real.
+- [x] Commit y push (`44caecf`, autorizados).
+
+## Etapa AG — Mi agenda ✅ (implementado, pendiente de revisión, sin commit ni push; Prompt 20)
+
+Ver `docs/PERSONAL-AGENDA.md`.
+
+- [x] Capacidad `agenda` (solo Personal); «Mi agenda» debajo de Inicio; ruta `/workspace/:id/agenda?view=`.
+- [x] `AgendaItem` y `GET …/agenda` de solo lectura (parámetros controlados, ids opacos, sin payload de Google).
+- [x] `PersonalAgendaService`: Google on demand por la herramienta, tareas y fechas límite; rangos centralizados (today/week/month/upcoming); misma zona que el planificador; resumen determinista; avisos de conexión con la agenda interna intacta.
+- [x] Hoy, Semana (7 columnas / día por día), Mes (cuadrícula de carga + detalle), Próximos (grupos, 90 días, «Ver más»).
+- [x] «Reorganizar con Pixel» y borradores sin ids; liberar una franja («el jueves en la tarde no puedo»); sin arrastrar ni «Nuevo evento».
+- [x] Inicio: «Próximos hoy» en «Tu día» y «Ver mi agenda».
+- [x] Adaptador: fechas reales de todo el día y paginación.
+- [x] Tests (contracts, API, web) y smoke de navegador 45/45.
+- [ ] Probar con la cuenta real de Google conectada.
 - [ ] Commit (pendiente de revisión del usuario).
 
 ## Etapa 9 — CreativeMemory básica (sustituida por la Etapa CM)

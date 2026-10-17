@@ -81,3 +81,14 @@ semana» es un botón); se mantiene `es-CO`.
 
 thinking (entender y leer) → idle (propuesta) → thinking (guardar) → success, warning (parcial) o
 error.
+
+## Relación con «Mi agenda» (Prompt 20)
+
+El planificador **decide**; «Mi agenda» **muestra** (`docs/PERSONAL-AGENDA.md`). Comparten la lectura
+(`readCalendar`), la zona (`planningTimezone`) y los rangos (`weekRange` en `availability.ts`, que
+ahora también usa `horizonRange`). Nuevo en `replan_block`: **liberar una franja**.
+
+- «El jueves en la tarde no puedo» mueve solo los bloques de Pixel de esa franja (mañana 6–12,
+  tarde 12–19, noche 19–24) al primer hueco libre fuera de ella.
+- Es un `move_block` por bloque, con una sola confirmación.
+- Dentro de «organízame la semana…», «no puedo el miércoles» sigue siendo un día a evitar del plan.

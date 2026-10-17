@@ -21,6 +21,7 @@ describe('Capacidades del workspace', () => {
       brandGuardian: false,
       creativeMemory: true,
       calendar: true,
+      agenda: true,
     });
     expect(workspaceCapabilities('enterprise')).toEqual({
       projects: true,
@@ -32,6 +33,7 @@ describe('Capacidades del workspace', () => {
       brandGuardian: true,
       creativeMemory: true,
       calendar: false,
+      agenda: false,
     });
   });
 

@@ -253,3 +253,9 @@ Planificar la semana usa los mismos estados: thinking (entender y leer el calend
 (propuesta) → thinking («Guardar semana») → success (todo comprobado), warning (parcial) o error.
 Conectar Google Calendar no cambia la presencia. La voz entra por PixelCommand y nunca guarda la
 semana; la voz preferida sigue siendo `es-CO`.
+
+## «Mi agenda» (Prompt 20)
+
+«Mi agenda» no añade un segundo avatar: presencia ambiental del workspace y, al reorganizar, la de
+PixelCommand (thinking → idle → thinking → success o warning). El Dock no aparece en `/agenda`
+porque la página ya tiene su «Reorganizar con Pixel».

@@ -316,7 +316,8 @@ export const CreatePixelCommandSchema = z
          */
         resource: z
           .object({
-            type: z.enum(['campaign', 'content_plan', 'project', 'content_item']),
+            // Prompt 20: `task` (desde «Mi agenda»: organizar ESA tarea; los bloques quedan vinculados).
+            type: z.enum(['campaign', 'content_plan', 'project', 'content_item', 'task']),
             id: ObjectIdSchema,
           })
           .strict()

@@ -2,7 +2,13 @@ import { randomBytes } from 'node:crypto';
 import { GeneratedWeekPlanningSchema } from '@pixel/contracts';
 import { DateTime } from 'luxon';
 import { describe, expect, it } from 'vitest';
-import { calendarIntentOf, interpretMove, interpretWeekPlanning, timeOf } from '../src/ai/index.js';
+import {
+  calendarIntentOf,
+  fold,
+  interpretMove,
+  interpretWeekPlanning,
+  timeOf,
+} from '../src/ai/index.js';
 import { openSecret, parseSecretKey, sealSecret } from '../src/lib/secretBox.js';
 import {
   dailyWindows,
@@ -371,5 +377,44 @@ describe('Configuración de Google Calendar (opcional)', () => {
     const badUrl = resolveCalendarConfig({ ...full, GOOGLE_CALENDAR_REDIRECT_URI: 'no-url' });
     expect(badUrl.problem).toMatch(/no es una URL/);
     expect(JSON.stringify(badUrl)).not.toContain('secret');
+  });
+});
+
+describe('Prompt 20: liberar una franja («el jueves en la tarde no puedo»)', () => {
+  it('es replanificar solo con un día; dentro de «organízame la semana» sigue siendo planificar', () => {
+    expect(calendarIntentOf('el jueves en la tarde no puedo.')).toBe('replan_block');
+    expect(calendarIntentOf('manana no voy a poder.')).toBe('replan_block');
+    expect(calendarIntentOf('no puedo')).toBeNull();
+    expect(
+      calendarIntentOf('organizame la semana: el miercoles no puedo y quiero estudiar dos veces'),
+    ).toBe('plan_week');
+  });
+
+  it('día y franja; «mañana» como día y «la mañana» como franja', () => {
+    expect(interpretMove('El jueves en la tarde no puedo.', 'monday').unavailable).toEqual({
+      day: 'thursday',
+      part: 'afternoon',
+    });
+    expect(interpretMove('Mañana por la mañana no puedo', 'monday').unavailable).toEqual({
+      day: 'tuesday',
+      part: 'morning',
+    });
+    expect(interpretMove('Muévelo al jueves a las 6.', 'monday').unavailable).toBeNull();
+  });
+});
+
+describe('Prompt 20: el borrador de «Mi agenda» para una tarea es planificar', () => {
+  it('«Quiero trabajar en «Entrega informe» una vez esta semana» → plan_week con 1 sesión', () => {
+    const request = 'Quiero trabajar en «Entrega informe» una vez esta semana';
+    expect(calendarIntentOf(fold(request))).toBe('plan_week');
+    expect(interpretWeekPlanning(request, 'wednesday').sessions).toEqual([
+      {
+        title: 'Trabajar en Entrega informe',
+        count: 1,
+        durationMinutes: null,
+        day: null,
+        time: null,
+      },
+    ]);
   });
 });

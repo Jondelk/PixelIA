@@ -28,7 +28,7 @@ export async function getCalendarConnection(
 /** Pide la URL de Google (estado de un solo uso + PKCE en el servidor) y navega a ella. */
 export async function startCalendarConnect(
   workspaceId: string,
-  returnTo: 'home' | 'pixel',
+  returnTo: 'home' | 'pixel' | 'agenda',
 ): Promise<void> {
   const { authUrl } = await apiRequest(
     `${calendarPath(workspaceId)}/connect`,

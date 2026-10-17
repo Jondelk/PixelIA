@@ -14,6 +14,7 @@ import { PersonalDnaPage } from '../features/personal/PersonalDnaPage';
 import { PersonalOnboardingPage } from '../features/personal/PersonalOnboardingPage';
 import { PersonalOnly } from '../features/personal/PersonalOnly';
 import { ContentPlannerPage } from '../features/content-planner/ContentPlannerPage';
+import { AgendaPage } from '../features/agenda/AgendaPage';
 import { GuardianPage } from '../features/guardian/GuardianPage';
 import { GuardianReportPage } from '../features/guardian/GuardianReportPage';
 import { MemoryPage } from '../features/creative-memory/MemoryPage';
@@ -119,6 +120,16 @@ export const router = createBrowserRouter([
               </PersonalOnly>
             ),
             handle: handle('Onboarding personal', 'Pixel'),
+          },
+          // «Mi agenda» (Prompt 20): solo Personal (capacidad agenda).
+          {
+            path: 'agenda',
+            element: (
+              <FeatureOnly feature="agenda">
+                <AgendaPage />
+              </FeatureOnly>
+            ),
+            handle: handle('Mi agenda', 'Pixel'),
           },
           {
             path: 'personal/dna',

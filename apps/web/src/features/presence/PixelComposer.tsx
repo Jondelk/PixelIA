@@ -1,6 +1,7 @@
 import type { PixelCommandSource } from '@pixel/contracts';
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { Button } from '../../components/Button';
+import { Link } from 'react-router';
 import { Icon } from '../../components/Icon';
 import { reportPresence, usePixelPresence } from './presenceContext';
 import {
@@ -22,6 +23,8 @@ export interface ComposerSuggestion {
   label: string;
   /** Lo que se escribe en el campo al pulsarla (un inicio de frase, nunca un formulario). */
   text: string;
+  /** Prompt 20: en lugar de escribir, abre una pantalla de Pixel («Ver mi agenda»). */
+  to?: string;
 }
 
 const VOICE_NOTES: Record<VoiceInputError, string> = {
@@ -38,6 +41,7 @@ export function PixelComposer({
   compact = false,
   suggestions = [],
   voiceInput,
+  initialText = '',
 }: {
   placeholder: string;
   onSubmit: (text: string, source: PixelCommandSource) => void;
@@ -46,11 +50,13 @@ export function PixelComposer({
   suggestions?: ComposerSuggestion[];
   /** Para tests: un proveedor de voz simulado (por defecto, el de la presencia). */
   voiceInput?: VoiceInputProvider;
+  /** Prompt 20: borrador inicial (p. ej. «Quiero reorganizar el miércoles 21: »). Nunca se envía solo. */
+  initialText?: string;
 }) {
   const id = useId();
   const presence = usePixelPresence();
   const voice = voiceInput ?? presence.input;
-  const [text, setText] = useState('');
+  const [text, setText] = useState(initialText);
   const [listening, setListening] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [askNotice, setAskNotice] = useState(false);
@@ -59,6 +65,12 @@ export function PixelComposer({
 
   // Nunca escucha en segundo plano: al desmontar (navegar, cambiar de Pixel) se cierra.
   useEffect(() => () => voice.stop(), [voice]);
+
+  // Prompt 20: con un borrador, el cursor va al final (se sigue escribiendo, no se escribe delante).
+  useEffect(() => {
+    if (!initialText || !field.current) return;
+    field.current.setSelectionRange(initialText.length, initialText.length);
+  }, [initialText]);
 
   const submit = (event?: FormEvent) => {
     event?.preventDefault();
@@ -198,16 +210,25 @@ export function PixelComposer({
         <ul className="flex flex-wrap gap-2" aria-label="Para empezar">
           {suggestions.slice(0, 4).map((suggestion) => (
             <li key={suggestion.label}>
-              <button
-                type="button"
-                onClick={() => {
-                  setText(suggestion.text);
-                  field.current?.focus();
-                }}
-                className="rounded-lg border border-line px-3 py-1.5 text-sm text-muted transition-colors hover:border-line-strong hover:text-fg"
-              >
-                {suggestion.label}
-              </button>
+              {suggestion.to ? (
+                <Link
+                  to={suggestion.to}
+                  className="inline-block rounded-lg border border-line px-3 py-1.5 text-sm text-muted transition-colors hover:border-line-strong hover:text-fg"
+                >
+                  {suggestion.label}
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setText(suggestion.text);
+                    field.current?.focus();
+                  }}
+                  className="rounded-lg border border-line px-3 py-1.5 text-sm text-muted transition-colors hover:border-line-strong hover:text-fg"
+                >
+                  {suggestion.label}
+                </button>
+              )}
             </li>
           ))}
         </ul>

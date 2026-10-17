@@ -152,3 +152,28 @@ del usuario.
 - `test/weekPlanner.unit.test.ts`: disponibilidad, planificador, reglas, cifrado y configuración.
 - `test/googleCalendar.live.test.ts`: Google real (solo el calendario de PRUEBA) y Claude real.
   SKIPPED sin su configuración.
+
+## «Mi agenda» (Prompt 20)
+
+«Mi agenda» (`docs/PERSONAL-AGENDA.md`) lee con `list_events` (por la herramienta, sin confirmación),
+sin guardar nada en Mongo. Cambios en el adaptador:
+
+- los eventos de todo el día conservan su fecha (`startDate` / `endDate`, fin exclusivo); antes se
+  convertían en «00:00 UTC», el día anterior en América;
+- `list_events` pagina, hasta 4 páginas (1000 eventos);
+- `list_events` acepta rangos de hasta 370 días; `find_availability` sigue en 31.
+
+El destino tras conectar admite también `agenda`, en la misma lista cerrada.
+
+## Vínculo con tareas (Prompt 20)
+
+Un bloque organizado para una tarea lleva en su marca privada `pixelTask`: una referencia opaca
+(`taskEventRef`, un hash del workspace y la tarea), nunca el título ni el id de Mongo.
+
+- `create_event` la recibe como `taskRef`, la pone el servidor desde una tarea validada y la
+  comprueba al verificar.
+- `update_event` no la toca.
+- `list_events` la expone como `pixelTaskRef`, solo en bloques de este Pixel, y admite
+  `pixelOnly` (el filtro de Google por la marca).
+
+Detalle en `docs/PERSONAL-AGENDA.md` §Tarea ↔ bloque de Pixel.

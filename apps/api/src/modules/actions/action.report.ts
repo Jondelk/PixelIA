@@ -111,6 +111,24 @@ function describeCalendarOutcome(
   const total = drafts.length;
   if (drafts.every((draft) => draft.effect === 'update')) {
     const draft = drafts[0]!;
+    // Prompt 20: liberar una franja mueve varios bloques (uno por acción, cada uno verificado).
+    if (total > 1) {
+      const missing = failed
+        .map((item) => `No pude mover «${item.label}» (${lowerFirst(reason(item))}).`)
+        .join(' ');
+      if (!failed.length) {
+        return {
+          status: 'completed',
+          reply: `Listo. Moví ${total} bloques y los comprobé en Google Calendar.`,
+        };
+      }
+      return done.length
+        ? {
+            status: 'partial',
+            reply: `Moví ${done.length} de los ${total} bloques. ${missing} Puedes reintentarlo: lo que ya se movió no se repite.`,
+          }
+        : { status: 'failed', reply: `${missing} No cambié nada en tu Google Calendar.` };
+    }
     return done.length
       ? {
           status: 'completed',

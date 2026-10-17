@@ -115,12 +115,15 @@ export class FakeGoogleCalendar implements GoogleCalendarProvider {
       start: new Date(event.start).toISOString(),
       end: new Date(event.end).toISOString(),
       allDay: event.allDay,
+      startDate: event.allDay ? event.start.slice(0, 10) : null,
+      endDate: event.allDay ? event.end.slice(0, 10) : null,
       cancelled: event.status === 'cancelled',
       transparent: event.transparent,
       pixel: {
         managed: event.private.pixelManaged === 'true',
         workspace: event.private.pixelWorkspace ?? null,
         action: event.private.pixelAction ?? null,
+        task: event.private.pixelTask ?? null,
       },
     };
   }
@@ -270,6 +273,7 @@ export class FakeGoogleCalendar implements GoogleCalendarProvider {
         pixelManaged: 'true',
         pixelWorkspace: event.pixel.workspace,
         pixelAction: event.pixel.action,
+        ...(event.pixel.task ? { pixelTask: event.pixel.task } : {}),
       },
     };
     this.events.set(event.id, stored);

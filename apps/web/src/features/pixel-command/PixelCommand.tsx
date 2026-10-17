@@ -35,7 +35,10 @@ type ContextHint = {
   intent?: 'create_campaign' | 'plan_content';
   campaignId?: string;
   /** Pixel Dock: el recurso que el usuario está viendo (el backend lo valida). */
-  resource?: { type: 'campaign' | 'content_plan' | 'project' | 'content_item'; id: string };
+  resource?: {
+    type: 'campaign' | 'content_plan' | 'project' | 'content_item' | 'task';
+    id: string;
+  };
 };
 
 /**
@@ -53,6 +56,7 @@ export function PixelCommand({
   suggestions,
   thinkingAvatar = 'focus',
   calendarReturnTo = 'home',
+  draft,
 }: {
   workspaceId: string;
   /** Base de rutas web del workspace (para enlazar lo creado). */
@@ -70,7 +74,9 @@ export function PixelCommand({
    */
   thinkingAvatar?: 'focus' | 'none';
   /** Prompt 19: adónde vuelve el usuario tras conectar Google Calendar desde una respuesta. */
-  calendarReturnTo?: 'home' | 'pixel';
+  calendarReturnTo?: 'home' | 'pixel' | 'agenda';
+  /** Prompt 20: un borrador para el campo (desde «Mi agenda»); el usuario lo edita y lo envía. */
+  draft?: string;
 }) {
   const presence = usePixelPresence();
   const [command, setCommand] = useState<PixelCommandDTO | null>(null);
@@ -164,6 +170,7 @@ export function PixelCommand({
       onCancel={cancel}
       onReset={reset}
       onGuardianOverride={continueAnyway}
+      draft={draft}
       renderConnect={(status) => (
         <CalendarConnectButton
           workspaceId={workspaceId}
@@ -210,6 +217,7 @@ export function PixelCommandPanel({
   onStopSpeaking,
   onExitVoice,
   renderConnect,
+  draft,
 }: {
   phase: CommandPhase;
   command: PixelCommandDTO | null;
@@ -234,6 +242,7 @@ export function PixelCommandPanel({
   onExitVoice?: () => void;
   /** Prompt 19: el botón para conectar (o reconectar) Google Calendar cuando Pixel lo pide. */
   renderConnect?: (status: NonNullable<PixelCommandDTO['connect']>['status']) => ReactNode;
+  draft?: string;
 }) {
   const showInput = phase === 'idle' || phase === 'cancelled';
   return (
@@ -245,7 +254,12 @@ export function PixelCommandPanel({
           {phase === 'cancelled' && command?.reply && (
             <p className="text-sm text-muted">{command.reply}</p>
           )}
-          <PixelComposer placeholder={placeholder} onSubmit={onSend} suggestions={suggestions} />
+          <PixelComposer
+            placeholder={placeholder}
+            onSubmit={onSend}
+            suggestions={suggestions}
+            initialText={draft}
+          />
         </>
       )}
 

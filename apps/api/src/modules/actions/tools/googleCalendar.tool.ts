@@ -33,7 +33,10 @@ import {
  * - Verificar = releer el evento en Google y comparar calendario, título, horas y marca de Pixel.
  */
 
-const MAX_RANGE_MS = 31 * 24 * 60 * 60_000;
+const DAY_MS = 24 * 60 * 60_000;
+const MAX_RANGE_MS = 31 * DAY_MS;
+/** Prompt 20: «Mi agenda · Próximos» lee hasta ~1 año (paginado en el adaptador). */
+const MAX_LIST_RANGE_MS = 370 * DAY_MS;
 
 const TimezoneSchema = z
   .string()
@@ -41,15 +44,32 @@ const TimezoneSchema = z
   .max(64)
   .refine((value) => isValidTimezone(value), 'Zona horaria no válida');
 
-const RangeSchema = z
-  .object({ start: z.iso.datetime({ offset: true }), end: z.iso.datetime({ offset: true }) })
+const rangeSchema = (maxMs: number) =>
+  z
+    .object({ start: z.iso.datetime({ offset: true }), end: z.iso.datetime({ offset: true }) })
+    .strict()
+    .refine(
+      (range) =>
+        Date.parse(range.end) > Date.parse(range.start) &&
+        Date.parse(range.end) - Date.parse(range.start) <= maxMs,
+      'Rango no válido',
+    );
+const RangeSchema = rangeSchema(MAX_RANGE_MS);
+/** list_events: además, solo bloques de Pixel (filtro de Google por la marca privada). */
+const ListRangeSchema = z
+  .object({
+    start: z.iso.datetime({ offset: true }),
+    end: z.iso.datetime({ offset: true }),
+    pixelOnly: z.boolean().optional(),
+  })
   .strict()
   .refine(
     (range) =>
       Date.parse(range.end) > Date.parse(range.start) &&
-      Date.parse(range.end) - Date.parse(range.start) <= MAX_RANGE_MS,
+      Date.parse(range.end) - Date.parse(range.start) <= MAX_LIST_RANGE_MS,
     'Rango no válido',
   );
+type ListRange = z.output<typeof ListRangeSchema>;
 type Range = z.output<typeof RangeSchema>;
 
 const timedRange = <T extends { start: string; end: string }>(value: T) =>
@@ -65,6 +85,14 @@ export const CreateEventInputSchema = z
     timezone: TimezoneSchema,
     description: z.string().max(1000).optional(),
     location: z.string().max(200).optional(),
+    /**
+     * Prompt 20: referencia opaca de la tarea que organiza este bloque. La pone el SERVIDOR (desde una
+     * tarea validada contra el workspace), nunca el cliente.
+     */
+    taskRef: z
+      .string()
+      .regex(/^[a-f0-9]{32}$/)
+      .optional(),
   })
   .strict()
   .refine(timedRange, 'Horario no válido');
@@ -109,10 +137,15 @@ export interface CalendarEventView {
   start: string;
   end: string;
   allDay: boolean;
+  /** Prompt 20: días de un evento de todo el día («YYYY-MM-DD», fin exclusivo); null con hora. */
+  startDate: string | null;
+  endDate: string | null;
   /** Ocupa tiempo (no cancelado, ni «disponible», ni de todo el día). */
   busy: boolean;
   /** Lo creó Pixel en ESTE workspace (marca privada): el único tipo que Pixel puede mover. */
   pixelOwned: boolean;
+  /** Prompt 20: referencia opaca de la tarea que cubre (solo en bloques de este Pixel). */
+  pixelTaskRef: string | null;
 }
 
 const eventView = (event: CalendarEventSummary, ctx: ToolExecutionContext): CalendarEventView => ({
@@ -121,8 +154,11 @@ const eventView = (event: CalendarEventSummary, ctx: ToolExecutionContext): Cale
   start: event.start,
   end: event.end,
   allDay: event.allDay,
+  startDate: event.startDate,
+  endDate: event.endDate,
   busy: occupies(event),
   pixelOwned: ownedByPixel(event, ctx),
+  pixelTaskRef: ownedByPixel(event, ctx) ? event.pixel.task : null,
 });
 
 const ref = (event: CalendarEventSummary) => ({
@@ -134,16 +170,19 @@ const ref = (event: CalendarEventSummary) => ({
 export function createGoogleCalendarTool(deps: CalendarDeps): PixelTool {
   const session = (ctx: ToolExecutionContext) => openCalendarSession(ctx.workspace, deps);
 
-  const listEvents = defineCapability<Range, { events: CalendarEventView[] }>({
+  const listEvents = defineCapability<ListRange, { events: CalendarEventView[] }>({
     key: 'list_events',
     description: 'Leer los eventos de tu calendario en un rango (solo título y horas).',
-    inputSchema: RangeSchema,
+    inputSchema: ListRangeSchema,
     effect: 'read',
     target: 'external',
     resourceKind: 'calendar_event',
     sensitive: true,
     async execute(input, ctx) {
-      const events = (await (await session(ctx)).listEvents(input)).filter((e) => !e.cancelled);
+      const { pixelOnly, ...range } = input;
+      const events = (
+        await (await session(ctx)).listEvents(range, { pixelManagedOnly: pixelOnly === true })
+      ).filter((e) => !e.cancelled);
       return {
         status: 'success',
         summary: `Leí ${events.length} eventos.`,
@@ -220,7 +259,11 @@ export function createGoogleCalendarTool(deps: CalendarDeps): PixelTool {
           end: input.end,
           timezone: input.timezone,
           description: input.description ?? 'Bloque creado por Pixel con tu autorización.',
-          pixel: { workspace: workspaceEventRef(ctx.workspace), action },
+          pixel: {
+            workspace: workspaceEventRef(ctx.workspace),
+            action,
+            task: input.taskRef ?? null,
+          },
         });
       } catch (err) {
         if (!(err instanceof CalendarError) || err.code !== 'calendar_duplicate') throw err;
@@ -245,7 +288,8 @@ export function createGoogleCalendarTool(deps: CalendarDeps): PixelTool {
         sameInstant(event.start, input.start) &&
         sameInstant(event.end, input.end) &&
         ownedByPixel(event, ctx) &&
-        event.pixel.action === actionRefFor(ctx.idempotencyKey),
+        event.pixel.action === actionRefFor(ctx.idempotencyKey) &&
+        event.pixel.task === (input.taskRef ?? null),
       );
     },
   });

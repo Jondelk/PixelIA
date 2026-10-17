@@ -275,3 +275,12 @@ pasa por el planificador.
 - La entrada (`CreatePixelCommandSchema` y `AdjustPixelCommandSchema`) acepta `timezone` (IANA del
   navegador), que solo es el último recurso para planificar.
 - Confirmar: «Guardar semana» o «Mover bloque». Detalle en `docs/PERSONAL-WEEK-PLANNER.md`.
+
+## Desde «Mi agenda» (Prompt 20)
+
+- «Reorganizar con Pixel» y las acciones de cada elemento o día abren PixelCommand en la propia
+  página, con un **borrador** de texto en el campo (sin ids, con el cursor al final). El usuario lo
+  completa y lo envía.
+- Lo demás no cambia: propuesta → confirmación → Action Foundation.
+- `replan_block` admite «liberar una franja» («el jueves en la tarde no puedo»).
+- Las sugerencias del composer pueden ser enlaces (`to`): «Ver mi agenda».

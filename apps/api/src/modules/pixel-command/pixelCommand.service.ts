@@ -44,7 +44,8 @@ import {
   type AuthorizedActionSnapshot,
 } from '../actions/action.snapshot.js';
 import { answerExternalRequest } from '../actions/external.capabilities.js';
-import type { CalendarDeps } from '../calendar/calendarConnection.service.js';
+import { taskEventRef, type CalendarDeps } from '../calendar/calendarConnection.service.js';
+import { TaskModel } from '../operations/task.model.js';
 import {
   planWeekCommand,
   replanCommand,
@@ -118,7 +119,7 @@ type ContextResource = NonNullable<NonNullable<CreatePixelCommandData['contextHi
 async function resolveContextResource(
   workspace: WorkspaceDocument,
   resource: ContextResource | undefined,
-): Promise<{ campaignId: string | null; project: KnownProject | null }> {
+): Promise<{ campaignId: string | null; project: KnownProject | null; taskId?: string }> {
   const none = { campaignId: null, project: null };
   if (!resource) return none;
   const filter = { _id: new Types.ObjectId(resource.id), workspaceId: workspace._id };
@@ -136,6 +137,12 @@ async function resolveContextResource(
       const project = await ProjectModel.findOne(filter).select({ name: 1, status: 1 });
       if (!project) throw missing();
       return { campaignId: null, project: projectRef(project) };
+    }
+    // Prompt 20: «Pedirle a Pixel que lo organice» desde «Mi agenda» (tarea de ESTE workspace).
+    case 'task': {
+      const task = await TaskModel.findOne(filter).select({ _id: 1 });
+      if (!task) throw missing();
+      return { ...none, taskId: task._id.toString() };
     }
     case 'content_item': {
       const item = await ContentItemModel.findOne(filter).select({ campaignId: 1, projectId: 1 });
@@ -258,6 +265,8 @@ interface CommandState {
   revision: number;
   /** Prompt 17: proyecto del recurso que el usuario estaba viendo (validado). */
   chosenProject: KnownProject | null;
+  /** Prompt 20: referencia opaca de la tarea en contexto (sus bloques quedan vinculados). */
+  taskRef: string | null;
   /** Prompt 19: zona IANA del navegador (último recurso para planificar) y lo planificado antes. */
   clientTimezone: string | null;
   calendar: {
@@ -411,6 +420,7 @@ async function interpretAndPlan(
             message,
             clientTimezone: state.clientTimezone,
             previous: state.calendar,
+            taskRef: state.taskRef,
           },
           calendarDeps,
         );
@@ -562,6 +572,7 @@ export async function createPixelCommand(
       tzOffset: input.tzOffset,
       revision: 0,
       chosenProject: fromResource.project,
+      taskRef: fromResource.taskId ? taskEventRef(workspace, fromResource.taskId) : null,
       clientTimezone: input.timezone ?? null,
       calendar: null,
     },
@@ -576,6 +587,7 @@ export async function createPixelCommand(
     contextHint: {
       intent: input.contextHint?.intent ?? null,
       projectId: fromResource.project ? new Types.ObjectId(fromResource.project.id) : null,
+      taskId: fromResource.taskId ? new Types.ObjectId(fromResource.taskId) : null,
     },
   });
   deps.logger.info('PixelCommand: solicitud interpretada', {
@@ -625,6 +637,9 @@ export async function adjustPixelCommand(
       tzOffset: command.tzOffset,
       revision: command.plan?.revision ?? 0,
       chosenProject: await savedProject(workspace, command.contextHint?.projectId),
+      taskRef: command.contextHint?.taskId
+        ? taskEventRef(workspace, command.contextHint.taskId.toString())
+        : null,
       clientTimezone: input.timezone ?? null,
       calendar:
         command.planning || command.weekPlan

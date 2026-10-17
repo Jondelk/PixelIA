@@ -8,7 +8,9 @@ import { DailyDirector } from '../daily-director/DailyDirector';
 import { OperationsOverview } from '../operations/OperationsOverview';
 import { PixelHomeHero } from '../presence/PixelHomeHero';
 import { CalendarReturnNotice } from '../calendar/CalendarConnection';
-import { PERSONAL_SUGGESTIONS } from '../presence/suggestions';
+import { personalSuggestions } from '../presence/suggestions';
+import { getCalendarConnection } from '../calendar/calendarApi';
+import { useResource } from '../../lib/useResource';
 import { useWorkspace } from '../workspaces/workspaceContext';
 
 /**
@@ -75,6 +77,11 @@ function PersonalHome({
 }) {
   const base = workspaceBasePath(workspaceId);
   const firstName = name.split(' ')[0] ?? name;
+  // Prompt 20: «Ver mi agenda» cuando Google Calendar está conectado (si no, «Organizar mi semana»).
+  const calendar = useResource(`calendar:${workspaceId}`, (signal) =>
+    getCalendarConnection(workspaceId, signal),
+  );
+  const connected = calendar.state.status === 'success' && calendar.state.data.connected;
 
   return (
     <>
@@ -86,7 +93,7 @@ function PersonalHome({
         eyebrow="Pixel Personal"
         name={name}
         title={`¿Qué necesitas hacer, ${firstName}?`}
-        suggestions={PERSONAL_SUGGESTIONS}
+        suggestions={personalSuggestions(base, connected)}
         avatar={avatar}
       />
 

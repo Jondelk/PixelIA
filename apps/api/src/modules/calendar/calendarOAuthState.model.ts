@@ -18,7 +18,7 @@ export interface CalendarOAuthStateAttrs {
   userId: Types.ObjectId;
   workspaceId: Types.ObjectId;
   codeVerifierSealed: string;
-  returnTo: 'home' | 'pixel';
+  returnTo: 'home' | 'pixel' | 'agenda';
   expiresAt: Date;
   usedAt: Date | null;
 }
@@ -29,7 +29,7 @@ const schema = new Schema<CalendarOAuthStateAttrs>(
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     workspaceId: { type: Schema.Types.ObjectId, ref: 'Workspace', required: true },
     codeVerifierSealed: { type: String, required: true },
-    returnTo: { type: String, enum: ['home', 'pixel'], required: true },
+    returnTo: { type: String, enum: ['home', 'pixel', 'agenda'], required: true },
     expiresAt: { type: Date, required: true },
     usedAt: { type: Date, default: null },
   },

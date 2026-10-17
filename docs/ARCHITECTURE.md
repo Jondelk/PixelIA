@@ -483,3 +483,13 @@ Rutas: `/api/workspaces/:id/calendar/{connection,connect,disconnect}` (requireWo
 capacidad `calendar`) y `/api/calendar/google/callback` (lee la sesión de la cookie). Dependencias
 nuevas en `apps/api`: `google-auth-library@11.1.0` (OAuth oficial con PKCE), `luxon@3.7.2` (zonas
 IANA, cambio de horario) y `@types/luxon@3.7.1` (dev).
+
+## Mi agenda (Prompt 20)
+
+```
+AgendaPage (web, sin cálculo de fechas) → GET /api/workspaces/:id/agenda (solo lectura, capacidad agenda)
+  → PersonalAgendaService: planningTimezone → rango (today/week/month/upcomingRange)
+     → google.calendar/list_events (on demand, por la herramienta) + Task + Project (ESTE workspace)
+     → AgendaItem → días, grupos, resumen determinista, aviso de conexión
+Cambios → PixelCommand (borrador desde la agenda) → propuesta → confirmación → Action Foundation
+```

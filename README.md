@@ -111,6 +111,7 @@ docs/               Estado real (PIXEL_ESTADO), MVP, arquitectura, entidades, ba
 - [`docs/PIXEL-ACTIONS.md`](./docs/PIXEL-ACTIONS.md) — Pixel Action Foundation: proponer → autorizar → ejecutar → verificar, con resultados veraces.
 - [`docs/PIXEL-TOOLS.md`](./docs/PIXEL-TOOLS.md) — herramientas, capacidades, registro y política de autorización.
 - [`docs/GOOGLE-CALENDAR.md`](./docs/GOOGLE-CALENDAR.md) — Google Calendar (solo Personal): OAuth con PKCE, tokens cifrados, estados y la herramienta `google.calendar`.
+- [`docs/PERSONAL-AGENDA.md`](./docs/PERSONAL-AGENDA.md) — «Mi agenda»: Hoy, Semana, Mes y Próximos con tus compromisos, lo que Pixel organizó y lo que falta por organizar (solo lectura; los cambios, con Pixel).
 - [`docs/PERSONAL-WEEK-PLANNER.md`](./docs/PERSONAL-WEEK-PLANNER.md) — organizar la semana con tu disponibilidad real: proponer, guardar con una confirmación, ajustar y replanificar.
 - [`docs/AVATAR-ASSET-CONTRACT.md`](./docs/AVATAR-ASSET-CONTRACT.md) — contrato del avatar GLB futuro (escala, rig, clips y materiales).
 - [`docs/WORKSPACE-MIGRATION.md`](./docs/WORKSPACE-MIGRATION.md) — migración Company → Workspace.

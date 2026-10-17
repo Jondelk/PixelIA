@@ -38,12 +38,13 @@ export const dockContextLabel = (resource: DockResource | null) =>
 
 /**
  * Dónde NO aparece el Dock: el Inicio (ya tiene la entrada de Pixel), el chat (ya es la
- * conversación), los onboardings y lo que no es un workspace. Nada de duplicar la entrada.
+ * conversación), «Mi agenda» (tiene su propio «Reorganizar con Pixel», Prompt 20), los onboardings y
+ * lo que no es un workspace. Nada de duplicar la entrada.
  */
 export function dockVisibleAt(pathname: string): boolean {
   const segments = pathname.split('/').filter(Boolean);
   if (segments[0] !== 'workspace' && segments[0] !== 'company') return false;
   if (segments.length <= 2) return false;
   const rest = segments.slice(2).join('/');
-  return !/^(?:chat|onboarding|personal\/onboarding)(?:\/|$)/.test(rest);
+  return !/^(?:chat|agenda|onboarding|personal\/onboarding)(?:\/|$)/.test(rest);
 }

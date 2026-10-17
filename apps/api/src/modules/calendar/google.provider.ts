@@ -21,7 +21,13 @@ import {
  */
 
 const API = 'https://www.googleapis.com/calendar/v3';
-const PRIVATE = { managed: 'pixelManaged', workspace: 'pixelWorkspace', action: 'pixelAction' };
+const PRIVATE = {
+  managed: 'pixelManaged',
+  workspace: 'pixelWorkspace',
+  action: 'pixelAction',
+  /** Prompt 20: referencia opaca de la tarea (nunca su título ni su id de Mongo). */
+  task: 'pixelTask',
+};
 
 interface GoogleEvent {
   id: string;
@@ -81,12 +87,15 @@ function toSummary(event: GoogleEvent): CalendarEventSummary {
     start: iso(event.start),
     end: iso(event.end),
     allDay,
+    startDate: allDay ? (event.start?.date ?? null) : null,
+    endDate: allDay ? (event.end?.date ?? null) : null,
     cancelled: event.status === 'cancelled',
     transparent: event.transparency === 'transparent',
     pixel: {
       managed: priv[PRIVATE.managed] === 'true',
       workspace: priv[PRIVATE.workspace] ?? null,
       action: priv[PRIVATE.action] ?? null,
+      task: priv[PRIVATE.task] ?? null,
     },
   };
 }
@@ -167,11 +176,19 @@ export function createGoogleCalendarProvider(config: GoogleCalendarConfig): Goog
       });
       if (options.pixelManagedOnly)
         params.set('privateExtendedProperty', `${PRIVATE.managed}=true`);
-      const body = await call<{ items?: GoogleEvent[] }>(
-        accessToken,
-        `${calendarPath(calendarId)}/events?${params.toString()}`,
-      );
-      return (body.items ?? []).map(toSummary);
+      // Prompt 20: rangos largos (Próximos) pueden tener más de una página; como mucho 4 (1000
+      // eventos), sin bucles infinitos.
+      const events: GoogleEvent[] = [];
+      for (let page = 0; page < 4; page += 1) {
+        const body = await call<{ items?: GoogleEvent[]; nextPageToken?: string }>(
+          accessToken,
+          `${calendarPath(calendarId)}/events?${params.toString()}`,
+        );
+        events.push(...(body.items ?? []));
+        if (!body.nextPageToken) break;
+        params.set('pageToken', body.nextPageToken);
+      }
+      return events.map(toSummary);
     },
 
     async freeBusy(accessToken, calendarId, range) {
@@ -207,6 +224,7 @@ export function createGoogleCalendarProvider(config: GoogleCalendarConfig): Goog
               [PRIVATE.managed]: 'true',
               [PRIVATE.workspace]: event.pixel.workspace,
               [PRIVATE.action]: event.pixel.action,
+              ...(event.pixel.task ? { [PRIVATE.task]: event.pixel.task } : {}),
             },
           },
         }),

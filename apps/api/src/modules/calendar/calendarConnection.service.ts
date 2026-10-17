@@ -141,8 +141,9 @@ export type CallbackFailure =
   | 'unconfigured';
 
 /** Solo rutas internas de una lista cerrada (nunca una URL recibida). */
-const returnPath = (workspaceId: string, returnTo: 'home' | 'pixel') =>
-  returnTo === 'home' ? `/workspace/${workspaceId}` : `/workspace/${workspaceId}/pixel`;
+const RETURN_PATHS = { home: '', pixel: '/pixel', agenda: '/agenda' } as const;
+const returnPath = (workspaceId: string, returnTo: keyof typeof RETURN_PATHS) =>
+  `/workspace/${workspaceId}${RETURN_PATHS[returnTo]}`;
 
 const withResult = (path: string, result: 'connected' | CallbackFailure) =>
   `${path}?calendar=${result === 'connected' ? 'connected' : `error&reason=${result}`}`;
@@ -402,6 +403,17 @@ export async function openCalendarSession(
     getEvent: (id) => run((t) => provider.getEvent(t, calendarId, id)),
     patchEvent: (id, patch) => run((t) => provider.patchEvent(t, calendarId, id, patch)),
   };
+}
+
+/**
+ * Prompt 20: referencia opaca de una tarea de ESTE workspace en la marca privada de sus bloques. La
+ * incluye el workspace, así que la de otro Pixel nunca coincide; no revela el id ni el título.
+ */
+export function taskEventRef(workspace: WorkspaceDocument, taskId: string): string {
+  return createHash('sha256')
+    .update(`pixel-task:${workspace._id.toString()}:${taskId}`)
+    .digest('hex')
+    .slice(0, 32);
 }
 
 /** Referencia opaca del workspace para las propiedades privadas de los eventos de Pixel. */

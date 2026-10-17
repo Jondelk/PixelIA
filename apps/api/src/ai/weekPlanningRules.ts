@@ -43,8 +43,9 @@ const PLAN_VERB =
   /\b(?:organiza(?:me|r)?|planifica(?:me|r)?|planea(?:me|r)?|arma(?:me|r)?|distribuye(?:me)?|reparte(?:me)?|ordena(?:me|r)?|agenda(?:me|r)?|bloquea(?:me|r)?|reserva(?:me|r)?|programa(?:me|r)?|ayudame a (?:organizar|planificar|repartir))\b[\s\S]{0,40}\b(?:semana|proximos? (?:7|siete) dias|siguientes (?:7|siete) dias|horario|agenda)\b/;
 const SESSION_VERB =
   /\b(estudiar|estudio|repasar|practicar|entrenar|leer|escribir|trabajar en|preparar|hacer ejercicio|ir al gimnasio|meditar|avanzar en)\b/;
+// «una vez», «un bloque», «dos sesiones»… (singular incluido: el borrador de «Mi agenda» usa «una vez»).
 const COUNT_PHRASE =
-  /\b(\d{1,2}|una|un|dos|tres|cuatro|cinco|seis|siete)\s+(?:veces|sesiones|bloques|ratos|dias)\b/;
+  /\b(\d{1,2}|una|un|dos|tres|cuatro|cinco|seis|siete)\s+(?:veces|vez|sesiones|sesion|bloques|bloque|ratos|rato|dias)\b/;
 /** Contenido de marca/redes: eso es el Content Planner, no el calendario. */
 const CONTENT_WORDS =
   /\b(?:contenidos?|publicaciones?|posts?|reels?|stories|carrusel(?:es)?|piezas?|parrilla|redes sociales)\b/;
@@ -78,10 +79,23 @@ export function asksReplan(t: string): boolean {
   );
 }
 
+/**
+ * Prompt 20: «El jueves en la tarde no puedo», «Mañana no voy a poder»: liberar una franja (mover los
+ * bloques de Pixel que caen ahí). Solo si nombra un día; dentro de «organízame la semana» es un día a
+ * evitar del plan, no esto.
+ */
+const UNAVAILABLE =
+  /\bno (?:puedo|podre|voy a poder|estoy disponible|estare disponible|alcanzo a ir|tengo tiempo)\b/;
+
+export function asksFreeUp(t: string, today: PlanningWeekday = 'monday'): boolean {
+  return UNAVAILABLE.test(t) && dayOf(t, today) !== null;
+}
+
 /** ¿Qué intención de calendario pide la frase? (null = ninguna). */
 export function calendarIntentOf(t: string): 'plan_week' | 'replan_block' | null {
   if (asksReplan(t)) return 'replan_block';
   if (asksWeekPlan(t)) return 'plan_week';
+  if (asksFreeUp(t)) return 'replan_block';
   return null;
 }
 
@@ -345,6 +359,8 @@ export interface MoveRequest {
   time: string | null;
   /** Palabras del tema («cálculo»), para elegir entre varios bloques. */
   subject: string[];
+  /** Prompt 20: una franja en la que el usuario NO puede («el jueves en la tarde no puedo»). */
+  unavailable: { day: PlanningWeekday; part: 'morning' | 'afternoon' | 'evening' | null } | null;
 }
 
 /** «Ese bloque del martes pásalo al jueves», «No pude estudiar cálculo hoy», «Muévelo al jueves a las 6». */
@@ -374,5 +390,19 @@ export function interpretMove(request: string, today: PlanningWeekday): MoveRequ
         ),
     ),
   ];
-  return { from: from === to ? (to ? null : from) : from, to, time: timeOf(t), subject };
+  const unavailableDay = UNAVAILABLE.test(t) ? dayOf(t, today) : null;
+  const part = /\b(?:en|por|de) la manana\b|\ben las mananas\b/.test(t)
+    ? 'morning'
+    : /\b(?:en|por|de) la tarde\b/.test(t)
+      ? 'afternoon'
+      : /\b(?:en|por|de) la noche\b/.test(t)
+        ? 'evening'
+        : null;
+  return {
+    from: from === to ? (to ? null : from) : from,
+    to,
+    time: timeOf(t),
+    subject,
+    unavailable: unavailableDay && !to ? { day: unavailableDay, part } : null,
+  };
 }

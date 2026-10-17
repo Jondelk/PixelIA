@@ -45,6 +45,7 @@ export function DailyDirectorView({
   onRegenerate,
   onRetry,
   timezonePrompt,
+  agendaSlot,
   now = new Date(),
 }: {
   base: string;
@@ -54,6 +55,8 @@ export function DailyDirectorView({
   onRegenerate: () => void;
   onRetry: () => void;
   timezonePrompt?: ReactNode;
+  /** Prompt 20: «Próximos hoy» de «Mi agenda» (solo si hay datos). */
+  agendaSlot?: ReactNode;
   now?: Date;
 }) {
   const generating = state.status === 'generating';
@@ -122,7 +125,14 @@ export function DailyDirectorView({
     </section>
   );
 
-  if (!data || state.status === 'error') return <div className="mb-12">{hero}</div>;
+  if (!data || state.status === 'error') {
+    return (
+      <div className="mb-12 space-y-10">
+        {hero}
+        {agendaSlot}
+      </div>
+    );
+  }
   const { brief, stale } = data;
   const noWork = brief.generation.fallbackReason === 'no_work';
 
@@ -144,6 +154,8 @@ export function DailyDirectorView({
       )}
 
       {timezonePrompt}
+
+      {agendaSlot}
 
       {noWork && (
         <Link to={`${base}/tasks`} className={buttonClasses('primary')}>

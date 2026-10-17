@@ -22,7 +22,7 @@ import { errorCodeOf } from '../actions/action.executor.js';
 import type { CalendarEventView } from '../actions/tools/googleCalendar.tool.js';
 import type { PixelToolRegistry } from '../actions/toolRegistry.js';
 import type { WorkspaceDocument } from '../workspaces/workspace.model.js';
-import { horizonRange, isValidTimezone, toSpan, type Span } from './availability.js';
+import { horizonRange, isValidTimezone, overlaps, toSpan, type Span } from './availability.js';
 import { connectionView, type CalendarDeps } from './calendarConnection.service.js';
 import type { TimeInterval } from './calendar.types.js';
 import {
@@ -52,6 +52,8 @@ export interface CalendarPlanningDeps {
 export interface CalendarPlanningState {
   timezone: string | null;
   interpretation: GeneratedWeekPlanning | null;
+  /** Prompt 20: referencia opaca de la tarea que se organiza (desde «Mi agenda»), si la hay. */
+  taskRef?: string | null;
 }
 
 export interface CalendarPlanStep {
@@ -119,11 +121,15 @@ export async function planningTimezone(
 const TIMEZONE_QUESTION =
   '¿En qué zona horaria estás? Por ejemplo: «America/Bogota» o «Europe/Madrid».';
 
-/** Una lectura del calendario por la herramienta (lecturas: sin confirmación, sin escribir nada). */
-async function readCalendar<O>(
+/**
+ * Una lectura del calendario por la herramienta (lecturas: sin confirmación, sin escribir nada). La
+ * comparten el planificador y «Mi agenda» (Prompt 20): un solo camino de lectura.
+ */
+export async function readCalendar<O>(
   workspace: WorkspaceDocument,
   capabilityKey: 'find_availability' | 'list_events',
-  range: TimeInterval,
+  /** `pixelOnly` (solo list_events): solo los bloques de Pixel (Prompt 20). */
+  range: TimeInterval & { pixelOnly?: boolean },
   deps: CalendarPlanningDeps,
 ): Promise<O> {
   const resolved = await deps.tools.resolve(TOOL, capabilityKey, workspace);
@@ -242,14 +248,25 @@ function toView(plan: WeekPlan, checkedAt: Date): WeekPlanView {
 const blocksWord = (count: number) => (count === 1 ? 'bloque' : 'bloques');
 
 /** Paso único: cada bloque será UNA acción create_event (con su propio resultado verificado). */
-function scheduleStep(blocks: PlannedBlock[], timezone: string): CalendarPlanStep {
+function scheduleStep(
+  blocks: PlannedBlock[],
+  timezone: string,
+  taskRef: string | null = null,
+): CalendarPlanStep {
   return {
     id: 'step_1',
     type: 'schedule_blocks',
     title: `Guardar ${blocks.length} ${blocksWord(blocks.length)} en Google Calendar`,
     params: {
       blocks: blocks.map((block) => ({
-        input: { summary: block.title, start: block.start, end: block.end, timezone },
+        input: {
+          summary: block.title,
+          start: block.start,
+          end: block.end,
+          timezone,
+          // Prompt 20: cada bloque queda vinculado a la tarea (si se organizó para una).
+          ...(taskRef ? { taskRef } : {}),
+        },
         label: `${block.dayLabel}, ${block.timeLabel}`,
       })),
     },
@@ -284,7 +301,7 @@ function weekProposal(
       ...plan.unscheduledItems.map((item) => `Sin hueco: ${item.title}. ${item.reason}`),
     ],
     creates: [`${blocks.length} ${blocksWord(blocks.length)} en Google Calendar`],
-    steps: [scheduleStep(blocks, plan.timezone)],
+    steps: [scheduleStep(blocks, plan.timezone, planning.taskRef ?? null)],
     weekPlan: toView(plan, checkedAt),
     planning,
   };
@@ -297,6 +314,8 @@ export interface WeekPlanInput {
   message: string;
   clientTimezone: string | null;
   previous: { planning: CalendarPlanningState | null; weekPlan: WeekPlanView | null } | null;
+  /** Prompt 20: la tarea en contexto (referencia opaca), validada por PixelCommand. */
+  taskRef?: string | null;
 }
 
 /** «Organízame la semana…» y sus ajustes. */
@@ -321,13 +340,25 @@ export async function planWeekCommand(
     };
   }
 
+  // Prompt 20: la tarea en contexto (o la del plan que se ajusta) vincula todos sus bloques.
+  const taskRef = input.taskRef ?? input.previous?.planning?.taskRef ?? null;
+
   // «Ese bloque del martes pásalo al jueves»: ajuste de UN bloque del plan propuesto.
   const previousPlan = input.previous?.weekPlan ?? null;
   const previousInterpretation = input.previous?.planning?.interpretation ?? null;
   if (previousPlan && previousInterpretation) {
     const move = interpretMove(input.message, todayOf(now, timezone));
     if (move.to || (move.time && move.from)) {
-      return moveInPlan(workspace, previousPlan, previousInterpretation, move, timezone, now, deps);
+      return moveInPlan(
+        workspace,
+        previousPlan,
+        previousInterpretation,
+        move,
+        timezone,
+        now,
+        deps,
+        taskRef,
+      );
     }
   }
 
@@ -338,7 +369,7 @@ export async function planWeekCommand(
     previousInterpretation,
     deps,
   );
-  const planning = { timezone, interpretation };
+  const planning = { timezone, interpretation, taskRef };
   if (!interpretation.sessions.length) {
     return {
       kind: 'question',
@@ -383,8 +414,9 @@ async function moveInPlan(
   timezone: string,
   now: Date,
   deps: CalendarPlanningDeps,
+  taskRef: string | null,
 ): Promise<CalendarOutcome> {
-  const planning = { timezone, interpretation };
+  const planning = { timezone, interpretation, taskRef };
   const weekdayOf = (iso: string) =>
     PLANNING_WEEKDAYS[DateTime.fromISO(iso, { zone: timezone }).weekday - 1]!;
   const candidates = previous.blocks.filter(
@@ -480,6 +512,7 @@ export async function replanCommand(
   }
   const local = DateTime.fromJSDate(now, { zone: timezone });
   const move = interpretMove(input.request, todayOf(now, timezone));
+  if (move.unavailable) return freeUpCommand(workspace, move.unavailable, now, timezone, deps);
   const search: TimeInterval = {
     start: local
       .minus({ days: move.from ? 6 : 0 })
@@ -599,3 +632,137 @@ export async function replanCommand(
     planning,
   };
 }
+
+const PART_WINDOWS = {
+  morning: { from: 6, to: 12, label: 'por la mañana' },
+  afternoon: { from: 12, to: 19, label: 'por la tarde' },
+  evening: { from: 19, to: 24, label: 'por la noche' },
+} as const;
+
+/**
+ * Prompt 20 («Reorganizar con Pixel» desde Mi agenda): «el jueves en la tarde no puedo». Mueve SOLO
+ * los bloques de Pixel que caen en esa franja, cada uno al primer hueco libre (fuera de la franja,
+ * sin solapar nada); los compromisos del usuario no se tocan. Una propuesta con un paso move_block
+ * por bloque y UNA confirmación.
+ */
+async function freeUpCommand(
+  workspace: WorkspaceDocument,
+  unavailable: NonNullable<ReturnType<typeof interpretMove>['unavailable']>,
+  now: Date,
+  timezone: string,
+  deps: CalendarPlanningDeps,
+): Promise<CalendarOutcome> {
+  const local = DateTime.fromJSDate(now, { zone: timezone });
+  const weekday = PLANNING_WEEKDAYS.indexOf(unavailable.day) + 1;
+  let day = local.startOf('day');
+  while (day.weekday !== weekday) day = day.plus({ days: 1 });
+  const part = unavailable.part ? PART_WINDOWS[unavailable.part] : null;
+  const blocked: Span = {
+    start: day.set({ hour: part?.from ?? 0 }).toMillis(),
+    end: (part && part.to < 24 ? day.set({ hour: part.to }) : day.plus({ days: 1 })).toMillis(),
+  };
+  const where = `el ${weekdayName(unavailable.day)}${part ? ` ${part.label}` : ''}`;
+  const search: TimeInterval = {
+    start: local.startOf('day').toUTC().toISO()!,
+    end: local.plus({ days: 9 }).endOf('day').toUTC().toISO()!,
+  };
+  let events: CalendarEventView[];
+  try {
+    events = (
+      await readCalendar<{ events: CalendarEventView[] }>(workspace, 'list_events', search, deps)
+    ).events;
+  } catch (err) {
+    return readFailure(err, deps, workspace);
+  }
+  const affected = events.filter(
+    (event) =>
+      event.pixelOwned &&
+      event.busy &&
+      overlaps(toSpan(event), blocked) &&
+      Date.parse(event.end) > now.getTime(),
+  );
+  if (!affected.length) {
+    return {
+      kind: 'reply',
+      reply: `No tienes bloques organizados por Pixel ${where}. Tus compromisos no los muevo; si quieres, dime qué cambiar.`,
+    };
+  }
+  // Ocupado: los demás eventos, la franja que no puede y lo que se va recolocando.
+  const busy: Span[] = [
+    ...events.filter((event) => event.busy && !affected.includes(event)).map(toSpan),
+    blocked,
+  ];
+  const steps: CalendarPlanStep[] = [];
+  const blocks: PlannedBlock[] = [];
+  const unplaced: string[] = [];
+  for (const event of affected) {
+    const found = findMoveSlot({
+      block: toSpan(event),
+      target: { weekday: null, time: null },
+      now,
+      timezone,
+      busy,
+    });
+    if (!('span' in found)) {
+      unplaced.push(event.title);
+      continue;
+    }
+    busy.push(found.span);
+    const to = blockLabels(found.span, timezone);
+    const input = {
+      eventId: event.id,
+      start: new Date(found.span.start).toISOString(),
+      end: new Date(found.span.end).toISOString(),
+      timezone,
+    };
+    steps.push({
+      id: `step_${steps.length + 1}`,
+      type: 'move_block',
+      title: `Mover «${event.title}» en Google Calendar`,
+      params: { input, title: event.title, label: `${to.dayLabel}, ${to.timeLabel}` },
+    });
+    blocks.push({
+      id: `block_${blocks.length + 1}`,
+      title: event.title,
+      start: input.start,
+      end: input.end,
+      ...to,
+      estimated: false,
+      reason: `Antes: ${blockLabels(toSpan(event), timezone).timeLabel} ${where}`,
+    });
+  }
+  if (!steps.length) {
+    return {
+      kind: 'reply',
+      reply: `No encontré huecos libres para mover ${affected.length === 1 ? 'el bloque' : 'los bloques'} de ${where}. No cambié nada en tu Google Calendar.`,
+    };
+  }
+  const summary = `Propongo mover ${steps.length === 1 ? 'el bloque' : `${steps.length} bloques`} que Pixel organizó ${where}. No cambio nada hasta que lo apruebes.`;
+  return {
+    kind: 'proposal',
+    summary,
+    understood: [
+      `No puedes ${where}: solo muevo los bloques que Pixel organizó; tus compromisos se quedan como están.`,
+      ...unplaced.map((title) => `Sin hueco para «${title}»: se queda donde está.`),
+    ],
+    proposal: blocks.map((block) => `${block.dayLabel} · ${block.timeLabel} · ${block.title}`),
+    creates: [`${plural(steps.length, 'cambio')} en Google Calendar`],
+    steps,
+    weekPlan: {
+      timezone,
+      rangeStart: search.start,
+      rangeEnd: search.end,
+      availabilityCheckedAt: now.toISOString(),
+      blocks,
+      unscheduled: unplaced.map((title) => ({
+        title,
+        reason: 'No encontré otro hueco libre en los próximos días.',
+      })),
+      assumptions: [],
+      fixedCommitments: events.filter((other) => !other.pixelOwned && other.busy).length,
+    },
+    planning: { timezone, interpretation: null },
+  };
+}
+
+const plural = (count: number, word: string) => `${count} ${count === 1 ? word : `${word}s`}`;

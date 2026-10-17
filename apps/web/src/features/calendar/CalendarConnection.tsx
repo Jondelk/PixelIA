@@ -28,7 +28,7 @@ export function CalendarConnectButton({
 }: {
   workspaceId: string;
   status: CalendarConnectionStatus;
-  returnTo: 'home' | 'pixel';
+  returnTo: 'home' | 'pixel' | 'agenda';
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -4,6 +4,8 @@ import { workspaceApiBase } from '../../lib/apiPaths';
 import { useResource } from '../../lib/useResource';
 import { getAvatar } from '../pixel/avatarApi';
 import { useWorkspace } from '../workspaces/workspaceContext';
+import { workspaceSupportsFeature } from '@pixel/contracts';
+import { AgendaTodayPreview } from '../agenda/AgendaTodayPreview';
 import { updateWorkspace } from '../workspaces/workspacesApi';
 import { generateDailyBrief, getDailyBrief } from './dailyBriefApi';
 import { browserTimezone, isNotGenerated } from './dailyLogic';
@@ -77,6 +79,11 @@ export function DailyDirector({
       firstName={firstName}
       state={state}
       avatar={avatarState.state.status === 'success' ? avatarState.state.data.avatar : null}
+      agendaSlot={
+        workspaceSupportsFeature(overview.workspace.type, 'agenda') ? (
+          <AgendaTodayPreview workspaceId={workspaceId} base={base} />
+        ) : null
+      }
       onRegenerate={generate}
       onRetry={() => {
         setFailure(null);

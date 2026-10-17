@@ -375,3 +375,20 @@ relevantes, acotadas).
 - **PixelCommand** añade `weekPlan` (vista de la semana propuesta), `planning` (zona y lo entendido)
   y `connect`. El recurso `calendar_event` admite ids externos (`PixelCreatedResource.id` = texto).
 - No se guardan eventos del calendario en Mongo.
+
+## AgendaItem (Prompt 20, sin persistencia)
+
+**AgendaItem** es un modelo de **lectura**: no tiene colección y no se guarda nada de Google. Campos:
+
+- `id` (opaco: `evt_…`, `task_…` o `project_…`);
+- `kind` (`commitment` | `pixel_block` | `pending` | `deadline`) y `kindLabel`;
+- `title`, `start` y `end` (null en todo el día y en fechas límite);
+- `date`, `endDate` y `dates` (días locales);
+- `allDay` y `multiDay`;
+- `timeLabel`, `dayLabel`, `status` y `statusLabel`;
+- `pixelManaged` y `movableByPixel`;
+- `deadline`;
+- `link` (tarea o proyecto del workspace);
+- `group` (Próximos).
+
+Lo construye `PersonalAgendaService` en cada petición.

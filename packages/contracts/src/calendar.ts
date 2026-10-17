@@ -47,7 +47,7 @@ export type CalendarConnectionResponse = z.infer<typeof CalendarConnectionRespon
  * el servidor construye la ruta de vuelta del mismo workspace.
  */
 export const StartCalendarConnectSchema = z
-  .object({ returnTo: z.enum(['home', 'pixel']).default('pixel') })
+  .object({ returnTo: z.enum(['home', 'pixel', 'agenda']).default('pixel') })
   .strict();
 export type StartCalendarConnectInput = z.input<typeof StartCalendarConnectSchema>;
 

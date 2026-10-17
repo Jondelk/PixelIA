@@ -59,14 +59,21 @@ describe('rutas de workspace', () => {
     );
   });
 
-  it('un Pixel Personal: Inicio · Trabajo (Proyectos, Tareas, Contenido) · Pixel', () => {
+  it('un Pixel Personal: Inicio · Mi agenda · Trabajo (Proyectos, Tareas, Contenido) · Pixel', () => {
     expect(
       workspaceNav('w1', 'personal').map((group) => [
         group.label ?? null,
         group.items.map((item) => [item.label, item.to]),
       ]),
     ).toEqual([
-      [null, [['Inicio', '/workspace/w1']]],
+      [
+        null,
+        [
+          ['Inicio', '/workspace/w1'],
+          // Prompt 20: «Mi agenda» justo debajo de Inicio.
+          ['Mi agenda', '/workspace/w1/agenda'],
+        ],
+      ],
       [
         'Trabajo',
         [

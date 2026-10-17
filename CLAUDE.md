@@ -55,6 +55,11 @@ plan determinista → propuesta → «Guardar semana» → `create_event` verifi
 mueve un bloque de Pixel. La primera herramienta externa (`google.calendar`) y opcional: sin
 configuración, Pixel lo dice y todo lo demás funciona.
 
+**Mi agenda** (Prompt 20, `docs/PERSONAL-AGENDA.md`), solo Personal, debajo de Inicio: Hoy · Semana ·
+Mes · Próximos con Compromisos (Google), bloques Organizados por Pixel y lo que está Por organizar
+(tareas y fechas límite). Solo lectura (`GET …/agenda`, nada de Google en Mongo); cambiar es hablar
+con Pixel (propuesta → confirmación), nunca arrastrar ni «Nuevo evento».
+
 El avatar **nunca** es una mascota aleatoria: es una consecuencia trazable del ADN. Ejemplos: café
 artesanal → grano de café cálido; startup → forma geométrica precisa; constructora → personaje
 estructural.
@@ -69,8 +74,8 @@ Referencia (leer lo relevante antes de trabajar): `docs/WORKSPACES.md`, `docs/PE
 `docs/WORKSPACE-MIGRATION.md`, `docs/OPERATIONS.md`, `docs/ENTERPRISE-OPERATIONS.md`,
 `docs/CAMPAIGNS.md`, `docs/CONTENT-PLANNER.md`, `docs/ENTERPRISE-CONTENT.md`, `docs/DAILY-DIRECTOR.md`,
 `docs/PIXEL-COMMAND.md`, `docs/BRAND-GUARDIAN.md`, `docs/CREATIVE-MEMORY.md`, `docs/PIXEL-PRESENCE.md`,
-`docs/PIXEL-ACTIONS.md`, `docs/PIXEL-TOOLS.md`, `docs/GOOGLE-CALENDAR.md`, `docs/PERSONAL-WEEK-PLANNER.md` y
-`docs/AVATAR-ASSET-CONTRACT.md` describen el diseño vigente; `docs/MVP.md`,
+`docs/PIXEL-ACTIONS.md`, `docs/PIXEL-TOOLS.md`, `docs/GOOGLE-CALENDAR.md`, `docs/PERSONAL-WEEK-PLANNER.md`,
+`docs/PERSONAL-AGENDA.md` y `docs/AVATAR-ASSET-CONTRACT.md` describen el diseño vigente; `docs/MVP.md`,
 `docs/ARCHITECTURE.md`, `docs/ENTITIES.md` y `docs/BACKLOG.md` tienen deriva importante (detalle en
 `PIXEL_ESTADO.md` §12). Ante un conflicto, manda el código.
 
@@ -227,7 +232,8 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
   `*.service`, `*.routes`), registrado solo en `modules/index.ts`: `auth`, `health`, `workspaces`,
   `companies`, `brand-dna`, `personal`, `avatars`, `conversations`, `creative-memory`, `operations`,
   `content-plans`, `daily-director`, `campaigns`, `pixel-command`, `guardian`, `creative-memory`,
-  `calendar` (Prompt 19: solo el ciclo de vida de la conexión, el planificador y el adaptador de Google).
+  `calendar` (Prompt 19: el ciclo de vida de la conexión, el planificador y el adaptador de Google;
+  Prompt 20: «Mi agenda», `agenda.service` + `GET /agenda`, solo lectura).
   `actions` (Prompt 18) no tiene rutas: herramientas, política, snapshot y ejecutor que usa
   PixelCommand; las herramientas viven en `actions/tools/` y se registran en
   `createDefaultToolRegistry()`. Errores con `AppError` o `lib/errors.ts` (el `errorHandler`
@@ -241,7 +247,7 @@ User → Workspace ─┬─ enterprise → Company → BrandDNA
   `companyApiBase` / `workspaceApiBase`, `lib/apiPaths.ts`). La entrada de cada Pixel es
   `/workspace/:workspaceId/...` y **toda funcionalidad nueva es workspace-first**, también en
   Enterprise: Inicio, `campaigns`, `projects`, `tasks`, `content`, `content-planner`,
-  `personal/onboarding`, `personal/dna`, `pixel`, `chat`, `guardian` (Enterprise), `memory`. Las Campañas, el Plan de contenido y las
+  `personal/onboarding`, `personal/dna`, `pixel`, `chat`, `guardian` (Enterprise), `memory`, `agenda` (Personal). Las Campañas, el Plan de contenido y las
   Operations Enterprise viven en `/workspace/:workspaceId/{campaigns,content-planner,projects,tasks,content}`
   (`enterpriseStaysInWorkspace`); las pantallas
   de marca anteriores siguen en `/company/:companyId/...` (el workspace enterprise redirige allí)
