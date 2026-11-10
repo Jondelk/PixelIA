@@ -1,0 +1,69 @@
+import { randomUUID } from 'node:crypto';
+import mongoose from 'mongoose';
+import request from 'supertest';
+import { afterAll, afterEach, beforeAll, inject } from 'vitest';
+import type { AIProvider } from '../../src/ai/index.js';
+import { DemoProvider } from '../../src/ai/providers/demo.provider.js';
+import { createApp, type AppOptions } from '../../src/app.js';
+import { PixelToolRegistry } from '../../src/modules/actions/toolRegistry.js';
+import { loadEnv } from '../../src/config/env.js';
+import { createLogger } from '../../src/lib/logger.js';
+
+export const testEnv = loadEnv({ NODE_ENV: 'test', BCRYPT_ROUNDS: '4', LOG_LEVEL: 'silent' });
+
+export const silentLogger = createLogger({ level: 'silent', format: 'json' });
+
+/**
+ * Segundo argumento: las herramientas de Pixel (Prompt 18) para simular fallos, o
+ * `{ tools, avatarModels }` (producción 3D, desactivada si se omite).
+ * `calendar`: Google Calendar falso (Prompt 19); sin él, la herramienta queda «sin configurar».
+ */
+export function buildTestApp(
+  ai: AIProvider = new DemoProvider(),
+  options?: PixelToolRegistry | Pick<AppOptions, 'avatarModels' | 'tools'>,
+  calendar?: AppOptions['calendar'],
+) {
+  return createApp({
+    env: testEnv,
+    logger: silentLogger,
+    getDatabaseStatus: () => 'connected',
+    ai,
+    ...(options instanceof PixelToolRegistry ? { tools: options } : (options ?? {})),
+    ...(calendar ? { calendar } : {}),
+  });
+}
+
+/** Conecta Mongoose a una base de datos aislada para el archivo de test y la limpia entre tests. */
+export function useTestDatabase() {
+  beforeAll(async () => {
+    await mongoose.connect(inject('mongoUri'), {
+      dbName: `pixel_test_${randomUUID().slice(0, 8)}`,
+    });
+    await mongoose.connection.syncIndexes();
+  });
+
+  afterEach(async () => {
+    await Promise.all(
+      Object.values(mongoose.connection.collections).map((collection) => collection.deleteMany({})),
+    );
+  });
+
+  afterAll(async () => {
+    await mongoose.connection.dropDatabase();
+    await mongoose.disconnect();
+  });
+}
+
+let counter = 0;
+
+/** Registra un usuario y devuelve un agente de supertest con su cookie de sesión. */
+export async function registerUser(app: ReturnType<typeof buildTestApp>, name = 'Usuario') {
+  counter += 1;
+  const agent = request.agent(app);
+  const email = `user${counter}-${randomUUID().slice(0, 6)}@pixel.test`;
+  const res = await agent
+    .post('/api/auth/register')
+    .send({ name, email, password: 'contraseña-segura' })
+    .expect(201);
+  return { agent, user: res.body.user as { id: string; email: string; name: string } };
+}

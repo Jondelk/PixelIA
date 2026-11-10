@@ -1,0 +1,16 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+
+# Archivos generados por la API (modelos 3D y renders)
+apps/api/storage/
+__pycache__/
+
+# Video de referencia SOLO para pruebas locales de la bienvenida (no es un asset de PIXELES).
+apps/web/public/experience/pixel-intro.local.mp4

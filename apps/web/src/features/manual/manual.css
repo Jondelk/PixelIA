@@ -1,0 +1,537 @@
+/*
+ * Manual de marca: documento A4 apaisado.
+ *
+ * - Es un documento de la EMPRESA, no de la interfaz de Pixel: usa sus colores y su tipografía
+ *   (variables --m-* definidas en línea a partir del BrandDNA) sobre papel blanco y tinta.
+ * - Todas las medidas internas están en cqw (ancho de la página): en pantalla la página escala con
+ *   su columna y al imprimir mide exactamente 297 × 210 mm.
+ * - "Descargar PDF" usa la impresión del navegador: se oculta la app (#root) y se imprime la copia
+ *   del documento montada en <body> (.manual-print).
+ */
+
+.manual-doc {
+  --m-paper: var(--color-paper);
+  --m-ink: var(--color-ink);
+  --m-ink-soft: color-mix(in srgb, var(--m-ink) 68%, var(--m-paper));
+  --m-ink-faint: color-mix(in srgb, var(--m-ink) 45%, var(--m-paper));
+  --m-rule: color-mix(in srgb, var(--m-ink) 12%, var(--m-paper));
+  --m-tint: color-mix(in srgb, var(--m-ink) 4%, var(--m-paper));
+  display: grid;
+  gap: 24px;
+  color: var(--m-ink);
+  font-family: var(--m-text), ui-sans-serif, system-ui, sans-serif;
+}
+
+.mpage {
+  box-sizing: border-box;
+  position: relative;
+  aspect-ratio: 297 / 210;
+  container-type: inline-size;
+  overflow: hidden;
+  background: var(--m-paper);
+  color: var(--m-ink);
+  padding: 5.2cqw 6cqw 6.5cqw;
+  border-radius: 6px;
+  box-shadow: var(--shadow-overlay);
+  font-size: 1.36cqw;
+  line-height: 1.55;
+}
+
+.mpage * {
+  box-sizing: border-box;
+}
+
+.mpage--bleed {
+  padding: 0;
+}
+
+.mpage--color {
+  background: var(--m-primary);
+  color: var(--m-on-primary);
+}
+
+/* ---------- tipografía ---------- */
+
+.m-display {
+  font-family: var(--m-display), ui-serif, Georgia, serif;
+  font-weight: var(--m-display-weight, 700);
+  letter-spacing: -0.02em;
+  line-height: 1.04;
+}
+
+.m-eyebrow {
+  display: flex;
+  align-items: baseline;
+  gap: 1.2cqw;
+  font-size: 0.92cqw;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--m-ink-soft);
+}
+
+.m-eyebrow b {
+  color: var(--m-primary-text);
+  font-weight: 700;
+}
+
+.m-title {
+  margin: 1.4cqw 0 0;
+  font-size: 4.6cqw;
+}
+
+.m-lead {
+  margin: 1.8cqw 0 0;
+  max-width: 62cqw;
+  font-size: 1.9cqw;
+  line-height: 1.42;
+  color: var(--m-ink-soft);
+}
+
+.m-label {
+  margin: 0 0 0.8cqw;
+  font-size: 0.95cqw;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--m-ink-faint);
+}
+
+.m-body {
+  margin: 0;
+  color: var(--m-ink-soft);
+}
+
+.m-body + .m-body {
+  margin-top: 0.8cqw;
+}
+
+.m-quote {
+  margin: 0;
+  font-size: 2.6cqw;
+  line-height: 1.2;
+}
+
+.m-quote::before {
+  content: '“';
+  color: var(--m-accent-text);
+}
+
+.m-quote::after {
+  content: '”';
+  color: var(--m-accent-text);
+}
+
+/* ---------- maquetación ---------- */
+
+.m-grid {
+  display: grid;
+  gap: 2.6cqw;
+}
+
+.m-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.m-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.m-cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.m-split {
+  display: grid;
+  grid-template-columns: 38fr 62fr;
+  gap: 5cqw;
+  height: 100%;
+}
+
+.m-mt {
+  margin-top: 3.4cqw;
+}
+
+.m-mt-sm {
+  margin-top: 1.6cqw;
+}
+
+.m-card {
+  border-top: 0.25cqw solid var(--m-ink);
+  padding-top: 1.2cqw;
+}
+
+.m-card--accent {
+  border-top-color: var(--m-primary);
+}
+
+.m-card h3 {
+  margin: 0 0 0.6cqw;
+  font-size: 1.5cqw;
+}
+
+.m-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.m-list li {
+  position: relative;
+  padding-left: 1.4cqw;
+  color: var(--m-ink-soft);
+}
+
+.m-list li + li {
+  margin-top: 0.5cqw;
+}
+
+.m-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 0.5cqw;
+  height: 0.5cqw;
+  background: var(--m-primary);
+}
+
+.m-list--no li::before {
+  background: none;
+  border: 0.12cqw solid var(--m-ink-faint);
+}
+
+.m-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6cqw;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.m-chips li {
+  border: 0.1cqw solid var(--m-rule);
+  border-radius: 99cqw;
+  padding: 0.4cqw 1.2cqw;
+  font-size: 1.2cqw;
+}
+
+.m-chips--strong li {
+  border-color: transparent;
+  background: var(--m-primary);
+  color: var(--m-on-primary);
+  font-weight: 600;
+}
+
+.m-chips--avoid li {
+  color: var(--m-ink-faint);
+  text-decoration: line-through;
+}
+
+/* ---------- folio ---------- */
+
+.m-folio {
+  position: absolute;
+  left: 6cqw;
+  right: 6cqw;
+  bottom: 2.6cqw;
+  display: flex;
+  justify-content: space-between;
+  border-top: 0.1cqw solid var(--m-rule);
+  padding-top: 0.9cqw;
+  font-size: 0.82cqw;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--m-ink-faint);
+}
+
+.mpage--color .m-folio {
+  border-top-color: color-mix(in srgb, var(--m-on-primary) 25%, transparent);
+  color: color-mix(in srgb, var(--m-on-primary) 70%, transparent);
+}
+
+/* ---------- personaje ---------- */
+
+.m-figure {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 0.6cqw;
+  background: var(--m-tint);
+}
+
+.m-figure img,
+.m-figure svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.m-figure figcaption {
+  position: absolute;
+  left: 1cqw;
+  bottom: 0.8cqw;
+  font-size: 0.82cqw;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--m-ink-faint);
+}
+
+/* ---------- color ---------- */
+
+.m-swatch {
+  display: flex;
+  flex-direction: column;
+  min-height: 24cqw;
+  border-radius: 0.6cqw;
+  overflow: hidden;
+  border: 0.1cqw solid var(--m-rule);
+}
+
+.m-swatch__chip {
+  flex: 1;
+  padding: 1.4cqw;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.m-swatch__data {
+  padding: 1cqw 1.4cqw 1.2cqw;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2cqw 1cqw;
+  font-size: 0.98cqw;
+  font-variant-numeric: tabular-nums;
+}
+
+.m-swatch__data dt {
+  color: var(--m-ink-faint);
+}
+
+.m-swatch__data dd {
+  margin: 0;
+}
+
+.m-share {
+  display: flex;
+  height: 2.2cqw;
+  border-radius: 0.4cqw;
+  overflow: hidden;
+}
+
+.m-grade {
+  display: inline-block;
+  min-width: 4.4cqw;
+  border-radius: 0.3cqw;
+  padding: 0 0.5cqw;
+  font-size: 0.86cqw;
+  font-weight: 600;
+  text-align: center;
+  background: var(--m-tint);
+}
+
+/* ---------- medidores ---------- */
+
+.m-meter {
+  display: grid;
+  grid-template-columns: 9cqw 1fr 9cqw;
+  align-items: center;
+  gap: 1cqw;
+  font-size: 1cqw;
+  color: var(--m-ink-soft);
+}
+
+.m-meter + .m-meter {
+  margin-top: 1cqw;
+}
+
+.m-meter__track {
+  position: relative;
+  height: 0.5cqw;
+  background: var(--m-rule);
+}
+
+.m-meter__dot {
+  position: absolute;
+  top: 50%;
+  width: 1.4cqw;
+  height: 1.4cqw;
+  border-radius: 50%;
+  background: var(--m-primary);
+  transform: translate(-50%, -50%);
+}
+
+.m-meter span:last-child {
+  text-align: right;
+}
+
+.m-steps {
+  display: flex;
+  gap: 0.4cqw;
+}
+
+.m-steps i {
+  width: 2.4cqw;
+  height: 0.6cqw;
+  background: var(--m-rule);
+}
+
+.m-steps i.on {
+  background: var(--m-primary);
+}
+
+/* ---------- usos ---------- */
+
+.m-use {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 0.6cqw;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.m-use > img,
+.m-use > svg {
+  height: 82%;
+  width: auto;
+  max-width: 82%;
+  object-fit: contain;
+}
+
+.m-use__tag {
+  position: absolute;
+  top: 0.8cqw;
+  left: 0.8cqw;
+  display: flex;
+  align-items: center;
+  gap: 0.5cqw;
+  border-radius: 99cqw;
+  background: var(--m-paper);
+  color: var(--m-ink);
+  padding: 0.2cqw 0.9cqw 0.2cqw 0.4cqw;
+  font-size: 0.86cqw;
+  font-weight: 600;
+}
+
+.m-use__tag i {
+  display: grid;
+  place-items: center;
+  width: 1.3cqw;
+  height: 1.3cqw;
+  border-radius: 50%;
+  font-style: normal;
+  font-size: 0.8cqw;
+  color: var(--m-paper);
+  background: var(--m-ink);
+}
+
+.m-use--wrong .m-use__tag i {
+  background: transparent;
+  color: var(--m-ink);
+  border: 0.12cqw solid var(--m-ink);
+}
+
+.m-use--wrong::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top right,
+    transparent calc(50% - 0.08cqw),
+    color-mix(in srgb, var(--m-ink) 55%, transparent) 50%,
+    transparent calc(50% + 0.08cqw)
+  );
+}
+
+.m-use p {
+  position: absolute;
+  left: 0.9cqw;
+  right: 0.9cqw;
+  bottom: 0.7cqw;
+  margin: 0;
+  font-size: 0.9cqw;
+  line-height: 1.35;
+}
+
+/* ---------- aplicaciones ---------- */
+
+.m-card-mock {
+  aspect-ratio: 85 / 55;
+  border-radius: 0.5cqw;
+  box-shadow: 0 1.2cqw 2.4cqw -1.4cqw color-mix(in srgb, var(--m-ink) 35%, transparent);
+  overflow: hidden;
+  position: relative;
+}
+
+.m-post-mock {
+  aspect-ratio: 1;
+  border-radius: 0.5cqw;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 1.2cqw 2.4cqw -1.4cqw color-mix(in srgb, var(--m-ink) 35%, transparent);
+}
+
+/* ---------- impresión ---------- */
+
+.manual-print {
+  display: none;
+}
+
+@page {
+  size: A4 landscape;
+  margin: 0;
+}
+
+@media print {
+  html,
+  body {
+    background: var(--color-paper) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #root {
+    display: none !important;
+  }
+
+  .manual-print {
+    display: block !important;
+  }
+
+  .manual-print .manual-doc {
+    display: block;
+  }
+
+  .manual-print .mpage {
+    width: 297mm;
+    height: 210mm;
+    aspect-ratio: auto;
+    border-radius: 0;
+    box-shadow: none;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .manual-print * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+/* Respaldo 2D del personaje (sin renders de estudio) dentro de las piezas de uso. */
+.m-use > div {
+  width: 82%;
+  height: 82%;
+}
+
+/* Recorte a N líneas (el número va en línea con WebkitLineClamp). */
+.m-clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
