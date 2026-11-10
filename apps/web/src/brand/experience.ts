@@ -67,19 +67,42 @@ export const experienceImages: Record<
 /**
  * Video de fondo de la bienvenida.
  *
- * PENDIENTE: el video recibido (`pixel-intro.mp4`) es un teaser de otro estudio —muestra su logo,
- * "COMING SOON" y una URL de YouTube—, así que se trató como referencia y NO se incluye. Para activar
- * el definitivo: copiarlo a `apps/web/public/experience/` y poner aquí su ruta en `src` (MP4 H.264;
- * opcionalmente añadir una versión WebM en `alternatives`). Sin `src`, la bienvenida muestra el poster.
+ * PENDIENTE: el video recibido (`pixel-intro.mp4`) es un teaser de otro estudio (CROSSMIND Studio:
+ * muestra su logo, "COMING SOON" y una URL de YouTube), así que se trató como referencia y NO se
+ * incluye. No hay ningún MP4/WebM propio de PIXELES en el repositorio.
+ *
+ * Resolución:
+ * 1. `VITE_PIXEL_INTRO_VIDEO` (solo para probar en LOCAL, p. ej. en `apps/web/.env.local`, que Git
+ *    ignora): una ruta interna como `/experience/pixel-intro.local.mp4`. Ese archivo también está
+ *    ignorado por Git: nunca es un asset de PIXELES.
+ * 2. Si no, la ruta oficial y futura: `apps/web/public/experience/pixel-intro.mp4` (MP4 H.264).
+ * 3. Si el archivo no existe o falla al cargar, la bienvenida muestra el poster (`BackgroundVideo`
+ *    retira el video) y «Entrar a Pixel» sigue disponible.
  */
+export const INTRO_VIDEO_PATH = '/experience/pixel-intro.mp4';
+
+/**
+ * Ruta del video: la variable local si es una ruta interna a un .mp4 o .webm; si no, la oficial.
+ * Nunca una URL externa ni un protocolo (la variable no puede apuntar fuera de la app).
+ */
+export function resolveIntroVideoSrc(override: unknown): string {
+  if (typeof override !== 'string') return INTRO_VIDEO_PATH;
+  const value = override.trim();
+  return /^\/(?!\/)[\w./-]+\.(?:mp4|webm)$/i.test(value) && !value.includes('..')
+    ? value
+    : INTRO_VIDEO_PATH;
+}
+
+const introSrc = resolveIntroVideoSrc(import.meta.env.VITE_PIXEL_INTRO_VIDEO);
+
 export const introVideo: {
   src: string | null;
   type: string;
   alternatives: { src: string; type: string }[];
   poster: ExperienceImage;
 } = {
-  src: null,
-  type: 'video/mp4',
+  src: introSrc,
+  type: introSrc.toLowerCase().endsWith('.webm') ? 'video/webm' : 'video/mp4',
   alternatives: [],
   poster: experienceImages.personal.evolution,
 };
