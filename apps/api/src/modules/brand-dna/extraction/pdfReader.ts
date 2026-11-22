@@ -2,6 +2,8 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { ColorSample } from '@pixel/contracts';
+// Solo tipos (se borra al compilar): pdf.js sigue cargándose de forma perezosa en loadPdfJs().
+import type * as PdfJsModule from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 /*
  * Lectura local de PDF, sin IA, con pdf.js (la librería de PDF de Firefox; JavaScript puro).
@@ -36,7 +38,7 @@ interface TextItem {
   transform: number[];
 }
 
-type PdfJs = typeof import('pdfjs-dist/legacy/build/pdf.mjs');
+type PdfJs = typeof PdfJsModule;
 let pdfjs: Promise<{ lib: PdfJs; assets: string }> | null = null;
 
 /** Carga perezosa: pdf.js solo se importa la primera vez que alguien sube un PDF. */

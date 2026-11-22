@@ -15,8 +15,7 @@ export interface SculptJob {
 }
 
 export type SculptWorkerMessage =
-  | { ok: true; result: SculptResult }
-  | { ok: false; error: string; boot?: boolean };
+  { ok: true; result: SculptResult } | { ok: false; error: string; boot?: boolean };
 
 const data = workerData as { job?: SculptJob } | null;
 if (parentPort && data?.job) {

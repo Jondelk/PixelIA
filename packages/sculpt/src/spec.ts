@@ -30,11 +30,7 @@ export type SurfaceDetail = 'none' | 'center_groove' | 'facets' | 'panel_lines' 
 export type EyeStyle = 'round' | 'oval' | 'dot' | 'crescent' | 'visor' | 'line';
 export type MouthStyle = 'soft_smile' | 'smile' | 'open_smile' | 'grin' | 'line' | 'none';
 export type FaceStyle =
-  | 'friendly_minimal'
-  | 'expressive_cartoon'
-  | 'minimal_geometric'
-  | 'visor'
-  | 'sculpted';
+  'friendly_minimal' | 'expressive_cartoon' | 'minimal_geometric' | 'visor' | 'sculpted';
 export type Stance = 'grounded' | 'balanced' | 'floating';
 
 export interface CharacterSpec {

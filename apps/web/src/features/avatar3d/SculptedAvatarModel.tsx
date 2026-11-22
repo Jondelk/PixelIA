@@ -1,11 +1,20 @@
 import { useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
-import { Box3, Euler, Vector3, type Mesh, type Object3D } from 'three';
+import { Box3, Vector3, type Euler, type Mesh, type Object3D } from 'three';
 import { mouthMorphWeights, poseToRig, RIG_NODES, type RigNode } from './glbRig';
 import { dampPose, targetPose } from './livePose';
 import { NEUTRAL_POSE, type AvatarState, type Pose } from './pose';
 import type { SceneSpec } from './sceneSpec';
+
+/**
+ * Escribe el peso de un morph target. Igual que mover un hueso, es una mutación imperativa de
+ * three.js en cada fotograma (fuera del render de React).
+ */
+function setMorph(mesh: Mesh, index: number, weight: number): void {
+  const influences = mesh.morphTargetInfluences;
+  if (influences) influences[index] = weight;
+}
 
 /** Caja que ocupa el modelo, para encuadrar la cámara (unidades de escena). */
 export interface ModelBounds {
@@ -97,11 +106,10 @@ export function SculptedAvatarModel({
 
     const transforms = poseToRig(current, rig.lookRange, { mouthMorphs: rig.mouths.length > 0 });
     for (const mouth of rig.mouths) {
-      const influences = mouth.mesh.morphTargetInfluences;
-      if (!influences) continue;
+      if (!mouth.mesh.morphTargetInfluences) continue;
       const weights = mouthMorphWeights(current, mouth.rest);
-      influences[mouth.open] = weights.open;
-      if (mouth.round !== undefined) influences[mouth.round] = weights.round;
+      setMorph(mouth.mesh, mouth.open, weights.open);
+      if (mouth.round !== undefined) setMorph(mouth.mesh, mouth.round, weights.round);
     }
     for (const [name, node] of rig.nodes) {
       const base = rig.rest.get(node)!;

@@ -28,7 +28,7 @@ function formatSize(bytes: number): string {
 }
 
 /** Valida la selección antes de enviarla; devuelve un mensaje si algo no cumple. */
-export function validateFiles(files: { name: string; size: number }[]): string | null {
+function validateFiles(files: { name: string; size: number }[]): string | null {
   if (files.length > EXTRACTION_LIMITS.maxFiles) {
     return `Puedes subir hasta ${EXTRACTION_LIMITS.maxFiles} documentos a la vez.`;
   }

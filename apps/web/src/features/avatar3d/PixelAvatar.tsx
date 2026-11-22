@@ -76,9 +76,7 @@ export function PixelAvatar({
     [modelUrl],
   );
 
-  const parametric = (
-    <AvatarController spec={spec} state={state} reducedMotion={reducedMotion} />
-  );
+  const parametric = <AvatarController spec={spec} state={state} reducedMotion={reducedMotion} />;
   // El modelo esculpido apoya los pies en y = 0; el paramétrico, en spec.groundY.
   const groundY = modelBounds ? 0 : spec.groundY;
 

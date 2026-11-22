@@ -104,7 +104,7 @@ export function sheetText(sheetXml: string, shared: string[]): string {
     const cells: string[] = [];
     for (const cell of row.match(/<c\b[^>]*\/>|<c\b[\s\S]*?<\/c>/g) ?? []) {
       const type = /\bt="([^"]+)"/.exec(cell)?.[1];
-      let value = '';
+      let value: string;
       if (type === 's') value = shared[Number(/<v>(\d+)<\/v>/.exec(cell)?.[1])] ?? '';
       else if (type === 'inlineStr') value = officeXmlToText(cell);
       else value = decodeEntities(/<v>([\s\S]*?)<\/v>/.exec(cell)?.[1] ?? '');
@@ -235,7 +235,10 @@ export function readDocument(input: DocumentInput): ReadDocument {
   }
 
   if (['txt', 'md', 'markdown', 'csv'].includes(ext) || media.startsWith('text/')) {
-    const text = bytes.toString('utf8').replace(/^﻿/, '').trim();
+    const text = bytes
+      .toString('utf8')
+      .replace(/^\uFEFF/, '')
+      .trim();
     if (!text || text.includes('\u0000')) {
       return {
         name,

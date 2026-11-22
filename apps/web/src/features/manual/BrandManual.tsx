@@ -80,9 +80,10 @@ export function BrandManual({
     '--m-accent-text': textSafe(colors.accent),
   } as CSSProperties;
 
-  let page = 0;
+  // Folio de cada página, en el orden en que se pintan (un contador local de este render).
+  const pages = { count: 0 };
   const folio = (section?: string) => {
-    page += 1;
+    const page = ++pages.count;
     return (
       <footer className="m-folio">
         <span>
@@ -549,7 +550,7 @@ export function BrandManual({
             </div>
             <footer className="m-folio" style={{ left: '58cqw' }}>
               <span>El personaje</span>
-              <span>{String((page += 1)).padStart(2, '0')}</span>
+              <span>{String(++pages.count).padStart(2, '0')}</span>
             </footer>
           </section>
 

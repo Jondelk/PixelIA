@@ -27,20 +27,7 @@ export const REST_MOUTH: MouthShape = { open: 0, wide: 0.5, round: 0 };
 
 /** Visemas: misma familia que la convención Oculus / Ready Player Me (docs/AVATAR-ASSET-CONTRACT.md). */
 export type Viseme =
-  | 'sil'
-  | 'aa'
-  | 'E'
-  | 'I'
-  | 'O'
-  | 'U'
-  | 'PP'
-  | 'FF'
-  | 'SS'
-  | 'DD'
-  | 'kk'
-  | 'CH'
-  | 'RR'
-  | 'nn';
+  'sil' | 'aa' | 'E' | 'I' | 'O' | 'U' | 'PP' | 'FF' | 'SS' | 'DD' | 'kk' | 'CH' | 'RR' | 'nn';
 
 export const VISEME_SHAPES: Record<Viseme, MouthShape> = {
   sil: REST_MOUTH,
